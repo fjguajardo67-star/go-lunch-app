@@ -762,8 +762,8 @@
             <label>Zona habitual <span style="font-weight:400;color:var(--gris-text)">(según RRHH)</span></label>
             <select id="e-zona">
               <option value="">— Sin asignar —</option>
-              <option value="zona_vdc">Glovis VDC</option>
-              <option value="zona_refris">Glovis REFIS</option>
+              <option value="zona_vdc">ASLA (LZCA)</option>
+              <option value="zona_refris">REFIS (LZCR)</option>
             </select>
           </div>
           <div>
@@ -771,7 +771,7 @@
             <select id="e-turno">
               <option value="">— Sin asignar —</option>
               <option value="turno_a">Turno A (10:00 am)</option>
-              <option value="turno_b">Turno B (5:00 pm)</option>
+              <option value="turno_b">Turno B (REFIS 5 PM · ASLA 6 PM)</option>
             </select>
           </div>
           <div style="display:flex;align-items:flex-end">
@@ -818,7 +818,7 @@
         </div>
         <div class="cov-reloj" aria-label="Horario de cobertura">
           <b>Cierre 2:45 PM</b>
-          <span>Salida 4:30 PM · Entrega 5:00 PM</span>
+          <span>Salida 4:30 PM · REFIS 5:00 PM · ASLA 6:00 PM</span>
         </div>
       </div>
 
@@ -998,9 +998,9 @@
               <label>Zonas que atiende</label>
               <div style="display:flex;gap:14px;align-items:center;padding-top:6px">
                 <label style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.88rem">
-                  <input type="checkbox" id="rp-vdc" style="width:18px;height:18px"> Glovis VDC</label>
+                  <input type="checkbox" id="rp-vdc" style="width:18px;height:18px"> ASLA (LZCA)</label>
                 <label style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.88rem">
-                  <input type="checkbox" id="rp-refris" style="width:18px;height:18px"> Glovis REFIS</label>
+                  <input type="checkbox" id="rp-refris" style="width:18px;height:18px"> REFIS (LZCR)</label>
               </div>
             </div>
             <div><label>Clave (opcional)</label><input type="text" id="rp-clave" placeholder="Se genera sola"></div>
@@ -1021,12 +1021,12 @@
             <div class="cocina-icono" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
             </div>
-            <div><h3>Puntos de entrega</h3><p>Coordenadas y radio permitido para VDC y REFIS.</p></div>
+            <div><h3>Puntos de entrega</h3><p>Coordenadas y radio permitido para ASLA y REFIS.</p></div>
           </div>
           <p style="font-size:.85rem;color:var(--gris-text);margin:-4px 0 14px;line-height:1.55">
-            La referencia contra la que se mide cada entrega. El contrato nombra
-            <b>Patio LZC VDC</b> (Calle Volcán Ajusco s/n, Isla del Cayacal) y
-            <b>REFIS</b> (Bulevar de las Bahías).
+            La referencia contra la que se mide cada entrega:
+            <b>ASLA (LZCA)</b>, fuera del puerto, y
+            <b>REFIS (LZCR)</b>, dentro del puerto.
             <b>Abre este panel desde la tablet, parado en el andén, y toca Capturar.</b>
             Desde una computadora no se puede: ahí la ubicación sale del wifi y se
             va cientos de metros.
@@ -1059,7 +1059,7 @@
             <div class="cocina-herramienta">
               <div class="cocina-herramienta-info">
                 <div class="cocina-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2v2M19 19h2v2M14 19h2v2"/></svg></div>
-                <div><h4>Prueba del escáner</h4><p>QR permanente para cámara, permisos, VDC, REFIS y ambos turnos.</p></div>
+                <div><h4>Prueba del escáner</h4><p>QR permanente para cámara, permisos, ASLA, REFIS y ambos turnos.</p></div>
               </div>
               <button class="accion mini sec" onclick="window.open('qr.html?prueba=entrega','_blank')">Ver QR</button>
             </div>
@@ -1149,7 +1149,7 @@
     </div>
     <p class="cov-alerta-kicker">Corte de cobertura · 2:45 PM</p>
     <h2 id="cov-alarma-titulo">La comanda final está lista</h2>
-    <p id="cov-alarma-texto">Cocina necesita este consolidado para iniciar la producción del servicio de las 5:00 PM.</p>
+    <p id="cov-alarma-texto">Cocina necesita este consolidado: REFIS 5:00 PM y ASLA 6:00 PM.</p>
     <dl class="cov-alerta-resumen">
       <div><dt>Solicitudes</dt><dd id="cov-alarma-solicitudes">0</dd></div>
       <div><dt>Alimentos</dt><dd id="cov-alarma-porciones">0</dd></div>
@@ -1163,6 +1163,7 @@
 </div>
 <iframe id="cov-print-frame" class="cov-print-frame" title="Impresión automática de comanda de cobertura"></iframe>
 
+<script src="/operacion.js"></script>
 <script>
 
   // ⚙️ La URL pública del backend en Railway; en local usa el mismo origen
@@ -1171,10 +1172,10 @@
   const API_BASE = '';
 
   // Texto legible de zonas y turnos (deben coincidir con services/menu.js)
-  const ZONA_TXT = { zona_vdc: 'Glovis VDC', zona_refris: 'Glovis REFIS' };
-  const TURNO_TXT = { turno_a: 'Turno A (10:00 am)', turno_b: 'Turno B (5:00 pm)' };
+  const ZONA_TXT = GoLunchOperacion.ZONAS;
+  const TURNO_TXT = { turno_a: 'Turno A (10:00 AM)', turno_b: 'Turno B (REFIS 5 PM · ASLA 6 PM)' };
   const zonaTxt  = z => ZONA_TXT[z]  || z || '—';
-  const turnoTxt = t => TURNO_TXT[t] || t || '—';
+  const turnoTxt = (t, zona, fecha) => t ? GoLunchOperacion.textoTurno(t, zona, fecha) : '—';
 
   // ── Fechas del comedor ──
   // NUNCA usar toISOString() para una fecha sin hora: convierte a UTC, y en
@@ -1484,7 +1485,7 @@
              '<td>' + escaparHtml(f.nombre) + '</td>' +
              '<td>' + (f.platillo ? escaparHtml(f.platillo) : vacio) + '</td>' +
              '<td style="font-size:.82rem">' + (f.zona ? zonaTxt(f.zona) : vacio) + '</td>' +
-             '<td style="font-size:.82rem">' + (f.turno ? turnoTxt(f.turno) : vacio) + '</td>' +
+             '<td style="font-size:.82rem">' + (f.turno ? turnoTxt(f.turno, f.zona, fecha) : vacio) + '</td>' +
              '<td style="font-size:.82rem;font-variant-numeric:tabular-nums">' + horaTxt(f.entregado_en) + '</td>' +
              '<td style="font-size:.82rem;white-space:nowrap">' + txt +
                (f.estado === 'tardia'
@@ -1772,7 +1773,7 @@
       let entregados = 0;
       for (const p of r.pedidos) {
         if (p.entregado_en) entregados++;
-        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno)}</td><td>${horaEntrega(p.entregado_en)}</td></tr>`;
+        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno, p.zona, f)}</td><td>${horaEntrega(p.entregado_en)}</td></tr>`;
       }
       h += `</table><p style="margin-top:10px;font-size:.85rem;color:var(--gris)">Total: ${r.count} pedidos · Entregados: ${entregados} · Sin recoger: ${r.count - entregados}</p>`;
       box.innerHTML = h;
@@ -1822,8 +1823,8 @@
   function interpretarZona(v) {
     const s = normalizar(v);
     if (!s) return null;
-    if (s.includes('vdc')) return 'zona_vdc';
-    if (s.includes('refri')) return 'zona_refris';
+    if (/asla|lzca|vdc/.test(s)) return 'zona_vdc';
+    if (/refis|refri|lzcr/.test(s)) return 'zona_refris';
     if (s === 'zona_vdc' || s === 'zona_refris') return s;
     return undefined;   // había algo, pero no se entendió
   }
@@ -1833,7 +1834,7 @@
     if (!s) return null;
     if (s === 'turno_a' || s === 'turno_b') return s;
     if (/\b10\b|10:00|matutino|manana/.test(s)) return 'turno_a';
-    if (/\b17\b|17:00|\b5:00\b|vespertino|tarde/.test(s)) return 'turno_b';
+    if (/\b17\b|\b18\b|17:00|18:00|\b[56]:00\b|vespertino|tarde/.test(s)) return 'turno_b';
     if (/(^|[^a-z])a([^a-z]|$)/.test(s)) return 'turno_a';
     if (/(^|[^a-z])b([^a-z]|$)/.test(s)) return 'turno_b';
     return undefined;
@@ -1950,7 +1951,7 @@
         <td>${escaparHtml(r.numero_empleado) || '<span style="color:#aaa">—</span>'}</td>
         <td style="font-size:.8rem">${escaparHtml(r.telefono) || '<span style="color:#aaa">—</span>'}</td>
         <td style="font-size:.78rem">${zonaTxt(r.zona_default)}</td>
-        <td style="font-size:.78rem">${turnoTxt(r.turno_default)}</td>
+        <td style="font-size:.78rem">${turnoTxt(r.turno_default, r.zona_default)}</td>
         <td style="font-size:.75rem;color:${malo ? 'var(--rojo)' : 'var(--verde)'}">${malo ? escaparHtml(r.problemas.join(', ')) : '✓ listo'}</td>
       </tr>`;
     });
@@ -2002,9 +2003,9 @@
   function descargarEjemplo() {
     const filas = [
       ['Nombre completo', 'No. empleado', 'Telefono', 'Zona', 'Turno'],
-      ['Juan Pérez López',   'EMP001', '6361037574', 'Glovis VDC',    'Turno A'],
-      ['María García Ruiz',  'EMP002', '6361037575', 'Glovis REFIS', 'Turno B'],
-      ['Pedro Sánchez Díaz', 'EMP003', '6361037576', 'Glovis VDC',    'Turno B']
+      ['Juan Pérez López',   'EMP001', '6361037574', 'ASLA (LZCA)',    'Turno A'],
+      ['María García Ruiz',  'EMP002', '6361037575', 'REFIS (LZCR)', 'Turno B'],
+      ['Pedro Sánchez Díaz', 'EMP003', '6361037576', 'ASLA (LZCA)',    'Turno B']
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(filas), 'Plantilla');
@@ -2158,7 +2159,7 @@
   // La clave se asigna aquí y se muestra UNA vez. En la base solo queda su
   // resguardo cifrado, así que no existe "ver la clave actual": si se pierde,
   // se restablece — y eso además cierra la sesión que estuviera abierta.
-  const ZONAS_RP = { zona_vdc: 'Glovis VDC', zona_refris: 'Glovis REFIS' };
+  const ZONAS_RP = GoLunchOperacion.ZONAS;
 
   function mostrarClaveNueva(clave, quien) {
     document.getElementById('rpClaveTexto').textContent = clave;
@@ -2243,8 +2244,8 @@
   // desde la tablet parada en el andén: en una PC la ubicación viene del wifi
   // o de la IP y un punto mal fijado desplaza para siempre TODAS las medidas.
   const ZONAS_PUNTO = [
-    { zona: 'zona_vdc',    nombre: 'Patio LZC VDC',  direccion: 'Calle Volcán Ajusco s/n, Col. Isla del Cayacal, C.P. 60950' },
-    { zona: 'zona_refris', nombre: 'REFIS',          direccion: 'Calle Bulevar de las Bahías, C.P. 60950' }
+    { zona: 'zona_vdc', nombre: 'ASLA (LZCA)', direccion: 'Fuera del puerto' },
+    { zona: 'zona_refris', nombre: 'REFIS (LZCR)', direccion: 'Dentro del puerto' }
   ];
   const PRECISION_PUNTO_MAXIMA_M = 25;
   let PUNTOS_GUARDADOS = [];
@@ -2413,7 +2414,7 @@
         p.empleados?.nombre || '',
         p.opcion_texto,
         zonaTxt(p.zona),
-        turnoTxt(p.turno),
+        turnoTxt(p.turno, p.zona, fecha),
         fecha
       ]);
     }
@@ -2459,7 +2460,7 @@
         p.fecha_menu,
         p.opcion_texto,
         zonaTxt(p.zona),
-        turnoTxt(p.turno)
+        turnoTxt(p.turno, p.zona, p.fecha_menu)
       ]);
     }
     const ws2 = XLSX.utils.aoa_to_sheet(filas2);

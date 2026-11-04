@@ -227,8 +227,8 @@ CREATE TABLE IF NOT EXISTS llegadas (
 CREATE INDEX IF NOT EXISTS idx_llegadas_fecha ON llegadas (fecha_menu, zona);
 
 -- Puntos de entrega del contrato, contra los que se mide la distancia.
---   Patio LZC VDC: Calle Volcán Ajusco s/n, Col. Isla del Cayacal, C.P. 60950
---   REFIS 1, 2 y 3: Calle Bulevar de las Bahías, C.P. 60950
+--   ASLA (LZCA): fuera del puerto; clave histórica zona_vdc.
+--   REFIS (LZCR): dentro del puerto; clave histórica zona_refris.
 -- Las coordenadas NO se ponen a mano desde un mapa: un pin a ojo se va 20 o
 -- 30 metros y ese error entra directo en la cifra que se le presenta al
 -- cliente. Se capturan paradas en el sitio, con la misma tablet y la misma
@@ -264,7 +264,8 @@ CREATE INDEX IF NOT EXISTS idx_envios_msgid ON envios (message_id);
 --
 -- Solicitudes grupales que hacen supervisores autorizados cuando personal
 -- del primer turno cubre el segundo. Se piden el MISMO día hasta las 14:45,
--- se producen entre las 15:00 y las 16:30 y viajan con la ruta de las 17:00.
+-- se producen entre las 15:00 y las 16:30. Desde 7/nov/2026 se entregan
+-- a las 17:00 en REFIS y a las 18:00 en ASLA.
 -- Viven aparte de `pedidos`: una persona puede tener su comida regular y una
 -- cobertura el mismo día sin que el UNIQUE de pedidos reemplace ninguna.
 -- ════════════════════════════════════════════════════════════════════

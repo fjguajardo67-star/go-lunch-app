@@ -484,7 +484,7 @@ adminRouter.get('/reportes', async (req, res) => {
 
       // Sin turno no hay hora de entrega que vencer (pedidos viejos de
       // WhatsApp): se da por vencido cuando el día ya pasó.
-      const limite = limiteEntrega(p.fecha_menu, p.turno);
+      const limite = limiteEntrega(p.fecha_menu, p.turno, p.zona);
       const yaVencio = limite ? DateTime.now() > limite : p.fecha_menu < hoyISO;
 
       if (yaVencio) {
@@ -528,7 +528,7 @@ adminRouter.get('/reportes', async (req, res) => {
       // justo en la cifra de la que cuelga la penalización del 30%.
       // Ante la duda no se presume a favor: se cuenta aparte y se reporta.
       // (Hallazgo GL-018 de la auditoría.)
-      const tardia = esEntregaTardia(p.fecha_menu, p.turno, p.entregado_en);
+      const tardia = esEntregaTardia(p.fecha_menu, p.turno, p.entregado_en, p.zona);
       if (tardia === true) {
         tardios++;
         const m = p.motivo_tardia || 'sin_motivo';
@@ -746,7 +746,7 @@ adminRouter.get('/dashboard/:fecha', async (req, res) => {
                  visto_en: acc?.visto_en || null, veces: acc?.veces || 0,
                  estado: acc ? 'vio_no_ordeno' : (accesosOk ? 'no_abrio' : 'sin_dato') };
       }
-      const tardia = esEntregaTardia(fecha, p.turno, p.entregado_en);
+      const tardia = esEntregaTardia(fecha, p.turno, p.entregado_en, p.zona);
       return {
         nombre: emp.nombre,
         numero_empleado: emp.numero_empleado,

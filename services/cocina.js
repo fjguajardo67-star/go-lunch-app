@@ -2,7 +2,7 @@
 import { DateTime } from 'luxon';
 import * as db from './supabase.js';
 import { fechaServicio } from './pedidos.js';
-import { manana, TURNOS, ZONAS } from './menu.js';
+import { manana, TURNOS, ZONAS, horaTexto, horaEntrega } from './menu.js';
 
 const ZONA_TZ = process.env.TZ || 'America/Mexico_City';
 
@@ -122,6 +122,7 @@ export function htmlComanda({ fecha, total, resumen }) {
   <h1>COMANDA DE COCINA</h1>
   <div class="sub">CICSA — Glovis</div>
   <div class="sub">Fecha de servicio: <strong>${esc(fecha)}</strong></div>
+  <div class="sub">Turno A: ${esc(horaTexto('turno_a', null, fecha))} · ambos patios<br>Turno B: REFIS ${esc(horaTexto('turno_b', 'zona_refris', fecha))} · ASLA ${esc(horaTexto('turno_b', 'zona_vdc', fecha))}</div>
   <hr>
   ${resumen.length ? secciones : vacio}
   <div class="total"><span>TOTAL PORCIONES</span><span>${total}</span></div>
@@ -159,10 +160,8 @@ export function htmlEtiquetas({ fecha, ancho, alto, modo, qr = true, pedidos }) 
     String(a.zona).localeCompare(String(b.zona)) ||
     String(a.empleados?.nombre || '').localeCompare(String(b.empleados?.nombre || '')));
 
-  // En la etiqueta la ruta va abreviada: el turno ya implica la hora, y
-  // escribirla completa hace que se corte en los rollos angostos.
-  const turnoCorto = t => (TURNOS[t] || t || 'Sin turno').split('—')[0].trim();
-  const zonaCorta  = z => (ZONAS[z] || z || 'Sin zona').replace(/^Glovis\s+/i, '');
+  // Hora y patio explícitos, abreviados para conservar el ancho del rollo.
+  const zonaCorta = z => (ZONAS[z] || z || 'Sin zona').split(' (')[0];
 
   // El QR lleva número de empleado y fecha: sin la fecha, la etiqueta de ayer
   // se podría escanear hoy y marcaría una entrega que no ocurrió.
@@ -172,7 +171,7 @@ export function htmlEtiquetas({ fecha, ancho, alto, modo, qr = true, pedidos }) 
     return `
     <div class="etiqueta">
       <div class="texto">
-        <div class="ruta">${esc(turnoCorto(p.turno))} &nbsp;·&nbsp; ${esc(zonaCorta(p.zona))}</div>
+        <div class="ruta">${esc(zonaCorta(p.zona))} &nbsp;·&nbsp; ${esc(horaEntrega(p.turno, p.zona, fecha) || 'Sin hora')}</div>
         <div class="nombre">${esc(p.empleados?.nombre || 'Sin nombre')}</div>
         <div class="platillo">${esc(p.opcion_texto || p.opcion_id)}</div>
         <div class="pie">

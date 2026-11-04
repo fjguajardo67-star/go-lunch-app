@@ -59,7 +59,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <main>
     <section id="login">
       <div class="lead"><h1>Alimentos para quienes extienden su jornada.</h1><p>Acceso exclusivo para supervisores autorizados por Glovis.</p></div>
-      <div class="timing" aria-label="Horario del servicio"><div><b>2:45 PM</b><span>Cierre</span></div><div><b>4:30 PM</b><span>Salida</span></div><div><b>5:00 PM</b><span>Entrega</span></div></div>
+      <div class="timing" aria-label="Horario del servicio"><div><b>2:45 PM</b><span>Cierre</span></div><div><b>5:00 PM</b><span>REFIS</span></div><div><b>6:00 PM</b><span>ASLA</span></div></div>
       <form class="panel" onsubmit="event.preventDefault();entrar()">
         <h2>Acceso de supervisor</h2><p>Usa el número de tu gafete y la clave que te entregó CICSA.</p>
         <label for="numero">Número de empleado</label>
@@ -79,14 +79,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
 
       <div id="editor" class="oculto">
-        <div class="lead"><h1>Arma la cobertura de hoy.</h1><p id="fecha-servicio">Entrega hoy a las 5:00 PM.</p></div>
+        <div class="lead"><h1>Arma la cobertura de hoy.</h1><p id="fecha-servicio">REFIS 5:00 PM · ASLA 6:00 PM.</p></div>
         <section class="panel">
           <h2>Menú especial</h2><p>Selecciona una opción para cada empleado. No admite modificaciones de preparación.</p>
           <div id="menu-opciones" class="menu-strip"></div>
         </section>
         <section class="panel">
           <h2>Entrega del lote</h2><p>El responsable puede ser el propio supervisor u otro empleado activo.</p>
-          <label for="zona">Zona</label><select id="zona"><option value="">Seleccionar zona</option><option value="zona_vdc">Glovis VDC</option><option value="zona_refris">Glovis REFIS</option></select>
+          <label for="zona">Zona</label><select id="zona" onchange="actualizarHorario()"><option value="">Seleccionar zona</option><option value="zona_vdc">ASLA (LZCA)</option><option value="zona_refris">REFIS (LZCR)</option></select>
           <label for="responsable">Número del responsable</label><input id="responsable" inputmode="numeric" onblur="buscarResponsable()"><div id="responsable-nombre" class="responsable-ok"></div>
         </section>
         <section class="panel">
@@ -95,7 +95,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <button class="add" type="button" onclick="agregarPersona()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar empleado</button>
           <div id="solicitud-error" class="error oculto" role="alert"></div>
         </section>
-        <div class="summary"><div class="summary-row"><div><b id="total">0 alimentos</b><span id="cuenta-regresiva">Cierra a las 2:45 PM</span></div><span>Entrega 5:00 PM</span></div><button id="btn-guardar" class="btn" onclick="guardarSolicitud()">Confirmar solicitud</button></div>
+        <div class="summary"><div class="summary-row"><div><b id="total">0 alimentos</b><span id="cuenta-regresiva">Cierra a las 2:45 PM</span></div><span id="hora-entrega">REFIS 5 PM · ASLA 6 PM</span></div><button id="btn-guardar" class="btn" onclick="guardarSolicitud()">Confirmar solicitud</button></div>
       </div>
 
       <section id="recibo" class="panel receipt oculto">
@@ -109,10 +109,11 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <footer class="footer"><a href="/pedido.html">Volver al pedido personal</a></footer>
 </div>
 
+<script src="/operacion.js"></script>
 <script>
   const API='';
   const LS='golunch_cobertura_sesion';
-  const ZONAS={zona_vdc:'Glovis VDC',zona_refris:'Glovis REFIS'};
+  const ZONAS=GoLunchOperacion.ZONAS;
   const $=id=>document.getElementById(id);
   let SESION=null,ESTADO=null,FILAS=[],RESPONSABLE=null;
 
@@ -145,8 +146,9 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   function prepararEstado(){
     const s=ESTADO.solicitud;
     if(s&&s.estado!=='cancelada')cargarSolicitud(s);else iniciarNueva();
+    actualizarHorario();
     if(!ESTADO.menu){mostrarCerrado('Menú especial pendiente','CICSA todavía no publica las opciones de cobertura para hoy.');return}
-    if(!ESTADO.abierto){mostrarCerrado('El conteo cerró a las 2:45 PM','La solicitud queda visible para producción y se entregará a las 5:00 PM.');if(s&&s.estado!=='cancelada')mostrarRecibo(s,false);return}
+    if(!ESTADO.abierto){mostrarCerrado('El conteo cerró a las 2:45 PM','La solicitud queda visible para producción. Entrega: '+GoLunchOperacion.horaTexto('turno_b',s?.zona,ESTADO.fecha)+'.');if(s&&s.estado!=='cancelada')mostrarRecibo(s,false);return}
     $('estado-cerrado').classList.add('oculto');
     if(s&&s.estado!=='cancelada')mostrarRecibo(s,true);else mostrarEditor();
     pintarMenu();pintarFilas();actualizarTotal();actualizarReloj();
@@ -160,10 +162,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     FILAS=(s.items||[]).map(i=>({numero:i.empleado_numero_snapshot,nombre:i.empleado_nombre_snapshot,opcion_id:i.opcion_id}));
     RESPONSABLE={numero:s.responsable_numero_snapshot,nombre:s.responsable_nombre_snapshot};$('responsable').value=RESPONSABLE.numero;$('responsable-nombre').textContent=RESPONSABLE.nombre;$('zona').value=s.zona;
   }
-  function mostrarEditor(){$('editor').classList.remove('oculto');$('recibo').classList.add('oculto')}
+  function actualizarHorario(){
+    const texto='Entrega '+GoLunchOperacion.horaTexto('turno_b',$('zona').value,ESTADO?.fecha);
+    $('fecha-servicio').textContent=texto;$('hora-entrega').textContent=texto;
+  }
+  function mostrarEditor(){$('editor').classList.remove('oculto');$('recibo').classList.add('oculto');actualizarHorario()}
   function editarSolicitud(){mostrarEditor();pintarMenu();pintarFilas();actualizarTotal()}
   function mostrarCerrado(titulo,texto){$('editor').classList.add('oculto');$('recibo').classList.add('oculto');$('estado-cerrado').classList.remove('oculto');$('cerrado-titulo').textContent=titulo;$('cerrado-texto').textContent=texto}
   function mostrarRecibo(s,editable){
+    actualizarHorario();
     $('editor').classList.add('oculto');$('recibo').classList.remove('oculto');$('rec-folio').textContent=s.folio;$('rec-total').textContent=s.total_porciones;$('rec-zona').textContent=ZONAS[s.zona]||s.zona;$('rec-responsable').textContent=s.responsable_nombre_snapshot+' · #'+s.responsable_numero_snapshot;$('rec-acciones').classList.toggle('oculto',!editable)
   }
 
