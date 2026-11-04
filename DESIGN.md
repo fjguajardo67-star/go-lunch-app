@@ -58,6 +58,11 @@ izquierda del escritorio; en móvil queda al pie de la portada con espacio
 reservado, sin cubrir el formulario ni el acceso de supervisores. Solo aparece
 en esa portada y conserva los colores y proporciones del archivo proporcionado.
 
+El panel administrativo repite el crédito al pie de la barra lateral izquierda.
+En escritorio la barra permanece visible al desplazar el contenido; en ventanas
+bajas permite desplazamiento propio para mantener accesibles todas las opciones.
+En móvil el crédito acompaña la fila de navegación horizontal.
+
 ## PWA y caché
 
 Todo cambio dentro de `/public` debe acompañarse de un incremento de `VERSION`
