@@ -12,7 +12,7 @@
   :root {
     --azul: #003087; --azul-mid: #1a4ba0; --azul-light: #e8eef8; --azul-line: #c5d3ec;
     --verde: #1e7a22; --verde-light: #e6f4e6;
-    --dorado: #b8860b; --dorado-light: #fdf5e6;
+    --dorado: #88620b; --dorado-light: #fdf5e6;
     --rojo: #c0392b; --rojo-light: #fdecec;
     --gris-bg: #f4f6fb; --gris-line: #dde3ef; --gris-text: #5a6480; --tinta: #0d1b3e;
   }
@@ -27,7 +27,7 @@
     display: flex; align-items: center; gap: 14px;
     position: sticky; top: 0; z-index: 10;
   }
-  .barra b { flex: 1; font-size: .95rem; }
+  .barra b { color: #fff; flex: 1; font-size: .95rem; }
   .barra button {
     padding: 8px 18px; background: var(--dorado); color: #fff; border: none;
     border-radius: 8px; font-family: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
@@ -60,7 +60,7 @@
   b { color: var(--tinta); }
 
   .rol {
-    display: inline-block; font-size: .68rem; font-weight: 800; letter-spacing: .06em;
+    display: inline-block; font-size: .75rem; font-weight: 800; letter-spacing: .06em;
     text-transform: uppercase; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
   }
   .rol.emp { background: var(--verde-light); color: var(--verde); }
@@ -400,7 +400,7 @@
       <tr><th>Aviso</th><th>Qué significa</th><th>Qué hacer</th></tr>
       <tr><td><b style="color:#1e7a22">Verde</b> con nombre</td><td>Entrega registrada</td><td>Nada — sigue con la siguiente</td></tr>
       <tr><td><b style="color:#1e7a22">“Prueba correcta”</b></td><td>La cámara leyó el QR y el repartidor tiene permiso para la ruta mostrada</td><td>Nada se registró; puedes repetir en la otra ruta autorizada</td></tr>
-      <tr><td><b style="color:#b8860b">"Ya estaba entregada"</b></td><td>Esa etiqueta ya se escaneó antes</td><td>Verifica que no estés entregando doble</td></tr>
+      <tr><td><b style="color:var(--dorado)">"Ya estaba entregada"</b></td><td>Esa etiqueta ya se escaneó antes</td><td>Verifica que no estés entregando doble</td></tr>
       <tr><td><b style="color:#c0392b">"No está en la lista"</b></td><td>Ese número no tiene pedido hoy</td><td>Revisa el número; si insiste, avisa al administrador</td></tr>
       <tr><td><b style="color:#c0392b">"Etiqueta de otro día"</b></td><td>La etiqueta es de una fecha distinta</td><td>NO la entregues — es comida de otro día</td></tr>
       <tr><td><b style="color:#c0392b">"Este pedido corresponde a REFIS (LZCR)"</b> (o ASLA)</td><td>Esa comida es de la otra ruta, no de la tuya</td><td>Entrégala si va contigo, pero el escaneo lo hace el equipo de esa zona. Aquí no se guardó nada</td></tr>
