@@ -175,7 +175,16 @@
     width: 232px; flex-shrink: 0; background: var(--blanco);
     border-right: 1px solid var(--gris-line); padding: 20px 14px;
     display: flex; flex-direction: column; gap: 22px;
+    position: sticky; top: 72px; align-self: flex-start;
+    height: calc(100vh - 72px); height: calc(100dvh - 72px);
+    overflow-y: auto;
   }
+  .lateral-credit {
+    margin-top: auto; padding: 16px 12px 0; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 4px;
+    color: var(--gris-text); font-size: .75rem; line-height: 1.4;
+  }
+  .lateral-credit img { display: block; width: 150px; height: 50px; object-fit: contain; }
   /* height:auto porque el ancho lo manda el CSS: sin esto el atributo height
      del <img> se aplica tal cual y deforma el logotipo. */
   .lateral .marca img { width: 100%; height: auto; max-width: 186px; display: block; margin: 0 auto; }
@@ -203,7 +212,9 @@
       width: auto; flex-direction: row; align-items: center; gap: 14px;
       border-right: none; border-bottom: 1px solid var(--gris-line);
       padding: 12px 16px; overflow-x: auto;
+      position: static; align-self: stretch; height: auto;
     }
+    .lateral-credit { margin-top: 0; padding: 0 12px; }
     /* La barra pasa a fila y las seis pestañas se llevaban todo el ancho:
        el logo quedaba en 0 px, invisible. Con ancho propio se queda, y las
        pestañas se desplazan con el overflow-x que ya tiene la barra. */
@@ -627,6 +638,10 @@
       <button class="tab"        data-p="cocina"    onclick="tab('cocina')">Cocina</button>
       <button class="tab"        data-p="reportes"  onclick="tab('reportes')">Reportes</button>
       </nav>
+      <div class="lateral-credit">
+        <span>Desarrollado por</span>
+        <img src="/2j-logo.svg" alt="Double J Blacklabs" width="2172" height="724">
+      </div>
     </aside>
     <div class="contenido">
     <div class="wrap">
