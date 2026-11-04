@@ -7,11 +7,10 @@
 import crypto from 'node:crypto';
 import { DateTime } from 'luxon';
 import * as db from './supabase.js';
-import { ZONA, ZONAS_VALIDAS } from './menu.js';
+import { ZONA, ZONAS_VALIDAS, horaTexto } from './menu.js';
 
 export const HORA_CORTE_COBERTURA = 14;
 export const MINUTO_CORTE_COBERTURA = 45;
-export const HORA_ENTREGA_COBERTURA = '17:00';
 export const OPCIONES_COBERTURA = ['especial_1', 'especial_2', 'especial_3'];
 
 export function ahoraCobertura() {
@@ -35,7 +34,8 @@ export function horarioCobertura() {
     abierto: ahora < corte,
     corte_iso: corte.toISO(),
     corte_texto: '2:45 PM',
-    entrega_texto: '5:00 PM',
+    entrega_texto: horaTexto('turno_b', null, ahora.toISODate()),
+    entrega_por_zona: Object.fromEntries(ZONAS_VALIDAS.map(z => [z, horaTexto('turno_b', z, ahora.toISODate())])),
     minutos_restantes: Math.max(0, Math.ceil(corte.diff(ahora, 'minutes').minutes))
   };
 }
@@ -76,7 +76,7 @@ function limpiarItems(items) {
 export function validarSolicitudEntrada({ responsable_numero, zona, items }) {
   const limpios = limpiarItems(items);
   if (!String(responsable_numero || '').trim()) return { error: 'Indica el número de empleado responsable de recibir.' };
-  if (!ZONAS_VALIDAS.includes(zona)) return { error: 'Selecciona VDC o REFIS como zona de entrega.' };
+  if (!ZONAS_VALIDAS.includes(zona)) return { error: 'Selecciona ASLA o REFIS como zona de entrega.' };
   if (!limpios.length) return { error: 'Agrega al menos una persona y su alimento.' };
   if (limpios.some(x => !x.numero_empleado)) return { error: 'Todos los alimentos necesitan número de empleado.' };
   if (limpios.some(x => !OPCIONES_COBERTURA.includes(x.opcion_id))) return { error: 'Selecciona un platillo para cada empleado.' };

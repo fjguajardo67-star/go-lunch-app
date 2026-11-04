@@ -1,5 +1,7 @@
 // services/menu.js — Lógica de horario y construcción del menú
 import { DateTime } from 'luxon';
+import '../public/operacion.js';
+export const { horaEntrega, horarioZona, horaTexto } = globalThis.GoLunchOperacion;
 
 // Una sola definición de zona horaria para todo el sistema. Se exporta porque
 // el panel la tenía escrita a mano en su propio formateo de horas, y dos
@@ -21,38 +23,31 @@ export const OPCION_LABELS = {
 export const OPCIONES_VALIDAS = Object.keys(OPCION_LABELS);
 
 // Zonas de entrega
-export const ZONAS = {
-  zona_vdc:    'Glovis VDC',
-  zona_refris: 'Glovis REFIS'
-};
+export const ZONAS = globalThis.GoLunchOperacion.ZONAS;
 export const ZONAS_VALIDAS = Object.keys(ZONAS);
 
 // Turnos
-export const TURNOS = {
-  turno_a: 'Turno A — 10:00 am',
-  turno_b: 'Turno B — 5:00 pm'
-};
+export const TURNOS = globalThis.GoLunchOperacion.TURNOS;
 export const TURNOS_VALIDOS = Object.keys(TURNOS);
 
 // ── Puntualidad de la entrega ─────────────────────────────────
 // Hora programada de cada turno y la tolerancia acordada. La ruta tarda en
 // recorrer sus puntos, así que sin tolerancia el final del recorrido saldría
 // tardío aunque vaya en tiempo. 15 min es acuerdo interno, no contractual.
-export const TURNO_HORA = { turno_a: '10:00', turno_b: '17:00' };
 export const TOLERANCIA_TARDIA_MIN = 15;
 
 // Momento a partir del cual una entrega de ese turno cuenta como tardía
-export function limiteEntrega(fechaISO, turno) {
-  const hora = TURNO_HORA[turno];
+export function limiteEntrega(fechaISO, turno, zona) {
+  const hora = horaEntrega(turno, zona, fechaISO);
   if (!hora || !fechaISO) return null;
   const d = DateTime.fromISO(`${fechaISO}T${hora}`, { zone: ZONA });
   return d.isValid ? d.plus({ minutes: TOLERANCIA_TARDIA_MIN }) : null;
 }
 
 // ¿La entrega fue tardía? null si no hay datos para saberlo.
-export function esEntregaTardia(fechaISO, turno, entregadoEn) {
+export function esEntregaTardia(fechaISO, turno, entregadoEn, zona) {
   if (!entregadoEn) return null;
-  const limite = limiteEntrega(fechaISO, turno);
+  const limite = limiteEntrega(fechaISO, turno, zona);
   if (!limite) return null;
   const e = DateTime.fromISO(entregadoEn, { zone: ZONA });
   return e.isValid ? e > limite : null;
@@ -185,8 +180,8 @@ export function construirListZona(telefono, opcionTexto) {
         sections: [{
           title: 'ZONAS DISPONIBLES',
           rows: [
-            { id: 'zona_vdc',    title: 'Glovis VDC',    description: 'Zona 1' },
-            { id: 'zona_refris', title: 'Glovis REFIS',  description: 'Zona 2' }
+            { id: 'zona_vdc', title: ZONAS.zona_vdc, description: 'Fuera del puerto' },
+            { id: 'zona_refris', title: ZONAS.zona_refris, description: 'Dentro del puerto' }
           ]
         }]
       }
@@ -195,7 +190,8 @@ export function construirListZona(telefono, opcionTexto) {
 }
 
 // PASO 3 — Selección de turno
-export function construirListTurno(telefono, opcionTexto, zonaTexto) {
+export function construirListTurno(telefono, opcionTexto, zonaTexto, fecha) {
+  const zona = Object.keys(ZONAS).find(id => ZONAS[id] === zonaTexto);
   return {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -213,8 +209,8 @@ export function construirListTurno(telefono, opcionTexto, zonaTexto) {
         sections: [{
           title: 'TURNOS DISPONIBLES',
           rows: [
-            { id: 'turno_a', title: 'Turno A', description: 'Entrega: 10:00 am' },
-            { id: 'turno_b', title: 'Turno B', description: 'Entrega: 5:00 pm'  }
+            { id: 'turno_a', title: 'Turno A', description: 'Entrega: ' + horaTexto('turno_a', zona, fecha) },
+            { id: 'turno_b', title: 'Turno B', description: 'Entrega: ' + horaTexto('turno_b', zona, fecha) }
           ]
         }]
       }
@@ -237,6 +233,6 @@ export function textoDeZona(zonaId) {
   return ZONAS[zonaId] || zonaId;
 }
 
-export function textoDeTurno(turnoId) {
-  return TURNOS[turnoId] || turnoId;
+export function textoDeTurno(turnoId, zona, fecha) {
+  return globalThis.GoLunchOperacion.textoTurno(turnoId, zona, fecha);
 }

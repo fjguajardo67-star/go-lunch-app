@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Entrega">
+<script src="/operacion.js"></script>
 <script>
   // Evita un destello claro al abrir la PWA cuando el equipo usa tema oscuro.
   try {
@@ -261,12 +262,12 @@
     <div id="zona-opciones">
       <button class="btn zona-opcion" type="button" data-zona="zona_vdc" onclick="elegirZona('zona_vdc')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        <span><b>Glovis VDC</b><small>Asignar esta ruta al equipo</small></span>
+        <span><b>ASLA (LZCA)</b><small>Asignar esta ruta al equipo</small></span>
         <svg class="zona-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </button>
       <button class="btn zona-opcion" type="button" data-zona="zona_refris" onclick="elegirZona('zona_refris')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-        <span><b>Glovis REFIS</b><small>Asignar esta ruta al equipo</small></span>
+        <span><b>REFIS (LZCR)</b><small>Asignar esta ruta al equipo</small></span>
         <svg class="zona-flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     </div>
@@ -481,7 +482,7 @@
   // dirección nunca se escribe a mano. Cambiar de dominio es solo DNS.
   const API_BASE = '';
 
-  const ZONA_TXT  = { zona_vdc: 'Glovis VDC', zona_refris: 'Glovis REFIS' };
+  const ZONA_TXT = GoLunchOperacion.ZONAS;
   const TURNO_TXT = { turno_a: 'Turno A', turno_b: 'Turno B' };
 
   // Debe coincidir exactamente con el que genera qr.html?prueba=entrega.
@@ -514,7 +515,7 @@
     // para no preguntarlo en cada uno de los recipientes del mismo lote.
     receptores: 'cicsa_entrega_receptores_cobertura'
   };
-  // Una caché por zona: cambiar de VDC a REFIS no debe mezclar listas ni
+  // Una caché por zona: cambiar de ASLA a REFIS no debe mezclar listas ni
   // contadores, y volver a la anterior no debe obligar a descargar de nuevo.
   const claveDatos = z => LS.datos + '_' + z;
 
@@ -525,7 +526,7 @@
   // es de la otra ruta" en vez de "no existe" cuando no hay señal.
   let INDICE_ZONAS = {};
   // Cada cambio de zona invalida las respuestas en vuelo de la anterior: sin
-  // esto, una descarga lenta de VDC podía pintarse encima de REFIS.
+  // esto, una descarga lenta de ASLA podía pintarse encima de REFIS.
   let EPOCA_ZONA = 0;
   let COLA = [];
   let CLAVE = '';
@@ -944,8 +945,10 @@
     }
     const ahora = new Date();
     const minutos = ahora.getHours() * 60 + ahora.getMinutes();
-    const [ha, ma] = (TURNO_HORA.turno_a || '10:00').split(':').map(Number);
-    const [hb, mb] = (TURNO_HORA.turno_b || '17:00').split(':').map(Number);
+    const horas = GoLunchOperacion.horarioZona(ZONA, FECHA);
+    if (!horas.turno_a || !horas.turno_b) return 'turno_a';
+    const [ha, ma] = horas.turno_a.split(':').map(Number);
+    const [hb, mb] = horas.turno_b.split(':').map(Number);
     const medio = ((ha * 60 + ma) + (hb * 60 + mb)) / 2;
     return minutos < medio ? 'turno_a' : 'turno_b';
   }
@@ -1589,8 +1592,10 @@
   // ── Entrega tardía ────────────────────────────────────────
   // Se calcula en el equipo, con los horarios descargados, para que funcione
   // en el puerto sin señal.
-  function limiteDelTurno(turno) {
-    const hora = TURNO_HORA[turno];
+  function limiteDelTurno(turno, zona = ZONA) {
+    // Una caché anterior puede traer 17:00 para ASLA. La regla compartida
+    // determina la hora por zona y fecha también cuando no hay conexión.
+    const hora = GoLunchOperacion.horaEntrega(turno, zona, FECHA);
     if (!hora || !FECHA) return null;
     const [a, m, d] = FECHA.split('-').map(Number);
     const [hh, mm] = hora.split(':').map(Number);
@@ -1601,7 +1606,7 @@
 
   function esTardia(p) {
     if (!p.entregado_en) return false;
-    const limite = limiteDelTurno(p.turno);
+    const limite = limiteDelTurno(p.turno, p.zona || ZONA);
     return limite ? new Date(p.entregado_en) > limite : false;
   }
 
@@ -1615,7 +1620,7 @@
 
   function pedirMotivo(p) {
     pedidoEnMotivo = p;
-    const limite = limiteDelTurno(p.turno);
+    const limite = limiteDelTurno(p.turno, p.zona || ZONA);
     $('motivo-quien').textContent = p.nombre + ' · ' + (TURNO_TXT[p.turno] || '');
     $('motivo-reloj').textContent =
       'Entregada ' + horaLocal(p.entregado_en) +

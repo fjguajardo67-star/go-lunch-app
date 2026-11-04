@@ -45,13 +45,24 @@ Si la entrega pasa de la hora del turno más 15 minutos, cuenta como **tardía**
 pide un motivo del catálogo (`acceso_puerto`, `trafico`, `cliente_ausente`,
 `cocina`…). Un motivo inventado no se guarda: solo los del catálogo.
 
-Turnos: **turno A 10:00**, **turno B 17:00**.
+Desde el **7 de noviembre de 2026**, las únicas zonas son:
+
+| Zona | Ubicación | Turno A | Turno B |
+|---|---|---|---|
+| ASLA (LZCA) | Fuera del puerto | 10:00 | 18:00 |
+| REFIS (LZCR) | Dentro del puerto | 10:00 | 17:00 |
+
+La regla compartida vive en `public/operacion.js`. Se conservan las claves
+internas `zona_vdc` (ASLA) y `zona_refris` (REFIS) para mantener historial,
+permisos y escaneos pendientes sin migrar datos. No existe una tercera zona.
+Las entregas anteriores al 7 de noviembre conservan su horario de 17:00
+para el turno B; no se recalifican con el horario nuevo.
 
 **Cobertura del segundo turno.** Un supervisor autorizado entra con número de
 empleado y clave personal, y antes de las **14:45** arma una solicitud consolidada
 para personal que extenderá su jornada. Selecciona una de tres opciones rápidas
 por empleado, zona y responsable. Cocina produce hasta las 16:30 y entrega a las
-17:00. Las etiquetas usan `EX|uuid|fecha`, por lo que no chocan con un pedido
+17:00 en REFIS y a las 18:00 en ASLA. Las etiquetas usan `EX|uuid|fecha`, por lo que no chocan con un pedido
 regular del mismo empleado. El repartidor escanea cada recipiente y confirma una
 sola vez quién recibe el folio; si cambia el receptor, escanea su gafete Glovis.
 
@@ -155,8 +166,8 @@ no las necesita.
 
 - **Corte de pedidos:** 20:00 hrs — se pide para el día siguiente
 - **Comanda automática:** 20:05 hrs
-- **Turnos de entrega:** A 10:00 · B 17:00, con 15 min de tolerancia
-- **Cobertura:** solicitud hasta 14:45 · alarma e impresión de comanda al cierre · salida 16:30 · entrega 17:00
+- **Turnos de entrega desde el 7/nov/2026:** A 10:00 en ambos patios · B 17:00 REFIS / 18:00 ASLA, con 15 min de tolerancia interna
+- **Cobertura:** solicitud hasta 14:45 · alarma e impresión de comanda al cierre · salida 16:30 · entrega por zona según turno B
 - **Zona horaria:** `America/Mexico_City` (Lázaro Cárdenas, Michoacán)
 - **Escala actual:** ~125 empleados
 

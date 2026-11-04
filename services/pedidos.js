@@ -133,7 +133,7 @@ function respuestaPedido({ empleado, pedido, fecha, zonaFinal, turnoFinal, modoP
     resumen: {
       platillo: pedido.opcion_texto,
       zona:     textoDeZona(zonaFinal),
-      turno:    textoDeTurno(turnoFinal),
+      turno:    textoDeTurno(turnoFinal, zonaFinal, fecha),
       corte:    horaCorteTexto()
     }
   };

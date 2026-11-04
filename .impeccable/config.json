@@ -1,0 +1,53 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "public/pedido.html"
+        ],
+        "createdAt": "2026-11-04T02:40:53.093Z",
+        "reason": "Agent: both findings are offset shadows (0 14px 28px and 0 9px 24px) providing depth, not zero-offset glow; preserve current design."
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "public/cobertura.html"
+        ],
+        "createdAt": "2026-11-04T02:40:53.108Z",
+        "reason": "Agent: summary uses an offset shadow (0 14px 30px), not a decorative halo; preserve current design."
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "public/entrega.html"
+        ],
+        "createdAt": "2026-11-04T02:40:53.121Z",
+        "reason": "Agent: camera has offset shadow (0 15px 32px); scan-line illumination is a functional indicator over variable camera imagery, not page decoration."
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "public/admin.html"
+        ],
+        "createdAt": "2026-11-04T02:40:53.133Z",
+        "reason": "Agent: findings are offset depth shadows on the white modal, login and header (0 30px 90px, 0 24px 60px, 0 2px 12px); preserve current design."
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "public/pedido.html"
+        ],
+        "createdAt": "2026-11-04T02:43:58.246Z",
+        "reason": "Agent: sole finding is empty-brandbar. CSS already supplies top padding max(20px, env(safe-area-inset-top)), 28px sides and 22px bottom; compact-height media keeps at least 14px. Static detector does not resolve max/env; unchanged from main."
+      }
+    ]
+  }
+}

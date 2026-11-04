@@ -9,7 +9,7 @@
 // Al cambiar los archivos de /public hay que subirle el número a VERSION: eso
 // tira el caché viejo. Las páginas van por red primero, así que se actualizan
 // solas; el número importa sobre todo para íconos y librerías.
-const VERSION = 'v33';
+const VERSION = 'v36';
 const CACHE = 'golunch-' + VERSION;
 
 // jsQR es lo que lee los códigos con la cámara. Vivía en un CDN, y por eso un
@@ -22,6 +22,8 @@ const CACHE = 'golunch-' + VERSION;
 const JSQR = '/jsQR.min.js';
 
 const PRECARGA = [
+  '/operacion.js',
+  '/2j-logo.svg',
   '/entrega.html',
   '/entrega.css',
   '/pedido.html',
@@ -155,6 +157,11 @@ self.addEventListener('fetch', evento => {
   // interceptar /sw.js—, de modo que sin esta línea el archivo quedaría en el
   // caché pero jamás se serviría desde ahí: sin señal, no escanea.
   const esJSQR = propio && url.pathname === JSQR;
+
+  if (propio && url.pathname === '/operacion.js') {
+    evento.respondWith(redPrimero(peticion));
+    return;
+  }
 
   if (esJSQR || (propio && ESTATICO.test(url.pathname))) {
     evento.respondWith(cachePrimero(peticion));
