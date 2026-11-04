@@ -50,6 +50,14 @@ el panel interrumpe la operación con una alerta sonora y visual, intenta abrir
 la impresión de la comanda y conserva una acción manual de respaldo. La alarma
 solo se apaga cuando el operador confirma que la comanda quedó impresa.
 
+## Crédito de desarrollo en la portada
+
+La portada de identificación muestra «Desarrollado por» con el SVG original
+`public/2j-logo.svg` de Double J Blacklabs. Se coloca en la esquina inferior
+izquierda del escritorio; en móvil queda al pie de la portada con espacio
+reservado, sin cubrir el formulario ni el acceso de supervisores. Solo aparece
+en esa portada y conserva los colores y proporciones del archivo proporcionado.
+
 ## PWA y caché
 
 Todo cambio dentro de `/public` debe acompañarse de un incremento de `VERSION`

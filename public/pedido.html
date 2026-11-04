@@ -1588,7 +1588,7 @@
     min-height: 100svh;
     margin: 0 auto;
     padding: max(24px, env(safe-area-inset-top)) 24px
-             calc(92px + env(safe-area-inset-bottom));
+             calc(116px + env(safe-area-inset-bottom));
     overflow: hidden;
     background: #fff;
     text-align: center;
@@ -1598,6 +1598,24 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+  .login-credit {
+    position: absolute;
+    left: 24px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    background: #fff;
+    color: #56677e;
+    text-align: left;
+    font-size: .75rem;
+    line-height: 1.4;
+  }
+  .login-credit img { display: block; width: 150px; height: 50px; object-fit: contain; }
+  @media (min-width: 900px) {
+    .login-credit { position: fixed; }
   }
   .login-view::before,
   .login-view::after {
@@ -2015,6 +2033,10 @@
         </a>
       </form>
 
+      <div class="login-credit">
+        <span>Desarrollado por</span>
+        <img src="/2j-logo.svg" alt="Double J Blacklabs" width="2172" height="724">
+      </div>
       <svg class="login-dots" viewBox="0 0 112 88" aria-hidden="true">
         <circle cx="8" cy="8" r="3"/><circle cx="32" cy="8" r="3"/><circle cx="56" cy="8" r="3"/><circle cx="80" cy="8" r="3"/><circle cx="104" cy="8" r="3"/>
         <circle cx="8" cy="32" r="3"/><circle cx="32" cy="32" r="3"/><circle cx="56" cy="32" r="3"/><circle cx="80" cy="32" r="3"/><circle cx="104" cy="32" r="3"/>
