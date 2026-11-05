@@ -6,6 +6,8 @@
 //   WHATSAPP_PHONE_ID → phone_number_id del número real del negocio
 // No se requiere ningún cambio de código.
 
+import { esClaveInterna } from './telefono.js';
+
 const API_VERSION = process.env.WHATSAPP_API_VERSION || 'v23.0';
 const TIMEOUT_MS = 15000;
 
@@ -21,6 +23,7 @@ function apiUrl() {
 }
 
 async function enviar(payload) {
+  if (esClaveInterna(payload.to)) throw new Error('Este empleado no tiene teléfono registrado.');
   let res;
   try {
     res = await fetch(apiUrl(), {

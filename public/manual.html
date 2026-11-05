@@ -208,9 +208,10 @@
     <h3>👤 Empleados — la plantilla</h3>
     <ul>
       <li><b>Cargar plantilla desde Excel:</b> sube el archivo de RRHH tal como llega (.xlsx o .csv). El sistema reconoce las columnas aunque vengan en otro orden, muestra una <b>previa</b> con lo que va a cargar y lo que tiene problemas, y solo carga lo válido. Hay un botón para descargar el formato de ejemplo y pedírselo a RRHH.</li>
-      <li><b>Alta individual:</b> nombre, número de empleado, teléfono, y su <b>zona y turno habituales</b>.</li>
+      <li><b>Alta individual o desde Excel:</b> solo se requieren nombre y número de empleado. Teléfono, zona y turno habituales son opcionales. Puedes cargar un listado con únicamente las columnas <b>Número</b> y <b>Nombre</b>.</li>
+      <li><b>Volver a cargar una plantilla:</b> el número de empleado identifica a cada persona. Actualiza su nombre y la activa, conservando su historial y el teléfono, zona y turno que no incluyas. No genera otra persona con el mismo número.</li>
       <li>En la tabla de plantilla puedes <b>corregir zona y turno</b> con los selectores de cada renglón. Un aviso te dice cuántos siguen sin asignación — a esos la página les preguntará zona y turno cada vez que pidan.</li>
-      <li><b>Corregir un teléfono mal capturado:</b> botón <b>Editar</b> junto al número, en el renglón del empleado. Se conserva todo su historial de pedidos. <b>No lo des de alta otra vez con el número bueno</b>: eso no lo corrige, crea un empleado duplicado. Si el número nuevo ya lo trae otro empleado, el sistema te dice de quién es y no deja el cambio — dos personas no pueden compartir teléfono.</li>
+      <li><b>Agregar o corregir un teléfono:</b> usa <b>Agregar</b> o <b>Editar</b> en el renglón del empleado. Se conserva su historial de pedidos. Si intentas cambiarlo mediante una nueva carga, el sistema te indicará que uses este botón; si pertenece a otra persona, lo rechazará.</li>
       <li><b>Desactivar</b> (baja temporal, conserva historial) vs <b>Eliminar</b> (borra el registro y sus pedidos). Ante la duda, desactiva.</li>
     </ul>
 

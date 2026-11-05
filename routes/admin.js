@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 import * as db from '../services/supabase.js';
 import * as wa from '../services/whatsapp.js';
 import { construirListMessage, esEntregaTardia, MOTIVOS_TARDIA, limiteEntrega, hoy, ZONA as ZONA_COMEDOR } from '../services/menu.js';
-import { diezDigitos } from '../services/telefono.js';
+import { diezDigitos, claveEmpleado } from '../services/telefono.js';
 import { resumenCocina } from '../services/cocina.js';
 import { fechaServicio } from '../services/pedidos.js';
 import { hashClave, generarClave } from '../services/sesion.js';
@@ -40,15 +40,17 @@ adminRouter.get('/empleados', async (req, res) => {
 adminRouter.post('/empleados', async (req, res) => {
   try {
     const { telefono, nombre, numero_empleado, activo, zona_default, turno_default } = req.body;
-    if (!telefono || !nombre || !numero_empleado) {
-      return res.status(400).json({ error: 'Faltan campos: telefono, nombre, numero_empleado' });
+    if (!nombre || !numero_empleado) {
+      return res.status(400).json({ error: 'Faltan campos: nombre, numero_empleado' });
     }
     const emp = await db.upsertEmpleado({
-      telefono, nombre, numero_empleado, activo, zona_default, turno_default
+      telefono, nombre, numero_empleado, activo,
+      ...(Object.hasOwn(req.body, 'zona_default') ? { zona_default } : {}),
+      ...(Object.hasOwn(req.body, 'turno_default') ? { turno_default } : {})
     });
     res.json({ ok: true, empleado: emp });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
@@ -651,8 +653,8 @@ adminRouter.post('/enviar-menu', async (req, res) => {
 
     // Excluir a quienes ya tienen pedido registrado para mañana
     const pedidos = await db.getPedidosPorFecha(fecha);
-    const yaPidieron = new Set(pedidos.map(p => diezDigitos(p.empleado_telefono)));
-    const pendientes = empleados.filter(emp => !yaPidieron.has(diezDigitos(emp.telefono)));
+    const yaPidieron = new Set(pedidos.map(p => claveEmpleado(p.empleado_telefono)));
+    const pendientes = empleados.filter(emp => diezDigitos(emp.telefono).length === 10 && !yaPidieron.has(claveEmpleado(emp.telefono)));
 
     let enviados = 0, fallidos = 0;
     const errores = [];
@@ -726,16 +728,16 @@ adminRouter.get('/dashboard/:fecha', async (req, res) => {
       console.error('[Panel] No se pudo leer accesos de', fecha, '—', err.message);
     }
     const accesoPorTel = {};
-    accesos.forEach(a => { accesoPorTel[diezDigitos(a.empleado_telefono)] = a; });
+    accesos.forEach(a => { accesoPorTel[claveEmpleado(a.empleado_telefono)] = a; });
 
     const pedidoPorTel = {};
-    pedidos.forEach(p => { pedidoPorTel[diezDigitos(p.empleado_telefono)] = p; });
+    pedidos.forEach(p => { pedidoPorTel[claveEmpleado(p.empleado_telefono)] = p; });
 
     // Una fila por empleado activo. El estado sale de un solo hecho: el
     // escaneo del QR al entregar (entregado_en). No hay estados intermedios.
     const filas = empleados.map(emp => {
-      const p = pedidoPorTel[diezDigitos(emp.telefono)];
-      const acc = accesoPorTel[diezDigitos(emp.telefono)];
+      const p = pedidoPorTel[claveEmpleado(emp.telefono)];
+      const acc = accesoPorTel[claveEmpleado(emp.telefono)];
       if (!p) {
         // Dos cosas muy distintas que antes se veían igual: mirar el menú y no
         // pedir es una decisión; no abrir la app siquiera es no haberse

@@ -9,6 +9,10 @@
 // para poder buscarlo sin importar cómo se haya guardado o cómo llegue.
 
 // Devuelve solo los dígitos de un string
+// Las altas web sin teléfono usan una clave interna, nunca un número ficticio.
+export const esClaveInterna = valor => /^emp_[0-9a-f]+$/.test(String(valor || ''));
+export const claveEmpleado = valor => esClaveInterna(valor) ? String(valor) : diezDigitos(valor);
+
 function soloDigitos(tel) {
   return String(tel || '').replace(/\D/g, '');
 }
@@ -16,6 +20,7 @@ function soloDigitos(tel) {
 // Extrae los 10 dígitos "nacionales" de un número mexicano,
 // quitando el código de país 52 y el "1" de móvil si existen.
 export function diezDigitos(tel) {
+  if (esClaveInterna(tel)) return '';
   let d = soloDigitos(tel);
   // Quitar prefijo 52 (país) y luego 1 (móvil) si están presentes
   if (d.startsWith('52')) d = d.slice(2);
@@ -31,6 +36,7 @@ export function diezDigitos(tel) {
 //   - 521 + 10                (5216361037574)
 // Devuelve un array sin duplicados, útil para buscar con .in()
 export function variantesTelefono(tel) {
+  if (esClaveInterna(tel)) return [String(tel)];
   const base = diezDigitos(tel);
   if (base.length !== 10) {
     // No es un número mexicano estándar: devolver tal cual en dígitos
@@ -47,6 +53,7 @@ export function variantesTelefono(tel) {
 // Formato canónico que usaremos para GUARDAR nuevos empleados:
 // siempre 521 + 10 dígitos, que es como WhatsApp identifica a México.
 export function formatoCanonico(tel) {
+  if (esClaveInterna(tel)) return String(tel);
   const base = diezDigitos(tel);
   if (base.length !== 10) return soloDigitos(tel);
   return '521' + base;

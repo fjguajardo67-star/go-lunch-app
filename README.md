@@ -68,6 +68,16 @@ sola vez quién recibe el folio; si cambia el receptor, escanea su gafete Glovis
 
 ## Base de datos
 
+La carga de empleados requiere únicamente nombre y número de empleado. El
+teléfono es opcional. Para conservar los vínculos existentes sin migrar datos,
+la columna histórica `empleados.telefono` admite también una clave interna
+`emp_<número de empleado codificado en hexadecimal UTF-8>`. Esa clave no es un
+teléfono: la interfaz muestra «Sin teléfono» y WhatsApp no intenta enviársela.
+Los cruces de pedidos y accesos usan `claveEmpleado` para mantener identidades
+distintas. Las altas se resuelven por `numero_empleado`: una recarga actualiza
+nombre/estado y conserva clave, historial y asignaciones omitidas. El teléfono
+existente solo cambia mediante la acción dedicada Agregar/Editar teléfono.
+
 Postgres en Supabase, proyecto **`glovis-cicsa-app`**
 (`fihjgndxgcbstqnyrygv`). Tablas propias:
 

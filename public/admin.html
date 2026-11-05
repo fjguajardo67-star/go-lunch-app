@@ -770,7 +770,7 @@
         <div class="grid3">
           <div><label>Nombre completo</label><input id="e-nombre" placeholder="Nombre del empleado"></div>
           <div><label>No. empleado</label><input id="e-num" placeholder="EMP001"></div>
-          <div><label>Teléfono WhatsApp</label><input id="e-tel" placeholder="5215512345678"></div>
+          <div><label>Teléfono (opcional)</label><input id="e-tel" placeholder="10 dígitos, si está disponible"></div>
         </div>
         <div class="grid3">
           <div>
@@ -807,7 +807,8 @@
         </div>
         <p style="font-size:.82rem;color:var(--gris-text);margin-bottom:14px">
           Sube el archivo de RRHH (.xlsx o .csv). Reconoce las columnas por su encabezado, así que no importa el orden.
-          Se esperan <b>Nombre</b>, <b>No. empleado</b> y <b>Teléfono</b>; <b>Zona</b> y <b>Turno</b> son opcionales pero recomendadas.
+          Solo se requieren <b>Nombre</b> y <b>No. empleado</b>. <b>Teléfono</b>, <b>Zona</b> y <b>Turno</b> son opcionales.
+          Al volver a cargar un número de empleado existente, se actualiza su nombre y se conservan el teléfono, la zona y el turno que no incluyas.
         </p>
         <input type="file" id="imp-archivo" accept=".xlsx,.xls,.csv" onchange="leerArchivo(this)"
                style="padding:10px;border:1.5px dashed var(--azul-line);border-radius:9px;width:100%;background:var(--gris-bg);cursor:pointer">
@@ -1915,8 +1916,7 @@
       const problemas = [];
       if (!nombre) problemas.push('sin nombre');
       if (!numero) problemas.push('sin número de empleado');
-      if (!telCrudo) problemas.push('sin teléfono');
-      else if (tel10.length !== 10) problemas.push('teléfono de ' + tel10.length + ' dígitos');
+      if (telCrudo && tel10.length !== 10) problemas.push('teléfono de ' + tel10.length + ' dígitos');
       if (numero && vistos.num.has(normalizar(numero))) problemas.push('número repetido en el archivo');
       if (tel10.length === 10 && vistos.tel.has(tel10)) problemas.push('teléfono repetido en el archivo');
       if (zona === undefined) problemas.push('zona no reconocida');
@@ -1928,7 +1928,7 @@
       return {
         linea: iEnc + 2 + n,
         nombre, numero_empleado: numero, telefono: telCrudo,
-        zona_default: zona || null, turno_default: turno || null,
+        zona_default: zona || undefined, turno_default: turno || undefined,
         problemas
       };
     });
@@ -2018,7 +2018,7 @@
   function descargarEjemplo() {
     const filas = [
       ['Nombre completo', 'No. empleado', 'Telefono', 'Zona', 'Turno'],
-      ['Juan Pérez López',   'EMP001', '6361037574', 'ASLA (LZCA)',    'Turno A'],
+      ['Juan Pérez López',   'EMP001', '', 'ASLA (LZCA)',    'Turno A'],
       ['María García Ruiz',  'EMP002', '6361037575', 'REFIS (LZCR)', 'Turno B'],
       ['Pedro Sánchez Díaz', 'EMP003', '6361037576', 'ASLA (LZCA)',    'Turno B']
     ];
@@ -2030,10 +2030,11 @@
   // Para un teléfono que va dentro de una cadena de JavaScript dentro de un
   // atributo HTML: onclick="editarTel('...')". escaparHtml NO sirve aquí,
   // porque no escapa la comilla simple, que es justo la que cierra la cadena.
-  // Se reduce a dígitos, que es lo único que ese campo puede contener
-  // (formatoCanonico, en services/telefono.js). Hoy la base ya lo garantiza;
-  // esto deja de depender de una invariante que vive en otro archivo.
-  const telParaAtributo = t => String(t ?? '').replace(/\D/g, '');
+  // Solo se admiten teléfonos o claves internas seguras. Nunca interpolar
+  // texto arbitrario del Excel dentro de un atributo ejecutable.
+  const esClaveInterna = t => /^emp_[0-9a-f]+$/.test(String(t || ''));
+  const telefonoVisible = t => esClaveInterna(t) ? '' : String(t || '');
+  const telParaAtributo = t => /^(?:[0-9]+|emp_[0-9a-f]+)$/.test(String(t || '')) ? String(t) : '';
 
   function escaparHtml(s) {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -2059,7 +2060,7 @@
     if (!emp) return;
     try {
       await api('/api/empleados', { method: 'POST', body: JSON.stringify({
-        telefono:      emp.telefono,
+        telefono:      telefonoVisible(emp.telefono),
         nombre:        emp.nombre,
         numero_empleado: emp.numero_empleado,
         activo:        emp.activo,
@@ -2080,7 +2081,7 @@
       zona_default:  val('e-zona')  || null,
       turno_default: val('e-turno') || null
     };
-    if (!body.nombre || !body.numero_empleado || !body.telefono) return aviso('empAviso','Completa nombre, número y teléfono', false);
+    if (!body.nombre || !body.numero_empleado) return aviso('empAviso','Completa nombre y número de empleado', false);
     try {
       await api('/api/empleados', { method:'POST', body: JSON.stringify(body) });
       aviso('empAviso', 'Empleado guardado');
@@ -2108,7 +2109,7 @@
       for (const e of empleados) {
         h += `<tr>
           <td>${escaparHtml(e.nombre)}</td><td>${escaparHtml(e.numero_empleado)}</td>
-          <td>${escaparHtml(e.telefono)}<button onclick="editarTel('${telParaAtributo(e.telefono)}')" style="background:none;border:1px solid #003087;color:#003087;border-radius:4px;font-size:.75rem;padding:1px 5px;cursor:pointer;margin-left:6px">Editar</button></td>
+          <td>${escaparHtml(telefonoVisible(e.telefono)) || 'Sin teléfono'}<button onclick="editarTel('${telParaAtributo(e.telefono)}')" style="background:none;border:1px solid #003087;color:#003087;border-radius:4px;font-size:.75rem;padding:1px 5px;cursor:pointer;margin-left:6px">${esClaveInterna(e.telefono) ? 'Agregar' : 'Editar'}</button></td>
           <td>${selectAsignacion(e.telefono, 'zona_default', e.zona_default, ZONA_TXT)}</td>
           <td>${selectAsignacion(e.telefono, 'turno_default', e.turno_default, TURNO_TXT)}</td>
           <td><span class="badge ${e.activo?'on':'off'}">${e.activo?'Activo':'Inactivo'}</span></td>
@@ -2134,7 +2135,7 @@
   // Corregir el teléfono sin borrar y recapturar (eso perdería sus pedidos)
   async function editarTel(tel) {
     const e = EMPLEADOS[tel] || {};
-    const actual = String(tel).replace(/\D/g,'').slice(-10);
+    const actual = telefonoVisible(tel).replace(/\D/g,'').slice(-10);
     const capturado = prompt(
       'Nuevo teléfono de ' + (e.nombre || 'este empleado') + ' (10 dígitos).\n\n' +
       'Sus pedidos anteriores se conservan.', actual);
@@ -2471,7 +2472,7 @@
       filas2.push([
         p.empleados?.numero_empleado || '',
         p.empleados?.nombre || '',
-        p.empleados?.telefono || p.empleado_telefono || '',
+        telefonoVisible(p.empleados?.telefono || p.empleado_telefono),
         p.fecha_menu,
         p.opcion_texto,
         zonaTxt(p.zona),
