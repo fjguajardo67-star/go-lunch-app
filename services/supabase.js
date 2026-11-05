@@ -1,6 +1,7 @@
 // services/supabase.js — Conexión y queries a la base de datos
 import { createClient } from '@supabase/supabase-js';
 import { variantesTelefono, formatoCanonico } from './telefono.js';
+import { guardarEmpleado } from './empleados.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -77,22 +78,7 @@ export async function listEmpleadosActivos() {
 }
 
 export async function upsertEmpleado(emp) {
-  const { data, error } = await supabase
-    .from('empleados')
-    .upsert({
-      telefono:        formatoCanonico(emp.telefono),  // siempre 521 + 10 dígitos
-      nombre:          emp.nombre,
-      numero_empleado: emp.numero_empleado,
-      activo:          emp.activo ?? true,
-      // Asignación que da RRHH: sirve de valor por defecto al pedir,
-      // no de candado (la gente cubre turnos y cambia de línea)
-      zona_default:    emp.zona_default  ?? null,
-      turno_default:   emp.turno_default ?? null
-    }, { onConflict: 'telefono' })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  return guardarEmpleado(supabase, emp);
 }
 
 export async function setEmpleadoActivo(telefono, activo) {

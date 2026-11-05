@@ -3,9 +3,9 @@
 -- Ejecutar en: Supabase Dashboard → SQL Editor → New Query → Run
 -- ====================================================================
 
--- Empleados (identificados por número de teléfono WhatsApp)
+-- Empleados (acceso por número de empleado; teléfono opcional)
 CREATE TABLE IF NOT EXISTS empleados (
-    telefono        VARCHAR PRIMARY KEY,        -- Formato: 5215512345678 (sin +)
+    telefono        VARCHAR PRIMARY KEY,        -- Teléfono real o clave interna emp_<hex del número de empleado> para altas web sin teléfono.
     nombre          TEXT    NOT NULL,
     numero_empleado VARCHAR UNIQUE NOT NULL,
     activo          BOOLEAN DEFAULT true,
