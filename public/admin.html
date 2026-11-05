@@ -14,6 +14,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/panel-favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/panel-icon-180.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="/impresion-panel.js"></script>
 <style>
   /* ── Tokens ── */
   :root {
@@ -680,6 +681,7 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="accion" onclick="guardarMenu()">Guardar menú</button>
           <button class="accion sec" onclick="cargarMenu()">Cargar existente</button>
+          <button class="accion sec" type="button" onclick="imprimirMenuVisible()">Imprimir menú del día</button>
           <button class="accion gold" onclick="enviarMasivo()">Enviar a todos los empleados</button>
         </div>
         <div id="menuAviso" class="aviso"></div>
@@ -707,6 +709,7 @@
           </div>
           <div>
             <button class="accion sec" style="margin-top:0" onclick="generarTablaPeriodo()">Generar tabla</button>
+            <button class="accion sec" type="button" style="margin-top:0" onclick="imprimirPeriodoVisible()">Imprimir periodo</button>
           </div>
         </div>
         <div id="tablaMenuBox"></div>
@@ -820,6 +823,7 @@
         <div class="card-header">
           <div class="card-icon">👥</div>
           <h3>Plantilla activa</h3>
+          <button class="accion mini sec" type="button" style="margin-left:auto" onclick="imprimirEmpleadosVisibles()">Imprimir lista</button>
         </div>
         <div id="empBox"><div class="vacio">Cargando plantilla…</div></div>
       </div>
@@ -2042,6 +2046,45 @@
   }
 
   // ── Empleados ──
+  function fechaImpresion() {
+    return new Intl.DateTimeFormat('es-MX', { timeZone: 'America/Mexico_City',
+      dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
+  }
+
+  function imprimirEmpleadosVisibles() {
+    const filas = [...document.querySelectorAll('#empBox table tr')].filter(f => f.querySelector('td') && !f.hidden);
+    if (!filas.length) return aviso('empAviso', 'Espera a que cargue la plantilla. Debe haber empleados para imprimir.', false);
+    const empleados = filas.map(f => {
+      const c = f.cells;
+      return { nombre: c[0].textContent.trim(), numero: c[1].textContent.trim(),
+        zona: c[3].querySelector('select').selectedOptions[0].textContent.trim(),
+        turno: c[4].querySelector('select').selectedOptions[0].textContent.trim(),
+        activo: c[5].textContent.trim() === 'Activo' };
+    });
+    try { ImpresionPanel.abrir(ImpresionPanel.lista(empleados, fechaImpresion())); }
+    catch (e) { aviso('empAviso', e.message, false); }
+  }
+
+  function imprimirMenuVisible() {
+    const dia = { fecha: val('m-fecha') };
+    if (!dia.fecha) return aviso('menuAviso', 'Selecciona la fecha del menú antes de imprimir.', false);
+    ['fija_a','fija_b','fija_c','var_1','var_2','var_3'].forEach(c => { dia[c] = val('m-' + c); });
+    if (!Object.values(dia).slice(1).some(Boolean)) return aviso('menuAviso', 'Carga un menú existente o captura los platillos antes de imprimir.', false);
+    try { ImpresionPanel.abrir(ImpresionPanel.menus([dia], fechaImpresion())); }
+    catch (e) { aviso('menuAviso', e.message, false); }
+  }
+
+  function imprimirPeriodoVisible() {
+    const dias = [...document.querySelectorAll('#tablaMenuBox tr[data-fecha]')].map(f => {
+      const dia = { fecha: f.dataset.fecha };
+      f.querySelectorAll('.menu-cell').forEach(c => { dia[c.dataset.campo] = c.value.trim(); });
+      return dia;
+    });
+    if (!dias.length) return aviso('periodoAviso', 'Genera la tabla del periodo antes de imprimir.', false);
+    try { ImpresionPanel.abrir(ImpresionPanel.menus(dias, fechaImpresion())); }
+    catch (e) { aviso('periodoAviso', e.message, false); }
+  }
+
   let EMPLEADOS = {};   // telefono → registro completo, para reasignar sin recapturar
 
   // Selector en línea de la asignación de RRHH dentro de la tabla

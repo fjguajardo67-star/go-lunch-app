@@ -47,6 +47,33 @@
         ],
         "createdAt": "2026-11-04T02:43:58.246Z",
         "reason": "Agent: sole finding is empty-brandbar. CSS already supplies top padding max(20px, env(safe-area-inset-top)), 28px sides and 22px bottom; compact-height media keeps at least 14px. Static detector does not resolve max/env; unchanged from main."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "public/manual.html"
+        ],
+        "createdAt": "2026-11-05T23:35:34.853Z",
+        "reason": "Agent: .caja.tip, .caja.importante and .caja.peligro are semantic documentation callouts for instructions, operational warnings and data-loss precautions, not decorative feature cards. Existing 5px borders distinguish those callouts; employee import change did not alter their CSS."
+      },
+      {
+        "rule": "all-caps-body",
+        "value": "*",
+        "files": [
+          "public/manual.html"
+        ],
+        "createdAt": "2026-11-05T23:35:34.866Z",
+        "reason": "Agent: uppercase applies only to Contenido, table headings and .rol labels. The flagged 39-character label identifies authorized coverage supervisors; paragraphs and instructions are sentence case. Detector misclassifies a role label as body text."
+      },
+      {
+        "rule": "aphoristic-cadence",
+        "value": "*",
+        "files": [
+          "public/manual.html"
+        ],
+        "createdAt": "2026-11-05T23:35:34.879Z",
+        "reason": "Agent: manual uses literal operational boundaries, including no installation required, no duplicate employee on reimport, separate coverage printouts and camera testing without manual entry. These are factual task instructions, not promotional contrast aphorisms; preserve precise operational guidance."
       }
     ]
   }
