@@ -79,7 +79,7 @@ pedidoRouter.post('/identificar', async (req, res) => {
     try {
       // En zona del comedor, no en UTC: con toISOString() el borde de la
       // ventana se corría un día a partir de las 18:00 locales, justo en las
-      // dos horas en que la gente alcanza a pedir antes del corte de las 8 PM.
+      // dos horas en que la gente alcanza a pedir antes del corte de las 10 PM.
       porCalificar = await db.pedidoPorCalificar(empleado.telefono, hoyMenos(7));
     } catch { /* calificar es opcional: nunca debe impedir pedir */ }
 

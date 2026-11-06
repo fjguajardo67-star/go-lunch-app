@@ -2481,7 +2481,7 @@
     $('cal-d').textContent = String(d);
     $('fecha-val').textContent = estado.fecha_legible || estado.fecha;
     $('menu-fecha').textContent = estado.fecha_legible || estado.fecha;
-    $('menu-corte').textContent = MODO_PRUEBA ? 'Sin límite en prueba' : (estado.corte || '8:00 PM');
+    $('menu-corte').textContent = MODO_PRUEBA ? 'Sin límite en prueba' : (estado.corte || '10:00 PM');
     $('fechabar').style.display = 'flex';
     $('fechabar').classList.toggle('cerrado', !estado.abierto);
     $('fecha-lbl').textContent = MODO_PRUEBA ? 'Menú real para' : (estado.abierto ? 'Tu pedido es para' : 'Pedidos cerrados para');

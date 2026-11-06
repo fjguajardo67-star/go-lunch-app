@@ -309,9 +309,9 @@ ${qr ? `  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrc
 </html>`;
 }
 
-// ── Cron interno: genera la comanda tras el corte de las 20:00 ──
+// ── Cron interno: genera la comanda tras el corte de las 22:00 ──
 // Activar con CRON_COCINA=on en Railway. Revisa cada minuto la hora local;
-// al llegar a las 20:05 genera el resumen del día siguiente (fecha de
+// al llegar a las 22:30 genera el resumen del día siguiente (fecha de
 // servicio) y lo deja en los logs. Aquí mismo se puede enganchar después
 // el envío por WhatsApp al chef o a un grupo.
 let ultimaEjecucion = null;
@@ -321,14 +321,14 @@ export function iniciarCronCocina() {
     console.log('[Cocina] Cron desactivado (define CRON_COCINA=on para activarlo)');
     return;
   }
-  console.log('[Cocina] Cron activo: comanda automática a las 20:05', ZONA_TZ);
+  console.log('[Cocina] Cron activo: comanda automática a las 22:30', ZONA_TZ);
   setInterval(async () => {
     const ahora = DateTime.now().setZone(ZONA_TZ);
     const hoyISO = ahora.toISODate();
-    if (ahora.hour === 20 && ahora.minute >= 5 && ultimaEjecucion !== hoyISO) {
+    if (ahora.hour === 22 && ahora.minute >= 30 && ultimaEjecucion !== hoyISO) {
       ultimaEjecucion = hoyISO;
       try {
-        // El corte de las 20:00 solo cierra los pedidos del día SIGUIENTE.
+        // El corte de las 22:00 solo cierra los pedidos del día SIGUIENTE.
         // Si mañana no hay servicio (fin de semana, festivo), la próxima
         // fecha con menú aún tiene su propio corte por delante: no es hoy
         // cuando se imprime su comanda.
