@@ -88,3 +88,7 @@ En Cocina → Impresión, el checklist comparte fecha, turno y zona con los dem�
 ## Márgenes y paginación de impresos
 
 Los documentos carta usan márgenes de 14 mm. Al imprimir, el checklist sigue flujo normal, sin altura mínima ni pie empujado con flex: Safari debe mantener conteo, continuación y firma dentro de su hoja. Listas y menús repiten cabeceras y evitan cortar filas. Las etiquetas en carta se distribuyen en filas de elementos indivisibles; el rollo conserva sus medidas y márgenes calibrados. Las comandas de 58 mm mantienen un área propia con margen vertical repetido de 2 mm.
+
+## Orden del checklist por menú
+
+Dentro de cada lote de turno y zona, el checklist agrupa por opción en el orden del menú y ordena por número de empleado de forma numérica, con nombre como desempate. Opción, número y nombre son las primeras columnas; horario y casilla quedan al final. Cada grupo muestra platillo original y total de la opción. La paginación reserva espacio para encabezados y nombres largos, conserva las continuaciones identificadas y una sola firma al final del lote.
