@@ -7,7 +7,7 @@ import { prepararChecklistReparto, htmlChecklistReparto } from '../services/chec
 const fecha='2026-11-07';
 const pedido=(i,turno='turno_a',zona='zona_vdc',nombre='Persona '+String(i).padStart(3,'0'))=>({turno,zona,empleados:{numero_empleado:String(i).padStart(5,'0'),nombre}});
 
-test('cada zona y turno genera su propio lote, ordenado por nombre y con horario correcto',()=>{
+test('cada zona y turno genera su propio lote, con horario correcto',()=>{
  const pedidos=[pedido(4,'turno_b','zona_vdc'),pedido(2,'turno_a','zona_refris'),pedido(3,'turno_b','zona_refris'),pedido(1)];
  const datos=prepararChecklistReparto(fecha,pedidos);
  assert.equal(datos.total,4);assert.equal(datos.lotes.length,4);assert.equal(datos.paginas.length,4);
@@ -19,14 +19,14 @@ test('cada zona y turno genera su propio lote, ordenado por nombre y con horario
 test('paginar conserva todas las filas y una sola firma por lote',()=>{
  const pedidos=Array.from({length:43},(_,i)=>pedido(i));
  const datos=prepararChecklistReparto(fecha,pedidos);
- assert.deepEqual(datos.paginas.map(p=>p.filas.length),[15,15,13]);
- assert.deepEqual(datos.paginas.map(p=>[p.hoja,p.hojas,p.ultima]),[[1,3,false],[2,3,false],[3,3,true]]);
+ assert.deepEqual(datos.paginas.map(p=>p.filas.length),[14,14,14,1]);
+ assert.deepEqual(datos.paginas.map(p=>[p.hoja,p.hojas,p.ultima]),[[1,4,false],[2,4,false],[3,4,false],[4,4,true]]);
  assert.deepEqual(datos.paginas.flatMap(p=>p.filas.map(f=>f.numero)),pedidos.map(p=>p.empleados.numero_empleado));
  const html=htmlChecklistReparto(datos);
  assert.equal((html.match(/class="firma-salida"/g)||[]).length,1);
  assert.equal((html.match(/class="casilla"/g)||[]).length,43);
- assert.equal((html.match(/Servicio: <b>07\/11\/2026<\/b>/g)||[]).length,3);
- assert.match(html,/Hoja 3 de 3/);assert.match(html,/Total del lote: <b>43<\/b>/);
+ assert.equal((html.match(/Servicio: <b>07\/11\/2026<\/b>/g)||[]).length,4);
+ assert.match(html,/Hoja 4 de 4/);assert.match(html,/Total del lote: <b>43<\/b>/);
  assert.match(html,/@page\{size:letter portrait;margin:14mm\}/);
 });
 test('la lista usa solo pedidos, conserva ceros iniciales y escapa HTML de los nombres',()=>{
@@ -39,6 +39,37 @@ test('la lista usa solo pedidos, conserva ceros iniciales y escapa HTML de los n
  assert.doesNotMatch(vacio,/class="firma-salida"|class="casilla"/);
  const sinZona=prepararChecklistReparto(fecha,[{empleados:{numero_empleado:'001',nombre:'Sin asignación'}}]);
  assert.equal(sinZona.total,1);assert.equal(sinZona.lotes[0].horario,'Por confirmar');
+});
+test('ordena por opción, número numérico y nombre sin perder ceros iniciales',()=>{
+ const datos=prepararChecklistReparto(fecha,[
+  {...pedido(1,'turno_a','zona_vdc','Primero por nombre pero opción B'),opcion_id:'fija_b',opcion_texto:'Arroz'},
+  {...pedido(10,'turno_a','zona_vdc','Ana'),opcion_id:'fija_a',opcion_texto:'Zanahoria'},
+  {...pedido(2,'turno_a','zona_vdc','Zulema'),opcion_id:'fija_a',opcion_texto:'Zanahoria'},
+  {...pedido(2,'turno_a','zona_vdc','Alba'),opcion_id:'fija_a',opcion_texto:'Zanahoria'},
+  {...pedido(1,'turno_a','zona_vdc','Primero pero variable'),opcion_id:'var_1',opcion_texto:'Pollo'}
+ ]);
+ assert.deepEqual(datos.lotes[0].filas.map(f=>[f.opcion_id,f.numero,f.nombre]),[
+  ['fija_a','00002','Alba'],['fija_a','00002','Zulema'],['fija_a','00010','Ana'],
+  ['fija_b','00001','Primero por nombre pero opción B'],['var_1','00001','Primero pero variable']
+ ]);
+ const html=htmlChecklistReparto(datos);
+ assert.match(html,/<th scope="col">Opción del menú<\/th><th scope="col">N.º empleado<\/th><th scope="col">Nombre del empleado/);
+ assert.equal((html.match(/class="opcion-grupo"/g)||[]).length,3);
+ assert.match(html,/Opción A · Zanahoria/);assert.match(html,/Total de esta opción: 3/);
+ assert.equal((html.match(/class="firma-salida"/g)||[]).length,1);
+});
+test('conserva platillos originales distintos de una misma opción y repite el grupo al continuar',()=>{
+ const pedidos=Array.from({length:20},(_,i)=>({...pedido(i),opcion_id:'fija_a',opcion_texto:i<10?'Pollo & arroz':'Pollo con verduras'}));
+ const datos=prepararChecklistReparto(fecha,pedidos);
+ assert.equal(Object.keys(datos.lotes[0].por_opcion).length,2);
+ assert.deepEqual(Object.values(datos.lotes[0].por_opcion),[10,10]);
+ const html=htmlChecklistReparto(datos);
+ assert.match(html,/Pollo &amp; arroz/);assert.match(html,/Pollo con verduras/);
+ assert.equal(datos.paginas.flatMap(p=>p.filas).length,20);
+ for(const pagina of datos.paginas){
+  assert.ok(pagina.filas.length);
+  assert.equal(pagina.lote.por_opcion[pagina.filas[0].opcion_clave],10);
+ }
 });
 test('fecha y selección inválidas se rechazan',()=>{
  for(const dia of ['2026-02-30','07/11/2026','2026-13-01',null])assert.throws(()=>prepararChecklistReparto(dia,[]),e=>e.status===400);

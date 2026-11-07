@@ -1,11 +1,43 @@
 // Lista de salida en carta: una combinación de turno/zona por lote.
 import { DateTime } from 'luxon';
-import { ZONA, ZONAS, TURNOS, horaTexto } from './menu.js';
+import { ZONA, ZONAS, TURNOS, OPCIONES_VALIDAS, OPCION_LABELS, horaTexto } from './menu.js';
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina } from './seleccion-cocina.js';
 
-const FILAS_POR_HOJA = 15;
+const UNIDADES_POR_HOJA = 15;
+const porTexto = new Intl.Collator('es', { sensitivity: 'base' });
+const porNumero = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
 const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+
+function compararFilas(a, b) {
+  const indice = fila => {
+    const i = OPCIONES_VALIDAS.indexOf(fila.opcion_id);
+    return i < 0 ? OPCIONES_VALIDAS.length : i;
+  };
+  return indice(a) - indice(b) || porTexto.compare(a.platillo, b.platillo) ||
+    porTexto.compare(a.opcion_id, b.opcion_id) || porNumero.compare(a.numero, b.numero) ||
+    porTexto.compare(a.nombre, b.nombre);
+}
+
+function paginarFilas(filas) {
+  const hojas = [];
+  let actual = [], unidades = 0, inicio = 0;
+  for (const fila of filas) {
+    // Reservar espacio para los textos largos y para el encabezado del platillo.
+    const pesoFila = Math.max(1, Math.ceil(fila.nombre.length / 80), Math.ceil(fila.numero.length / 12));
+    const pesoEncabezado = Math.max(1, Math.ceil((fila.opcion.length + fila.platillo.length) / 85));
+    const cambiaOpcion = actual.at(-1)?.opcion_clave !== fila.opcion_clave;
+    if (actual.length && unidades + pesoFila + (cambiaOpcion ? pesoEncabezado : 0) > UNIDADES_POR_HOJA) {
+      hojas.push({ filas: actual, inicio });
+      inicio += actual.length; actual = []; unidades = 0;
+    }
+    if (actual.at(-1)?.opcion_clave !== fila.opcion_clave) unidades += pesoEncabezado;
+    unidades += pesoFila;
+    actual.push(fila);
+  }
+  if (actual.length) hojas.push({ filas: actual, inicio });
+  return hojas;
+}
 
 export function validarFechaChecklist(fecha) {
   const dia = typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)
@@ -28,7 +60,11 @@ export function prepararChecklistReparto(fecha, pedidos, seleccion = {}) {
     if (!grupos.has(clave)) grupos.set(clave, { turno: pedido.turno, zona: pedido.zona, filas: [] });
     grupos.get(clave).filas.push({
       numero: String(pedido.empleados?.numero_empleado ?? ''),
-      nombre: pedido.empleados?.nombre || 'Sin nombre'
+      nombre: String(pedido.empleados?.nombre || 'Sin nombre'),
+      opcion_id: String(pedido.opcion_id ?? ''),
+      opcion: Object.hasOwn(OPCION_LABELS, pedido.opcion_id) ? OPCION_LABELS[pedido.opcion_id] : (pedido.opcion_texto ? 'Otra opción' : 'Sin opción'),
+      platillo: String(pedido.opcion_texto || 'Sin platillo registrado'),
+      opcion_clave: JSON.stringify([pedido.opcion_id ?? null, pedido.opcion_texto || 'Sin platillo registrado'])
     });
   }
   const lotes = [...grupos.values()].sort((a, b) =>
@@ -36,18 +72,17 @@ export function prepararChecklistReparto(fecha, pedidos, seleccion = {}) {
     String(a.zona ?? '').localeCompare(String(b.zona ?? '')));
   const paginas = [];
   for (const lote of lotes) {
-    lote.filas.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es') || a.numero.localeCompare(b.numero));
+    lote.filas.sort(compararFilas);
+    lote.por_opcion = {};
+    for (const fila of lote.filas) lote.por_opcion[fila.opcion_clave] = (lote.por_opcion[fila.opcion_clave] || 0) + 1;
     lote.total = lote.filas.length;
     lote.turno_texto = TURNOS[lote.turno] || 'Sin turno asignado';
     lote.zona_texto = ZONAS[lote.zona] || 'Sin zona asignada';
     lote.horario = Object.hasOwn(TURNOS, lote.turno) && Object.hasOwn(ZONAS, lote.zona)
       ? horaTexto(lote.turno, lote.zona, fecha) : 'Por confirmar';
-    const hojas = Math.ceil(lote.total / FILAS_POR_HOJA);
-    for (let inicio = 0; inicio < lote.total; inicio += FILAS_POR_HOJA) {
-      const hoja = inicio / FILAS_POR_HOJA + 1;
-      paginas.push({ lote, hoja, hojas, inicio, ultima: hoja === hojas,
-        filas: lote.filas.slice(inicio, inicio + FILAS_POR_HOJA) });
-    }
+    const hojas = paginarFilas(lote.filas);
+    hojas.forEach((pagina, i) => paginas.push({ lote, ...pagina,
+      hoja: i + 1, hojas: hojas.length, ultima: i === hojas.length - 1 }));
   }
   return { fecha, fecha_texto: dia.toFormat('dd/MM/yyyy'), filtros, total: elegidos.length, lotes, paginas };
 }
@@ -64,11 +99,12 @@ export function htmlChecklistReparto(datos) {
         <p class="referencia">Hoja ${pagina.hoja} de ${pagina.hojas} de este lote · Total del lote: ${lote.total} comida(s)</p>
       </header>
       <table>
-        <colgroup><col class="col-revision"><col class="col-numero"><col><col class="col-horario"></colgroup>
-        <thead><tr><th scope="col">Revisado</th><th scope="col">N.º empleado</th><th scope="col">Nombre del empleado</th><th scope="col">Entrega</th></tr></thead>
-        <tbody>${pagina.filas.map((fila, i) => `<tr>
+        <colgroup><col class="col-opcion"><col class="col-numero"><col><col class="col-horario"><col class="col-revision"></colgroup>
+        <thead><tr><th scope="col">Opción del menú</th><th scope="col">N.º empleado</th><th scope="col">Nombre del empleado</th><th scope="col">Entrega</th><th scope="col">Revisado</th></tr></thead>
+        <tbody>${pagina.filas.map((fila, i) => `${i === 0 || pagina.filas[i - 1].opcion_clave !== fila.opcion_clave
+          ? `<tr class="opcion-grupo"><th colspan="5" scope="rowgroup">${esc(fila.opcion)} · ${esc(fila.platillo)} <span>— Total de esta opción: ${lote.por_opcion[fila.opcion_clave]}</span></th></tr>` : ''}<tr>
+          <td>${esc(fila.opcion)}</td><td>${esc(fila.numero || 'Sin número')}</td><td class="nombre">${esc(fila.nombre)}</td><td>${esc(lote.horario)}</td>
           <td class="revision"><span class="casilla"></span><small>${pagina.inicio + i + 1}</small></td>
-          <td>${esc(fila.numero || 'Sin número')}</td><td class="nombre">${esc(fila.nombre)}</td><td>${esc(lote.horario)}</td>
         </tr>`).join('')}</tbody>
       </table>
       <div class="cierre">
@@ -91,9 +127,10 @@ export function htmlChecklistReparto(datos) {
 header{margin-bottom:4mm}.marca{font-size:10pt;letter-spacing:.04em;margin:0 0 2mm}h1{font-size:20pt;line-height:1.15;margin:0 0 4mm}
 .encabezado{display:flex;justify-content:space-between;gap:6mm;font-size:11pt;margin:2mm 0}.referencia{font-size:9pt;margin:2mm 0 0}
 table{border-collapse:collapse;table-layout:fixed;width:100%;font-size:10pt;line-height:1.15}
-.col-revision{width:19mm}.col-numero{width:26mm}.col-horario{width:26mm}
+.col-opcion{width:27mm}.col-revision{width:20mm}.col-numero{width:25mm}.col-horario{width:24mm}
 th,td{border:1px solid #000;padding:1mm 2mm;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
 th{font-size:9pt;height:8mm}td{height:8mm}.nombre{font-weight:600}
+.opcion-grupo{break-after:avoid;page-break-after:avoid}.opcion-grupo th{font-size:10pt;padding:2mm;height:auto}.opcion-grupo span{font-size:9pt;font-weight:400}
 .revision{text-align:center;white-space:nowrap}.casilla{display:inline-block;width:4mm;height:4mm;border:1px solid #000;vertical-align:middle}
 .revision small{font-size:8pt;margin-left:2mm}.cierre{margin-top:auto;padding-top:4mm;font-size:10pt}
 .conteo{margin:0 0 4mm}.firma-salida{break-inside:avoid}.firma-salida p{margin:0}.linea-firma{height:13mm;border-bottom:1px solid #000;width:90mm;margin-bottom:2mm}
