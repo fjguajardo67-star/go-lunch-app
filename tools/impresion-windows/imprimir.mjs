@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rename, open, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -37,8 +37,15 @@ const sumatra = args => new Promise((resolve,reject)=>{
   p.on('exit',code=>{clearTimeout(limite);code===0?resolve():reject(new Error(`Sumatra terminó con código ${code}. Revise la impresora.`));});
 });
 
-let browser;
+let browser, bloqueo;
+const archivoBloqueo=path.join(salida,'impresion.lock');
 try {
+  try { bloqueo=await open(archivoBloqueo,'wx'); }
+  catch(e) {
+    if(e.code==='EEXIST') throw new Error('Ya hay una impresion en curso o quedo un bloqueo de un cierre inesperado. Revise la cola y el proceso antes de quitar impresion.lock.');
+    throw e;
+  }
+  await bloqueo.writeFile(String(process.pid));
   if(modo==='diario' && !ventanaDiaria()) {await log('Fuera de la ventana 21:30–23:59; no se imprime.'); process.exitCode=0;}
   else {
     const fecha = fechaManual || mananaMexico();
@@ -108,4 +115,7 @@ try {
   // No imprimir URL, cabeceras ni credenciales en los registros.
   await log(`ERROR: ${String(e.message).split(clave).join('[oculto]')}`);
   process.exitCode=1;
-} finally { if(browser) await browser.close(); }
+} finally {
+  if(browser) await browser.close();
+  if(bloqueo) { await bloqueo.close(); await unlink(archivoBloqueo); }
+}

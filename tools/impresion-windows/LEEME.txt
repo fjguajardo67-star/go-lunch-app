@@ -31,6 +31,9 @@ Documentos, estado y registro:
 %LOCALAPPDATA%\GoLunchImpresion\documentos
 Las marcas enviado_a_windows significan aceptado por la cola, NO papel verificado.
 Una marca enviando se conserva ante fallos para no duplicar una entrega dudosa.
+impresion.lock impide dos ejecuciones simultaneas (manual y programada). Si la PC
+se apago de golpe, revise el papel y la cola y compruebe que no siga corriendo
+la tarea antes de retirar ese archivo de bloqueo en la carpeta documentos.
 PDF guardados por fecha y preparacion. No se borra el historial al repetir.
 Una fecha sin pedidos o una PC apagada NO genera una impresion de otro dia.
 
