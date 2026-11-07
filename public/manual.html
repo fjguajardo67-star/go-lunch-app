@@ -271,8 +271,21 @@
     <div class="caja tip">
       <b>Rutina sugerida de cada noche (a las 9:30 PM):</b> abrir Cocina →
       imprimir la comanda para la cocina → imprimir las etiquetas del día siguiente.
-      La impresión automática en Windows está prevista para las 9:30 PM y queda pendiente de instalar y configurar las impresoras. Mientras tanto, imprime desde estos botones.
+      La impresión automática de las 9:30 PM se activa en la PC Windows con el paquete de instalación que se descarga desde Cocina. Antes de activarla, hay que probar ambas impresoras siguiendo los pasos de abajo.
     </div>
+
+    <h3>Impresión automática desde Windows — 9:30 PM</h3>
+    <ol>
+      <li>En la PC de impresión, instala los controladores de <b>Brother QL-800</b> con papel <b>62 × 40 mm</b> y de <b>VOLTECK POS58</b> con rollo de <b>58 mm</b>. Prueba cada impresora desde Windows.</li>
+      <li>Instala <b>Node.js LTS (22 o posterior)</b> desde nodejs.org y <b>SumatraPDF</b> desde sumatrapdfreader.org. La PC debe tener Microsoft Edge.</li>
+      <li>En Cocina descarga <b>Instalación Windows: impresión diaria 9:30 PM</b>. Extrae el ZIP completo y abre <b>Instalar.cmd</b> con el usuario de Windows que operará el comedor, sin ejecutarlo como otro administrador.</li>
+      <li>El instalador muestra las impresoras instaladas: selecciona primero la Brother y luego la POS58. Escribe la contraseña del usuario <b>gerente</b> cuando la solicite. Queda protegida para ese usuario y esa PC.</li>
+      <li>Elige una fecha que tenga pedidos. Se preparan <b>comanda.pdf</b> y <b>etiquetas.pdf</b> sin imprimir. Ábrelos, selecciona su impresora correspondiente, escala 100 % y comprueba una prueba física. El QR de una etiqueta debe leerse desde el teléfono.</li>
+      <li>Solo cuando ambas pruebas salgan bien, vuelve al instalador y escribe <b>ACTIVAR</b>. Crea la tarea <b>GoLunch-Impresion-2130</b>, diaria a las 9:30 PM. Windows debe estar en la zona horaria de Ciudad de México.</li>
+    </ol>
+    <p>La tarea imprime únicamente el servicio de <b>mañana</b>. Si no hay pedidos, no imprime ni adelanta otro día. Mantén la PC encendida, conectada a corriente, con internet y la sesión del usuario iniciada (puede estar bloqueada). La pantalla puede apagarse; evita suspensión. Las impresoras deben estar encendidas y conectadas.</p>
+    <p>Los PDF, el estado por documento y <b>impresion.log</b> quedan en <code>%LOCALAPPDATA%\GoLunchImpresion\documentos</code>. <b>Enviado a Windows</b> confirma que la cola aceptó el trabajo; no garantiza que haya salido papel. Si dice <b>enviando</b> o falla, revisa la cola y la impresora antes de repetir.</p>
+    <p><b>Preparar-prueba.cmd</b> genera PDF sin imprimir. <b>Imprimir-ahora.cmd</b> solicita fecha y confirmación, e imprime solo documentos aún no enviados. <b>Reimprimir.cmd</b> pide una confirmación adicional porque puede duplicar etiquetas. Si un apagado inesperado deja <b>impresion.lock</b>, comprueba primero que no haya una ejecución activa ni un trabajo pendiente antes de retirar ese bloqueo. Para detener la automatización, deshabilita la tarea en el Programador de tareas de Windows. La automatización cubre el servicio regular; las coberturas del mismo día conservan su impresión independiente.</p>
 
     <h3>🕒 Coberturas</h3>
     <p>Administra el servicio del mismo día para personal del primer turno que

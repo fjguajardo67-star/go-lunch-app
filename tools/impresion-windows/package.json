@@ -1,0 +1,8 @@
+{
+  "name": "golunch-impresion-windows",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "dependencies": { "playwright-core": "1.56.1", "qrcode": "1.5.4" }
+}

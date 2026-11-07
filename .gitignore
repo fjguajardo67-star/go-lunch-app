@@ -1,2 +1,7 @@
 node_modules/
 .env
+
+# Datos privados de la instalacion local de Windows
+tools/impresion-windows/config.json
+tools/impresion-windows/clave.dpapi
+tools/impresion-windows/documentos/

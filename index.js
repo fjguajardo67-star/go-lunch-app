@@ -161,7 +161,7 @@ app.get('/comanda/:fecha', async (req, res) => {
   }
   try {
     const resumen = await resumenCocina(fecha);
-    res.type('html').send(htmlComanda(resumen));
+    res.type('html').send(htmlComanda(resumen, { ancho: req.query.ancho }));
   } catch (err) {
     console.error('[Comanda] Error:', err);
     res.status(500).send('Error generando la comanda');
