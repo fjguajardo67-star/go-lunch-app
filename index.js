@@ -8,6 +8,7 @@ import { adminRouter } from './routes/admin.js';
 import { pedidoRouter } from './routes/pedido.js';
 import { entregaRouter } from './routes/entrega.js';
 import { coberturaRouter } from './routes/cobertura.js';
+import { checklistRepartoRouter } from './routes/checklist-reparto.js';
 import { resumenCocina, htmlComanda, etiquetas, htmlEtiquetas, iniciarCronCocina } from './services/cocina.js';
 import {
   resumenCobertura, htmlComandaCobertura,
@@ -146,6 +147,7 @@ app.use('/pedido', pedidoRouter);
 // Solicitudes grupales del mismo día para personal que cubre el segundo
 // turno. Tiene autenticación propia de supervisores y no toca /pedido.
 app.use('/cobertura', coberturaRouter);
+app.use('/checklist-reparto', checklistRepartoRouter);
 
 // Comanda de cocina imprimible (HTML). Se abre en el navegador con:
 //   /comanda/2026-07-20?key=ADMIN_KEY

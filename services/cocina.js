@@ -1,4 +1,5 @@
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina, resumirPedidosCocina } from './seleccion-cocina.js';
+import { prepararChecklistReparto, validarFechaChecklist } from './checklist-reparto.js';
 import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina.js — Comanda de cocina: resumen por platillo y vista imprimible
 import { DateTime } from 'luxon';
@@ -13,6 +14,12 @@ const ZONA_TZ = process.env.TZ || 'America/Mexico_City';
 export async function resumenCocina(fecha, seleccion = {}) {
   const filtros = normalizarSeleccionCocina(seleccion);
   return resumirPedidosCocina(fecha, await db.getPedidosPorFecha(fecha), filtros);
+}
+
+export async function checklistReparto(fecha, seleccion = {}) {
+  validarFechaChecklist(fecha);
+  const filtros = normalizarSeleccionCocina(seleccion);
+  return prepararChecklistReparto(fecha, await db.getPedidosPorFecha(fecha), filtros);
 }
 
 // ── HTML imprimible (impresora térmica o carta) ─────────────────

@@ -995,6 +995,13 @@
                 </span>
                 <span aria-hidden="true">→</span>
               </button>
+              <button class="accion cocina-accion" onclick="abrirImpreso('checklist')">
+                <span class="cocina-accion-contenido">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10l1 1 2-2M13 10h3M8 16l1 1 2-2M13 16h3"/></svg>
+                  <span><span class="cocina-accion-titulo">Checklist de salida</span><span class="cocina-accion-detalle">Lista por zona y turno con una firma por lote</span></span>
+                </span>
+                <span aria-hidden="true">→</span>
+              </button>
               <button class="accion cocina-accion sec" onclick="window.open('qr.html','_blank')">
                 <span class="cocina-accion-contenido">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6"/><rect x="15" y="3" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><path d="M15 15h3v3h-3zM21 15v3M18 21h3M15 21v-1"/></svg>
@@ -1354,7 +1361,9 @@
     if (!fecha) return;
     const [ancho, alto] = document.getElementById('im-tamano').value.split('x');
     let url;
-    if (tipo === 'comanda') {
+    if (tipo === 'checklist') {
+      url = API_BASE + '/checklist-reparto/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
+    } else if (tipo === 'comanda') {
       url = API_BASE + '/comanda/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY) + '&ancho=58';
     } else {
       url = API_BASE + '/etiquetas/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
