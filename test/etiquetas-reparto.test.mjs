@@ -22,6 +22,7 @@ test('etiqueta regular horizontal conserva número y fecha sin pie externo',()=>
  assert.match(html,/left: 9mm; right: 9mm/);
  assert.doesNotMatch(html,/<div class="pie">|<span>#00123<\/span>/);
  assert.match(html,/desactivar Encabezados y pies de página/);
+ assert.doesNotMatch(html,/transform:scale\(0\.85\)|class="marco-etiqueta"/);
 });
 test('especial conserva QR, empleado, fecha y responsable',()=>{
  const html=htmlEtiquetasCobertura({fecha,items:[{empleado_nombre_snapshot:'Prueba',empleado_numero_snapshot:'00077',opcion_texto:'Ensalada',codigo_entrega:'uuid-especial',secuencia:1,solicitud:{turno:'turno_b',zona:'zona_refris',folio:'FOLIO-NO-IMPRIMIR',total_porciones:1,responsable_nombre_snapshot:'Responsable <prueba>',responsable_numero_snapshot:'001'}}]});
@@ -31,7 +32,20 @@ test('especial conserva QR, empleado, fecha y responsable',()=>{
  assert.match(html,/EX\|uuid-especial\|2026-11-07/);
  assert.match(html,/<span>Empleado #00077<\/span>/);
  assert.match(html,/<span>07\/11\/2026<\/span>/);
+ assert.match(html,/<div class="marco-etiqueta"><article class="etiqueta">/);
+ assert.match(html,/transform:scale\(0\.85\);transform-origin:center center/);
+ assert.match(html,/reducción de cobertura al <b>85 %<\/b>/);
  assert.doesNotMatch(html,/<div class="pie">|FOLIO-NO-IMPRIMIR/);
+});
+test('la calibración de cobertura mantiene el papel y respeta tamaños alternativos',()=>{
+ const carta=htmlEtiquetasCobertura({fecha,modo:'hoja',items:[]});
+ assert.match(carta,/@page\{size:letter portrait;margin:14mm\}/);
+ assert.match(carta,/\.marco-etiqueta\{width:90mm;height:62mm/);
+ assert.match(carta,/Sin solicitudes confirmadas/);
+ const chico=htmlEtiquetasCobertura({fecha,ancho:62,alto:40,modo:'rollo',items:[]});
+ assert.match(chico,/@page\{size:62mm 40mm;margin:0\}/);
+ assert.match(chico,/transform:scale\(1\)/);
+ assert.doesNotMatch(chico,/reducción de cobertura al/);
 });
 test('tamaños alternativos y prueba carta siguen disponibles; sin QR usa todo el ancho',()=>{
  const chico=htmlEtiquetas({fecha,ancho:62,alto:40,pedidos:[pedido]});
