@@ -54,6 +54,30 @@ test('el turno se recuerda solo en su fecha y zona; la cantidad de pendientes no
  c.ZONA=zona;c.FECHA='2026-11-08';vm.runInContext('restaurarTurno()',c);assert.equal(c.TURNO,'');
 });
 
+test('un rechazo de un lote no borra la cola del otro turno si ese envío falla',async()=>{
+ const html=readFileSync(new URL('../public/entrega.html',import.meta.url),'utf8');
+ const fn=html.match(/async function sincronizar\([\s\S]*?\n  }/)[0];
+ const cola=['turno_a','turno_b'].map(turno=>({tipo:'regular',numero_empleado:turno,fecha,zona,turno}));
+ const c=vm.createContext({COLA:cola,LLEGADAS:[],FECHA:fecha,ZONA:zona,EPOCA_ZONA:0,FECHA_REPARTO:'hoy',
+  navigator:{onLine:true},API_BASE:'',LS:{cola:'cola'},zonaDeElemento:e=>e.zona,cabecerasAuth:x=>x,
+  guardar:()=>{},mostrarAviso:()=>{},marcarListaVieja:()=>{},
+  fetch:async(_url,opciones)=>{
+   if(opciones?.method==='POST'&&JSON.parse(opciones.body).turno==='turno_a')return {ok:false,json:async()=>({definitivo:true,error:'Fecha futura'})};
+   throw new Error('Sin conexión');
+  }});
+ await vm.runInContext(fn+';sincronizar()',c);
+ assert.equal(c.COLA.length,1);assert.equal(c.COLA[0].turno,'turno_b');
+});
+
+test('la lógica de grupos se sirve desde la caché del service worker sin conexión',async()=>{
+ const eventos={};let respuesta;
+ const c=vm.createContext({URL,Request,Response,console,self:{location:{origin:'http://prueba'},addEventListener:(n,fn)=>eventos[n]=fn},
+  fetch:async()=>{throw new Error('Sin conexión');},caches:{match:async r=>r.url.endsWith('/reparto-grupos.js')?new Response('grupo disponible sin señal'):undefined}});
+ vm.runInContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),c);
+ eventos.fetch({request:new Request('http://prueba/reparto-grupos.js'),respondWith:r=>respuesta=r});
+ assert.ok(respuesta);assert.equal(await (await respuesta).text(),'grupo disponible sin señal');
+});
+
 test('API valida grupo real, rechaza lotes mezclados y mantiene cobertura fuera del cierre',async()=>{
  const variables=['SUPABASE_URL','SUPABASE_KEY','ADMIN_KEY'];const prev=Object.fromEntries(variables.map(k=>[k,process.env[k]]));const reloj=Settings.now;
  Settings.now=()=>Date.parse(fecha+'T16:00:00-06:00');

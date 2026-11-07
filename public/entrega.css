@@ -2548,4 +2548,5 @@ main {
   background: var(--blanco); color: var(--tinta);
 }
 .turno-activo select:focus-visible { outline: 2px solid var(--azul-vivo); outline-offset: 2px; }
+@media (max-width: 719px) { .turno-activo { order: 3; flex: 0 0 100%; } }
 @media (max-width: 360px) { .turno-activo { grid-template-columns: 1fr; gap: 4px; } }

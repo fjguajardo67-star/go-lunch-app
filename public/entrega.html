@@ -940,10 +940,6 @@
     $('app').classList.toggle('sin-conexion', !on);
   }
 
-  // Zona de un elemento de la cola. Los escaneos de la versión anterior no la
-  // traen: se intenta deducir del pedido guardado o del índice del día. Si no
-  // se puede, devuelve vacío y el elemento viaja SIN zona — el servidor lo
-  // acepta sin verificar antes que perder una entrega que sí ocurrió.
   // ── Llegada al punto ──────────────────────────────────────
   // El operador selecciona el turno; los pendientes nunca cambian esa selección.
   function turnoEnCurso() {
@@ -958,11 +954,11 @@
 
   function seleccionarTurno(turno) {
     if (!FECHA || !ZONA) return;
+    if (RECEPTOR_PENDIENTE) cancelarReceptor();
+    if (escaneando) detenerCamara();
     if (!GoLunchReparto.turnoValido(turno)) {
       TURNO = ''; localStorage.removeItem(LS.turno); pintar(); return;
     }
-    if (RECEPTOR_PENDIENTE) cancelarReceptor();
-    if (escaneando) detenerCamara();
     TURNO = turno; guardar(LS.turno, {fecha:FECHA,zona:ZONA,turno}); pintar();
   }
 
@@ -1170,11 +1166,9 @@
     //    ocurrió, y si el reparto se escaneó ayer y la app se abre hoy, esos
     //    escaneos deben registrarse en el día de ayer, no en el de hoy.
     if (COLA.length) {
-      // Agrupado por FECHA y ZONA: el servidor verifica que cada pedido sea de
-      // la zona declarada, así que mezclar rutas en un lote haría que la otra
-      // se rechazara entera. Los escaneos viejos sin zona van en su propio
-      // grupo y viajan SIN el campo: el servidor omite la verificación en vez
-      // de rechazarlos, porque son entregas reales que ya ocurrieron.
+      // Cada lote conserva fecha, zona y turno. Los escaneos antiguos sin
+      // grupo se envían aparte: solo se liberan si ya estaban confirmados;
+      // los demás permanecen en el equipo para revisión.
       const porLote = {};
       COLA.forEach(e => {
         const f = e.fecha || FECHA;   // escaneos viejos sin fecha: la de la app
@@ -1206,7 +1200,7 @@
               COLA = COLA.filter(e => {
                 const f = e.fecha || FECHA;
                 const z = zonaDeElemento(e) || null;
-                return !(f === fechaLote && z === zonaLote);
+                return !(f === fechaLote && z === zonaLote && (e.turno || null) === turnoLote);
               });
               guardar(LS.cola, COLA);
               mostrarAviso('avisoSync',

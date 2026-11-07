@@ -160,7 +160,7 @@ self.addEventListener('fetch', evento => {
   // caché pero jamás se serviría desde ahí: sin señal, no escanea.
   const esJSQR = propio && url.pathname === JSQR;
 
-  if (propio && url.pathname === '/operacion.js') {
+  if (propio && ['/operacion.js', '/reparto-grupos.js'].includes(url.pathname)) {
     evento.respondWith(redPrimero(peticion));
     return;
   }

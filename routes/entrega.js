@@ -423,10 +423,9 @@ entregaRouter.post('/', async (req, res) => {
         motivo: 'fecha_futura', fecha, hoy: hoy(), definitivo: true
       });
     }
-    // La zona es opcional a propósito: los escaneos que quedaron en la cola de
-    // la versión anterior no la traen, y rechazarlos perdería entregas reales.
-    // Cuando SÍ viene, se verifica contra la base y no se confía en el filtro
-    // del teléfono.
+    // La zona del lote es opcional si cada elemento trae su propio grupo.
+    // Los registros antiguos sin grupo solo se reconocen si ya estaban
+    // entregados; los pendientes requieren revisión antes de escribir.
     if (zona && !ZONAS_VALIDAS.includes(zona)) {
       return res.status(400).json({ error: 'Zona inválida', zonas_validas: ZONAS_VALIDAS });
     }
@@ -496,8 +495,8 @@ entregaRouter.post('/', async (req, res) => {
       // Un motivo inventado no se guarda: solo los del catálogo
       const motivo = MOTIVOS_TARDIA_VALIDOS.includes(e?.motivo_tardia) ? e.motivo_tardia : null;
       try {
-        // La zona del elemento manda sobre la del lote: así un escaneo viejo
-        // sin zona viaja sin verificar aunque el lote sí la declare.
+        // El elemento conserva su zona; el lote sirve de respaldo cuando
+        // esta no viene. Arriba ya se verificó que ambos grupos coincidan.
         const zonaItem = e?.zona !== undefined ? e.zona : zona;
         // La coordenada solo se guarda si el fix sirve. Por encima de este
         // radio el dato vino de antenas y no de satélites: aparenta prueba y
