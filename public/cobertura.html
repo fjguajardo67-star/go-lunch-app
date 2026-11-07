@@ -203,16 +203,34 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   setInterval(actualizarReloj,30000);
 
   async function guardarSolicitud(){
-    error('solicitud-error','');await buscarResponsable();
-    for(let i=0;i<FILAS.length;i++)if(FILAS[i].numero&&!FILAS[i].nombre)await buscarPersona(i);
-    const items=FILAS.filter(f=>f.numero||f.opcion_id);
-    if(!RESPONSABLE)return error('solicitud-error','Verifica el número del responsable.');
-    if(!$('zona').value)return error('solicitud-error','Selecciona la zona de entrega.');
-    if(!items.length||items.some(f=>!f.numero||!f.nombre||!f.opcion_id))return error('solicitud-error','Completa y verifica cada empleado y su platillo.');
-    const btn=$('btn-guardar');btn.disabled=true;$('turno-servicio').disabled=true;btn.textContent='Confirmando…';
-    try{const r=await fetch(API+'/cobertura/solicitud',{method:'POST',headers:auth(),body:JSON.stringify({turno:$('turno-servicio').value,responsable_numero:RESPONSABLE.numero,zona:$('zona').value,items:items.map(f=>({numero_empleado:f.numero,opcion_id:f.opcion_id}))})});const d=await r.json();if(!r.ok)throw new Error(d.detalle?d.error+' '+d.detalle:d.error||'No se pudo guardar.');ESTADO.solicitud=d.solicitud;cargarSolicitud(d.solicitud);mostrarRecibo(d.solicitud,true)}catch(e){error('solicitud-error',e.message)}finally{btn.disabled=false;$('turno-servicio').disabled=false;btn.textContent='Confirmar solicitud'}
+    const btn=$('btn-guardar'), selector=$('turno-servicio');
+    if(btn.disabled || selector.disabled)return;
+    const turno=ESTADO.turno;
+    btn.disabled=true;selector.disabled=true;btn.textContent='Confirmando…';
+    error('solicitud-error','');
+    try{
+      await buscarResponsable();
+      for(let i=0;i<FILAS.length;i++)if(FILAS[i].numero&&!FILAS[i].nombre)await buscarPersona(i);
+      const items=FILAS.filter(f=>f.numero||f.opcion_id);
+      if(!RESPONSABLE)throw new Error('Verifica el número del responsable.');
+      if(!$('zona').value)throw new Error('Selecciona la zona de entrega.');
+      if(!items.length||items.some(f=>!f.numero||!f.nombre||!f.opcion_id))throw new Error('Completa y verifica cada empleado y su platillo.');
+      const r=await fetch(API+'/cobertura/solicitud',{method:'POST',headers:auth(),body:JSON.stringify({turno,responsable_numero:RESPONSABLE.numero,zona:$('zona').value,items:items.map(f=>({numero_empleado:f.numero,opcion_id:f.opcion_id}))})});
+      const d=await r.json();
+      if(!r.ok)throw new Error(d.detalle?d.error+' '+d.detalle:d.error||'No se pudo guardar.');
+      ESTADO.solicitud=d.solicitud;cargarSolicitud(d.solicitud);mostrarRecibo(d.solicitud,true);
+    }catch(e){error('solicitud-error',e.message)}
+    finally{btn.disabled=false;selector.disabled=false;btn.textContent='Confirmar solicitud'}
   }
-  async function cancelarSolicitud(){if(!confirm('¿Cancelar la solicitud de este turno?'))return;try{const r=await fetch(API+'/cobertura/solicitud?turno='+$('turno-servicio').value,{method:'DELETE',headers:auth()});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cancelar.');await cargar()}catch(e){alert(e.message)}}
+  async function cancelarSolicitud(){
+    const selector=$('turno-servicio');
+    if(selector.disabled || !confirm('¿Cancelar la solicitud de este turno?'))return;
+    const turno=ESTADO.turno;selector.disabled=true;
+    try{
+      const r=await fetch(API+'/cobertura/solicitud?turno='+turno,{method:'DELETE',headers:auth()});
+      const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cancelar.');await cargar();
+    }catch(e){alert(e.message)}finally{selector.disabled=false}
+  }
   function salir(recargar=true){SESION=null;localStorage.removeItem(LS);if(recargar)location.reload();else{$('contenido').classList.add('oculto');$('login').classList.remove('oculto')}}
   if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>
