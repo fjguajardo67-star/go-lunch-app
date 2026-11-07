@@ -1,3 +1,4 @@
+import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina, resumirPedidosCocina } from './seleccion-cocina.js';
 import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina.js — Comanda de cocina: resumen por platillo y vista imprimible
 import { DateTime } from 'luxon';
@@ -9,41 +10,20 @@ const ZONA_TZ = process.env.TZ || 'America/Mexico_City';
 
 // ── Resumen agrupado por platillo para una fecha ────────────────
 // Devuelve: { fecha, total, resumen: [{ platillo, porciones, por_turno, por_zona }] }
-export async function resumenCocina(fecha) {
-  const pedidos = await db.getPedidosPorFecha(fecha);
-  const total = pedidos.length;
-
-  const grupos = new Map(); // platillo → { porciones, por_turno, por_zona }
-  for (const p of pedidos) {
-    const platillo = p.opcion_texto || p.opcion_id;
-    if (!grupos.has(platillo)) {
-      grupos.set(platillo, { porciones: 0, por_turno: {}, por_zona: {} });
-    }
-    const g = grupos.get(platillo);
-    g.porciones++;
-    const turno = TURNOS[p.turno] || p.turno || 'Sin turno';
-    const zona  = ZONAS[p.zona]   || p.zona  || 'Sin zona';
-    g.por_turno[turno] = (g.por_turno[turno] || 0) + 1;
-    g.por_zona[zona]   = (g.por_zona[zona]   || 0) + 1;
-  }
-
-  const resumen = [...grupos.entries()]
-    .map(([platillo, g]) => ({
-      platillo,
-      porciones: g.porciones,
-      porcentaje: total ? Math.round((g.porciones / total) * 100) : 0,
-      por_turno: g.por_turno,
-      por_zona: g.por_zona
-    }))
-    .sort((a, b) => b.porciones - a.porciones);
-
-  return { fecha, total, resumen };
+export async function resumenCocina(fecha, seleccion = {}) {
+  const filtros = normalizarSeleccionCocina(seleccion);
+  return resumirPedidosCocina(fecha, await db.getPedidosPorFecha(fecha), filtros);
 }
 
 // ── HTML imprimible (impresora térmica o carta) ─────────────────
 // Sin colores, fuente grande, una sección por turno (la cocina prepara
 // cada turno por separado), con subtotal por turno y hora de generación.
-export function htmlComanda({ fecha, total, resumen }, { ancho } = {}) {
+export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } = {}) {
+  filtros = normalizarSeleccionCocina(filtros);
+  const turnosElegidos = filtros.turno ? [filtros.turno] : Object.keys(TURNOS);
+  const horarios = turnosElegidos.map(turno =>
+    `${turno === 'turno_a' ? 'Turno A' : 'Turno B'}: ${horaTexto(turno, filtros.zona, fecha)}`
+  ).join(' · ');
   const termica = Number(ancho) === 58;
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat("dd/MM/yyyy HH:mm 'hrs'");
 
@@ -77,14 +57,14 @@ export function htmlComanda({ fecha, total, resumen }, { ancho } = {}) {
       <hr>`;
   }).join('');
 
-  const vacio = `<p class="vacio">Sin pedidos registrados para esta fecha.</p><hr>`;
+  const vacio = `<p class="vacio">Sin pedidos para esta fecha y selección.</p><hr>`;
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Comanda ${esc(fecha)}</title>
+<title>Comanda ${esc(fecha)} · ${esc(textoSeleccionCocina(filtros))}</title>
 <link rel="icon" type="image/png" href="/icono-32.png">
 <link rel="apple-touch-icon" href="/icono-180.png">
 
@@ -138,7 +118,8 @@ export function htmlComanda({ fecha, total, resumen }, { ancho } = {}) {
   <h1>COMANDA DE COCINA</h1>
   <div class="sub">CICSA — Glovis</div>
   <div class="sub">Fecha de servicio: <strong>${esc(fecha)}</strong></div>
-  <div class="sub">Turno A: ${esc(horaTexto('turno_a', null, fecha))} · ambos patios<br>Turno B: REFIS ${esc(horaTexto('turno_b', 'zona_refris', fecha))} · ASLA ${esc(horaTexto('turno_b', 'zona_vdc', fecha))}</div>
+  <div class="sub"><strong>${esc(textoSeleccionCocina(filtros))}</strong></div>
+  <div class="sub">${esc(horarios)}</div>
   <hr>
   ${resumen.length ? secciones : vacio}
   <div class="total"><span>TOTAL PORCIONES</span><span>${total}</span></div>
@@ -159,19 +140,20 @@ function esc(s) {
 // Se pegan en el contenedor. El tamaño es configurable porque depende del
 // rollo que se compre; con modo 'hoja' se prueban en papel carta antes de
 // invertir en la impresora.
-export async function etiquetas(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', qr = true } = {}) {
-  const pedidos = await db.getPedidosPorFecha(fecha);
-  return { fecha, ancho, alto, modo, qr, pedidos };
+export async function etiquetas(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', qr = true, turno, zona } = {}) {
+  const filtros = normalizarSeleccionCocina({ turno, zona });
+  const pedidos = seleccionarPedidosCocina(await db.getPedidosPorFecha(fecha), filtros);
+  return { fecha, ancho, alto, modo, qr, pedidos, filtros };
 }
 
-export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo, qr = true, pedidos }) {
+export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo, qr = true, pedidos, filtros = {} }) {
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat('dd/MM/yyyy HH:mm');
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const enHoja = modo === 'hoja';
 
   // Las etiquetas salen agrupadas por turno y zona: así se empacan y se
   // reparten en el mismo orden en que la cocina las va a necesitar.
-  const orden = [...pedidos].sort((a, b) =>
+  const orden = seleccionarPedidosCocina(pedidos, filtros).sort((a, b) =>
     String(a.turno).localeCompare(String(b.turno)) ||
     String(a.zona).localeCompare(String(b.zona)) ||
     String(a.empleados?.nombre || '').localeCompare(String(b.empleados?.nombre || '')));
@@ -196,14 +178,14 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
     </div>`;
   }).join('');
 
-  const vacio = '<p style="font-family:sans-serif;padding:20px">Sin pedidos registrados para esta fecha.</p>';
+  const vacio = '<p style="font-family:sans-serif;padding:20px">Sin pedidos para esta fecha y selección.</p>';
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Etiquetas ${esc(fecha)}</title>
+<title>Etiquetas ${esc(fecha)} · ${esc(textoSeleccionCocina(filtros))}</title>
 <link rel="icon" type="image/png" href="/icono-32.png">
 <link rel="apple-touch-icon" href="/icono-180.png">
 
@@ -291,14 +273,14 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
 <body>
   <div class="barra">
     <b>🏷️ Etiquetas · ${esc(fechaCorta)}</b>
+    <span class="dato">${esc(textoSeleccionCocina(filtros))}</span>
     <span class="dato">${orden.length} comida(s)</span>
     <span class="dato">${ancho} × ${alto} mm</span>
     <span class="dato">${enHoja ? 'prueba en papel carta' : 'rollo continuo'}</span>
     <button onclick="window.print()">Imprimir</button>
   </div>
   <div class="ayuda">
-    ${estiloEtiquetaReparto(ancho, alto)}
-  ${enHoja
+    ${enHoja
       ? 'Imprime esta hoja en papel normal y recórtala para comprobar que la medida cabe en el contenedor <b>antes</b> de comprar el rollo. Cambia el tamaño con <b>?ancho=</b> y <b>?alto=</b> en milímetros.'
       : 'Ajusta el tamaño con <b>?ancho=</b> y <b>?alto=</b> (mm) para que coincida con tu rollo. Para probar en papel carta primero, agrega <b>&amp;modo=hoja</b>.'}
     En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: papel de 62 mm, largo 90 mm y orientación horizontal. El contenido conserva un margen interior de 9 mm a ambos lados. Las etiquetas van ordenadas por turno y zona.

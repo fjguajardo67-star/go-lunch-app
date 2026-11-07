@@ -403,9 +403,9 @@ adminRouter.get('/pedidos', async (req, res) => {
 // Resumen para cocina: conteo por platillo (con desglose por turno y zona)
 adminRouter.get('/resumen-cocina/:fecha', async (req, res) => {
   try {
-    res.json(await resumenCocina(req.params.fecha));
+    res.json(await resumenCocina(req.params.fecha, { turno: req.query.turno, zona: req.query.zona }));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 
