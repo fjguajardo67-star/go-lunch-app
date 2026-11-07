@@ -618,7 +618,7 @@
       </div>
     </div>
     <div class="header-right">
-      <span class="header-sub">Corte 8:00 PM · Lázaro Cárdenas, Mich. <span id="versionPanel" style="opacity:.75"></span></span>
+      <span class="header-sub">Corte 9:00 PM · Lázaro Cárdenas, Mich. <span id="versionPanel" style="opacity:.75"></span></span>
       <button class="btn-salir" onclick="window.open('manual.html','_blank')" title="Manual de operación">📖 Manual</button>
       <button class="btn-salir" onclick="salir()">Cerrar sesión</button>
     </div>
@@ -1200,7 +1200,7 @@
   // ── Fechas del comedor ──
   // NUNCA usar toISOString() para una fecha sin hora: convierte a UTC, y en
   // Lázaro Cárdenas (UTC-6) a partir de las 18:00 ya devuelve el día
-  // siguiente. Eso caía justo en la rutina posterior al corte de las 8 PM:
+  // siguiente. Eso caía justo en la rutina posterior al corte de las 9 PM:
   // el panel ofrecía imprimir la comanda del día equivocado.
   // Se ancla a la zona del comedor y no a la del equipo, para que el panel dé
   // la misma fecha desde cualquier computadora.
@@ -1222,6 +1222,8 @@
   const etiquetaZona  = z => z === 'sin_zona'  ? 'Sin zona'  : zonaTxt(z);
 
   let ADMIN_KEY = '';
+  let PANEL_USUARIO = '';
+  let PANEL_ROL = 'admin';
   const COBERTURA_MONITOR_MS = 30000;
   const COBERTURA_ACK_PREFIX = 'golunch_cobertura_comanda_impresa_';
   let temporizadorCobertura = null;
@@ -1235,8 +1237,10 @@
     if (!k) return;
     prepararAudioCobertura();
     ADMIN_KEY = k;
-    // Prueba la clave con una petición simple
-    api('/api/empleados').then(() => {
+    PANEL_USUARIO = document.getElementById('adminUser').value.trim().toLowerCase();
+    api('/api/sesion').then(sesion => {
+      PANEL_ROL = sesion.rol;
+      aplicarPermisosPanel();
       document.getElementById('gate').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       const hoy = fechaComedor();
@@ -1287,10 +1291,35 @@
     }
   }
 
+  // Las restricciones visuales acompañan la autorización obligatoria del servidor.
+  function aplicarPermisosPanel() {
+    if (PANEL_ROL !== 'gerente') return;
+    if (!document.getElementById('aviso-rol-gerente')) {
+      const aviso = document.createElement('p');
+      aviso.id = 'aviso-rol-gerente';
+      aviso.className = 'aviso info';
+      aviso.textContent = 'Sesión: gerente. Menús y empleados disponibles para consulta e impresión; los cambios corresponden al administrador.';
+      document.querySelector('.wrap').prepend(aviso);
+      const observer = new MutationObserver(() => aplicarPermisosPanel());
+      observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+    }
+    document.querySelectorAll('#p-menu input:not([type="date"]), #p-menu .menu-cell, #p-coberturas .cov-menu-options input').forEach(e => { e.readOnly = true; });
+    document.querySelectorAll('#p-empleados input, #p-empleados select').forEach(e => { e.disabled = true; });
+    document.querySelectorAll('button[onclick]').forEach(b => {
+      const accion = b.getAttribute('onclick');
+      const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura)\(/.test(accion);
+      const mutaEmpleado = b.closest('#p-empleados') && !/^(imprimirEmpleadosVisibles|cargarEmpleados|descargarFormato|descargarPlantilla)/.test(accion);
+      if (mutaMenu || mutaEmpleado) {
+        b.disabled = true;
+        b.title = 'Solo el administrador puede realizar este cambio';
+      }
+    });
+  }
+
   async function api(path, opts = {}) {
     const res = await fetch(API_BASE + path, {
       ...opts,
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY, ...(opts.headers||{}) }
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO, ...(opts.headers||{}) }
     });
     if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || res.status);
     return res.json();
@@ -1343,7 +1372,7 @@
       const m = dias[0];
       if (!m.publicado) {
         alerta.className = 'aviso err';
-        alerta.textContent = '⚠ Mañana ' + m.dia_semana + ' ' + m.dia_num + ' no tiene menú publicado. Si no se publica antes de las 8:00 PM de hoy, nadie podrá pedir para ese día.';
+        alerta.textContent = '⚠ Mañana ' + m.dia_semana + ' ' + m.dia_num + ' no tiene menú publicado. Si no se publica antes de las 9:00 PM de hoy, nadie podrá pedir para ese día.';
       } else {
         alerta.className = 'aviso';
       }

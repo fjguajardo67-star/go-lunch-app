@@ -1,3 +1,4 @@
+import { autorizarPanel } from '../services/acceso-panel.js';
 // routes/admin.js — API REST para el panel de administración
 import express from 'express';
 import { DateTime } from 'luxon';
@@ -12,19 +13,10 @@ import { horarioCobertura } from '../services/cobertura.js';
 
 export const adminRouter = express.Router();
 
-// Protección simple por clave de administrador
-adminRouter.use((req, res, next) => {
-  const key = req.headers['x-admin-key'];
-
-  if (!process.env.ADMIN_KEY) {
-    return res.status(500).json({ error: 'ADMIN_KEY no configurada en el servidor' });
-  }
-
-  if (key !== process.env.ADMIN_KEY) {
-    return res.status(401).json({ error: 'No autorizado' });
-  }
-
-  next();
+// El servidor aplica permisos aunque se intente llamar directamente a la API.
+adminRouter.use(autorizarPanel);
+adminRouter.get('/sesion', (req, res) => {
+  res.json({ usuario: req.rolPanel === 'gerente' ? 'gerente' : 'admin', rol: req.rolPanel });
 });
 
 // ── Empleados ───────────────────────────────────────────────────

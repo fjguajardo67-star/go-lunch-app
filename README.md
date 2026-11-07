@@ -207,3 +207,14 @@ comprobar que `/health` responda desde el dominio, no dar el deploy por hecho.
 
 El SQL nuevo va a `schema.sql` y lo pega el dueño en Supabase. Y como el proyecto
 es compartido, jamás tocar las tablas de Grill Express.
+
+## Acceso del gerente
+
+Configurar `GERENTE_KEY` en Railway con una contraseña propia, distinta de
+`ADMIN_KEY` y de las claves de reparto. En el panel se ingresa con el usuario
+`gerente` y esa contraseña. No se crean tablas ni se cambian las claves existentes.
+La contraseña del gerente permite el resto de la administración, consulta e
+impresión, pero el servidor devuelve 403 en cualquier escritura sobre
+`/api/empleados`, `/api/menu` y `/api/cobertura/menu`, incluidas sus subrutas.
+El administrador mantiene todos sus permisos. Si no se configura `GERENTE_KEY`,
+el acceso de gerente permanece deshabilitado.
