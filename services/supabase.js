@@ -1,3 +1,4 @@
+import { guardarPeriodoMenu } from './menu-cobertura.js';
 // services/supabase.js — Conexión y queries a la base de datos
 import { createClient } from '@supabase/supabase-js';
 import { variantesTelefono, formatoCanonico } from './telefono.js';
@@ -746,6 +747,10 @@ export async function upsertMenuCobertura(menu) {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function publicarPeriodoMenuCobertura(menu) {
+  return guardarPeriodoMenu(supabase, menu);
 }
 
 export async function contarSolicitudesCobertura(fecha) {
