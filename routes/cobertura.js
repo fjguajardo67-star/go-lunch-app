@@ -75,7 +75,7 @@ coberturaRouter.use(async (req, res, next) => {
 
 coberturaRouter.get('/estado', async (req, res) => {
   try {
-    const estado = await cobertura.estadoSupervisor(req.supervisor.id);
+    const estado = await cobertura.estadoSupervisor(req.supervisor.id, req.query.turno);
     res.json({
       ...estado,
       supervisor: {
@@ -86,7 +86,7 @@ coberturaRouter.get('/estado', async (req, res) => {
     });
   } catch (err) {
     console.error('[Cobertura] Error consultando estado:', err);
-    res.status(500).json({ error: 'No se pudo consultar el menú especial.' });
+    res.status(err.status || 500).json({ error: err.status ? err.message : 'No se pudo consultar el menú especial.' });
   }
 });
 
@@ -113,7 +113,7 @@ coberturaRouter.post('/solicitud', async (req, res) => {
 
 coberturaRouter.delete('/solicitud', async (req, res) => {
   try {
-    await cobertura.cancelarSolicitud(req.supervisor.id);
+    await cobertura.cancelarSolicitud(req.supervisor.id, req.query.turno);
     res.json({ ok: true });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message, motivo: err.motivo });

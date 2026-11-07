@@ -833,12 +833,12 @@
     <section id="p-coberturas" class="panel">
       <div class="cov-hero">
         <div>
-          <h2>Cobertura del segundo turno</h2>
-          <p>Solicitudes del mismo día para personal que extiende su jornada. Los supervisores autorizados capturan hasta las 2:45 PM; al cierre, este panel activa la alarma y presenta la comanda final.</p>
+          <h2>Pedidos especiales por turno</h2>
+          <p>Menú especial compartido. Turno A: cierre 7:00 AM y entrega 10:00 AM. Turno B y horas extras: cierre 2:00 PM; al cierre de cada turno, este panel presenta su comanda final.</p>
         </div>
         <div class="cov-reloj" aria-label="Horario de cobertura">
-          <b>Cierre 2:45 PM</b>
-          <span>Salida 4:30 PM · REFIS 5:00 PM · ASLA 6:00 PM</span>
+          <b>A · 7:00 AM / B y extras · 2:00 PM</b>
+          <span>A: entrega 10:00 AM · B: REFIS 5:00 PM / ASLA 6:00 PM</span>
         </div>
       </div>
 
@@ -895,6 +895,7 @@
             </div>
           </div>
           <div class="row-fin" style="margin-bottom:16px">
+            <div><label for="cov-turno">Turno de producción</label><select id="cov-turno" onchange="cargarCobertura()"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select></div>
             <div><label for="cov-fecha">Fecha de servicio a consultar</label><input type="date" id="cov-fecha" style="max-width:190px" onchange="cargarCobertura()"></div>
             <button class="accion sec" onclick="cargarCobertura()">Consultar día</button>
           </div>
@@ -1179,7 +1180,6 @@
     <div class="cov-alerta-senal" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
     </div>
-    <p class="cov-alerta-kicker">Corte de cobertura · 2:45 PM</p>
     <h2 id="cov-alarma-titulo">La comanda final está lista</h2>
     <p id="cov-alarma-texto">Cocina necesita este consolidado: REFIS 5:00 PM y ASLA 6:00 PM.</p>
     <dl class="cov-alerta-resumen">
@@ -2876,8 +2876,8 @@
     coberturaAlarma = null;
   }
 
-  function ackCobertura(fecha) {
-    try { return localStorage.getItem(COBERTURA_ACK_PREFIX + fecha); }
+  function ackCobertura(fecha, turno) {
+    try { return localStorage.getItem(COBERTURA_ACK_PREFIX + fecha + '|' + turno); }
     catch { return null; }
   }
 
@@ -2890,7 +2890,7 @@
     badge.title = total ? total + ' alimento(s) de cobertura para hoy' : '';
   }
 
-  function urlImpresoCobertura(tipo, fecha, autoPrint = false) {
+  function urlImpresoCobertura(tipo, fecha, autoPrint = false, turno = document.getElementById('cov-turno').value) {
     let url = tipo === 'comanda'
       ? API_BASE + '/comanda-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
       : API_BASE + '/etiquetas-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
@@ -2899,30 +2899,32 @@
       const [ancho, alto] = tamano.split('x');
       url += '&ancho=' + encodeURIComponent(ancho) + '&alto=' + encodeURIComponent(alto);
     }
+    url += '&turno=' + encodeURIComponent(turno);
     if (autoPrint) url += '&autoprint=1';
     return url;
   }
 
   function intentarImpresionAutomaticaCobertura() {
     if (!coberturaAlarma) return;
-    const intento = coberturaAlarma.fecha + '|' + coberturaAlarma.total_porciones;
+    const intento = coberturaAlarma.fecha + '|' + coberturaAlarma.turno + '|' + coberturaAlarma.total_porciones;
     if (coberturaImpresionIntentada === intento) return;
     coberturaImpresionIntentada = intento;
     const frame = document.getElementById('cov-print-frame');
-    if (frame) frame.src = urlImpresoCobertura('comanda', coberturaAlarma.fecha, true) + '&alarma=' + Date.now();
+    if (frame) frame.src = urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno) + '&alarma=' + Date.now();
   }
 
   function activarAlarmaCobertura(datos, fecha) {
     const total = Number(datos.total_porciones || 0);
-    const clave = fecha + '|' + total;
+    const clave = fecha + '|' + datos.turno + '|' + total;
     const yaVisible = coberturaAlarma &&
-      (coberturaAlarma.fecha + '|' + coberturaAlarma.total_porciones) === clave &&
+      (coberturaAlarma.fecha + '|' + coberturaAlarma.turno + '|' + coberturaAlarma.total_porciones) === clave &&
       !document.getElementById('cov-alarma-comanda').classList.contains('oculto');
     coberturaAlarma = {
-      fecha,
+      fecha, turno: datos.turno,
       total_solicitudes: Number(datos.total_solicitudes || 0),
       total_porciones: total
     };
+    document.getElementById('cov-alarma-texto').textContent = (datos.turno === 'turno_a' ? 'Turno A · entrega 10:00 AM.' : 'Turno B y horas extras · REFIS 5:00 PM y ASLA 6:00 PM.');
     document.getElementById('cov-alarma-solicitudes').textContent = coberturaAlarma.total_solicitudes;
     document.getElementById('cov-alarma-porciones').textContent = coberturaAlarma.total_porciones;
     document.getElementById('cov-alarma-comanda').classList.remove('oculto');
@@ -2936,21 +2938,25 @@
 
   function evaluarCorteCobertura(datos, fecha) {
     if (fecha !== fechaComedor()) return;
-    actualizarBadgeCobertura(datos);
-    const total = Number(datos.total_porciones || 0);
-    const cerrado = datos.horario && datos.horario.abierto === false;
-    if (!cerrado || total === 0 || ackCobertura(fecha) === String(total)) {
-      if (coberturaAlarma?.fecha === fecha) detenerAlarmaCobertura();
+    if (datos.por_turno) {
+      actualizarBadgeCobertura({total_porciones: datos.por_turno.reduce((n,s)=>n+s.total_porciones,0)});
+      for (const servicio of datos.por_turno) evaluarCorteCobertura(servicio,fecha);
       return;
     }
-    activarAlarmaCobertura(datos, fecha);
+    const total = Number(datos.total_porciones || 0);
+    const cerrado = datos.horario && datos.horario.abierto === false;
+    if (!cerrado || total === 0 || ackCobertura(fecha, datos.turno) === String(total)) {
+      if (coberturaAlarma?.fecha === fecha && coberturaAlarma.turno === datos.turno) detenerAlarmaCobertura();
+      return;
+    }
+    if (!coberturaAlarma || coberturaAlarma.turno === datos.turno) activarAlarmaCobertura(datos, fecha);
   }
 
   async function revisarCorteCobertura() {
     if (!ADMIN_KEY) return;
     const fecha = fechaComedor();
     try {
-      const datos = await api('/api/cobertura/solicitudes/' + fecha);
+      const datos = await api('/api/cobertura/solicitudes/' + fecha + '?turno=' + document.getElementById('cov-turno').value);
       evaluarCorteCobertura(datos, fecha);
     } catch { /* Un fallo de red no interrumpe el resto del panel. */ }
   }
@@ -2963,14 +2969,14 @@
 
   function imprimirComandaFinalCobertura() {
     if (!coberturaAlarma) return;
-    window.open(urlImpresoCobertura('comanda', coberturaAlarma.fecha, true), '_blank');
+    window.open(urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno), '_blank');
   }
 
   function confirmarComandaCobertura() {
     if (!coberturaAlarma) return;
     try {
       localStorage.setItem(
-        COBERTURA_ACK_PREFIX + coberturaAlarma.fecha,
+        COBERTURA_ACK_PREFIX + coberturaAlarma.fecha + '|' + coberturaAlarma.turno,
         String(coberturaAlarma.total_porciones)
       );
     } catch { /* La confirmación dura al menos durante esta sesión. */ }
@@ -3154,7 +3160,7 @@
   async function cargarSolicitudesCobertura(fecha) {
     const box = document.getElementById('covSolicitudes');
     try {
-      const r = await api('/api/cobertura/solicitudes/' + fecha);
+      const r = await api('/api/cobertura/solicitudes/' + fecha + '?turno=' + document.getElementById('cov-turno').value);
       document.getElementById('cov-n-sol').textContent = r.total_solicitudes || 0;
       document.getElementById('cov-n-por').textContent = r.total_porciones || 0;
       evaluarCorteCobertura(r, fecha);

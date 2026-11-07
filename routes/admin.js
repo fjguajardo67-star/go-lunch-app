@@ -303,10 +303,17 @@ adminRouter.get('/cobertura/solicitudes/:fecha', async (req, res) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(req.params.fecha || '')) {
       return res.status(400).json({ error: 'Fecha inválida.' });
     }
-    const solicitudes = await db.listSolicitudesCobertura(req.params.fecha);
-    const horario = horarioCobertura();
+    const turno = validarTurnoCobertura(req.query.turno);
+    const todas = await db.listSolicitudesCobertura(req.params.fecha);
+    const solicitudes = todas.filter(s => s.turno === turno);
+    const horario = horarioCobertura(turno);
+    const por_turno = ['turno_a', 'turno_b'].map(t => {
+      const activas = todas.filter(s => s.turno === t && s.estado !== 'cancelada');
+      const h = horarioCobertura(t);
+      return { turno: t, total_solicitudes: activas.length, total_porciones: activas.reduce((n,s) => n + s.total_porciones,0), horario: h.fecha === req.params.fecha ? h : null };
+    });
     res.json({
-      solicitudes,
+      solicitudes, turno, por_turno,
       total_solicitudes: solicitudes.filter(s => s.estado !== 'cancelada').length,
       total_porciones: solicitudes.filter(s => s.estado !== 'cancelada')
         .reduce((s, x) => s + (x.total_porciones || 0), 0),
@@ -315,7 +322,7 @@ adminRouter.get('/cobertura/solicitudes/:fecha', async (req, res) => {
       horario: horario.fecha === req.params.fecha ? horario : null
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
   }
 });
 

@@ -52,14 +52,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
         <span class="divider" aria-hidden="true"></span>
         <img src="/glovis-logo.png" alt="Hyundai Glovis" width="220" height="56">
       </div>
-      <div class="brand-copy"><b>Cobertura</b><span>Segundo turno</span></div>
+      <div class="brand-copy"><b>Cobertura</b><span>Turnos A y B · Horas extras</span></div>
     </div>
   </header>
 
   <main>
     <section id="login">
-      <div class="lead"><h1>Alimentos para quienes extienden su jornada.</h1><p>Acceso exclusivo para supervisores autorizados por Glovis.</p></div>
-      <div class="timing" aria-label="Horario del servicio"><div><b>2:45 PM</b><span>Cierre</span></div><div><b>5:00 PM</b><span>REFIS</span></div><div><b>6:00 PM</b><span>ASLA</span></div></div>
+      <div class="lead"><h1>Pedidos especiales para tu equipo.</h1><p>Acceso exclusivo para supervisores autorizados por Glovis.</p></div>
+      <div class="timing" aria-label="Horario del servicio"><div><b>7:00 AM</b><span>Cierre turno A</span></div><div><b>2:00 PM</b><span>Cierre B y extras</span></div><div><b>Mismo menú</b><span>Ambos turnos</span></div></div>
       <form class="panel" onsubmit="event.preventDefault();entrar()">
         <h2>Acceso de supervisor</h2><p>Usa el número de tu gafete y la clave que te entregó CICSA.</p>
         <label for="numero">Número de empleado</label>
@@ -73,6 +73,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
     <section id="contenido" class="oculto">
       <div class="session"><div><strong id="supervisor-nombre">—</strong><span id="supervisor-numero">—</span></div><button class="link" onclick="salir()">Cerrar sesión</button></div>
+      <div class="panel"><label for="turno-servicio">Turno de la solicitud</label><select id="turno-servicio" onchange="cambiarTurno()"><option value="turno_b">Turno B y horas extras · cierre 2:00 PM</option><option value="turno_a">Turno A · cierre 7:00 AM</option></select><p>El menú es el mismo. Cada turno tiene su propia solicitud.</p></div>
       <div id="estado-cerrado" class="panel empty oculto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         <h2 id="cerrado-titulo">Solicitudes cerradas</h2><p id="cerrado-texto">El conteo quedó listo para producción.</p>
@@ -95,12 +96,12 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <button class="add" type="button" onclick="agregarPersona()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar empleado</button>
           <div id="solicitud-error" class="error oculto" role="alert"></div>
         </section>
-        <div class="summary"><div class="summary-row"><div><b id="total">0 alimentos</b><span id="cuenta-regresiva">Cierra a las 2:45 PM</span></div><span id="hora-entrega">REFIS 5 PM · ASLA 6 PM</span></div><button id="btn-guardar" class="btn" onclick="guardarSolicitud()">Confirmar solicitud</button></div>
+        <div class="summary"><div class="summary-row"><div><b id="total">0 alimentos</b><span id="cuenta-regresiva">Cierre según el turno</span></div><span id="hora-entrega">REFIS 5 PM · ASLA 6 PM</span></div><button id="btn-guardar" class="btn" onclick="guardarSolicitud()">Confirmar solicitud</button></div>
       </div>
 
       <section id="recibo" class="panel receipt oculto">
         <div class="receipt-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 12 4 4 8-9"/></svg></div>
-        <h2>Solicitud confirmada</h2><p>El conteo ya está visible para CICSA. Puedes modificarlo hasta las 2:45 PM.</p>
+        <h2 id="recibo-turno">Solicitud confirmada</h2><p id="recibo-corte">El conteo ya está visible para CICSA. Cada solicitud puede modificarse hasta el cierre de su turno.</p>
         <div class="receipt-grid"><div><span>Folio</span><b id="rec-folio">—</b></div><div><span>Alimentos</span><b id="rec-total">—</b></div><div><span>Zona</span><b id="rec-zona">—</b></div><div><span>Responsable</span><b id="rec-responsable">—</b></div></div>
         <div id="rec-acciones" class="receipt-actions"><button class="btn sec" onclick="editarSolicitud()">Modificar</button><button class="btn sec danger" onclick="cancelarSolicitud()">Cancelar</button></div>
       </section>
@@ -133,22 +134,33 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     }catch(e){error('login-error',e.message)}finally{btn.disabled=false;btn.textContent='Entrar a cobertura'}
   }
 
+  async function cambiarTurno(){
+    const anterior=ESTADO?.turno || 'turno_b';
+    if(!$('editor').classList.contains('oculto') && FILAS.some(f=>f.numero || f.opcion_id) && !confirm('¿Cambiar de turno? Los cambios sin confirmar se perderán.')){$('turno-servicio').value=anterior;return}
+    $('turno-servicio').disabled=true;
+    const ok=await cargar();
+    if(!ok)$('turno-servicio').value=anterior;
+    $('turno-servicio').disabled=false;
+  }
+
   async function cargar(){
     try{
-      const r=await fetch(API+'/cobertura/estado',{headers:auth()});const d=await r.json();
+      const r=await fetch(API+'/cobertura/estado?turno='+$('turno-servicio').value,{headers:auth()});const d=await r.json();
       if(r.status===401){salir(false);throw new Error(d.error||'Tu sesión terminó. Vuelve a entrar.')}if(!r.ok)throw new Error(d.error||'No se pudo cargar.');
       ESTADO=d;$('login').classList.add('oculto');$('contenido').classList.remove('oculto');
       $('supervisor-nombre').textContent=d.supervisor.nombre;$('supervisor-numero').textContent='#'+d.supervisor.numero_empleado+' · Supervisor autorizado';
-      prepararEstado();
-    }catch(e){if(!$('login').classList.contains('oculto'))error('login-error',e.message);else alert(e.message)}
+      prepararEstado();return true;
+    }catch(e){if(!$('login').classList.contains('oculto'))error('login-error',e.message);else alert(e.message);return false}
   }
 
   function prepararEstado(){
     const s=ESTADO.solicitud;
     if(s&&s.estado!=='cancelada')cargarSolicitud(s);else iniciarNueva();
     actualizarHorario();
+    $("recibo-turno").textContent="Solicitud confirmada · "+(ESTADO.turno === "turno_a" ? "Turno A" : "Turno B y horas extras");
+    $("recibo-corte").textContent="El conteo ya está visible para CICSA. Modificaciones antes de las "+ESTADO.corte_texto+".";
     if(!ESTADO.menu){mostrarCerrado('Menú especial pendiente','CICSA todavía no publica las opciones de cobertura para hoy.');return}
-    if(!ESTADO.abierto){mostrarCerrado('El conteo cerró a las 2:45 PM','La solicitud queda visible para producción. Entrega: '+GoLunchOperacion.horaTexto('turno_b',s?.zona,ESTADO.fecha)+'.');if(s&&s.estado!=='cancelada')mostrarRecibo(s,false);return}
+    if(!ESTADO.abierto){mostrarCerrado('El conteo cerró a las '+ESTADO.corte_texto,'La solicitud queda visible para producción. Entrega: '+GoLunchOperacion.horaTexto(ESTADO?.turno || 'turno_b',s?.zona,ESTADO.fecha)+'.');if(s&&s.estado!=='cancelada')mostrarRecibo(s,false);return}
     $('estado-cerrado').classList.add('oculto');
     if(s&&s.estado!=='cancelada')mostrarRecibo(s,true);else mostrarEditor();
     pintarMenu();pintarFilas();actualizarTotal();actualizarReloj();
@@ -163,7 +175,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     RESPONSABLE={numero:s.responsable_numero_snapshot,nombre:s.responsable_nombre_snapshot};$('responsable').value=RESPONSABLE.numero;$('responsable-nombre').textContent=RESPONSABLE.nombre;$('zona').value=s.zona;
   }
   function actualizarHorario(){
-    const texto='Entrega '+GoLunchOperacion.horaTexto('turno_b',$('zona').value,ESTADO?.fecha);
+    const texto='Entrega '+GoLunchOperacion.horaTexto(ESTADO?.turno || 'turno_b',$('zona').value,ESTADO?.fecha);
     $('fecha-servicio').textContent=texto;$('hora-entrega').textContent=texto;
   }
   function mostrarEditor(){$('editor').classList.remove('oculto');$('recibo').classList.add('oculto');actualizarHorario()}
@@ -171,6 +183,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   function mostrarCerrado(titulo,texto){$('editor').classList.add('oculto');$('recibo').classList.add('oculto');$('estado-cerrado').classList.remove('oculto');$('cerrado-titulo').textContent=titulo;$('cerrado-texto').textContent=texto}
   function mostrarRecibo(s,editable){
     actualizarHorario();
+    $("recibo-turno").textContent="Solicitud confirmada · "+(ESTADO.turno === "turno_a" ? "Turno A" : "Turno B y horas extras");
+    $("recibo-corte").textContent="El conteo ya está visible para CICSA. Modificaciones antes de las "+ESTADO.corte_texto+".";
     $('editor').classList.add('oculto');$('recibo').classList.remove('oculto');$('rec-folio').textContent=s.folio;$('rec-total').textContent=s.total_porciones;$('rec-zona').textContent=ZONAS[s.zona]||s.zona;$('rec-responsable').textContent=s.responsable_nombre_snapshot+' · #'+s.responsable_numero_snapshot;$('rec-acciones').classList.toggle('oculto',!editable)
   }
 
@@ -195,10 +209,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     if(!RESPONSABLE)return error('solicitud-error','Verifica el número del responsable.');
     if(!$('zona').value)return error('solicitud-error','Selecciona la zona de entrega.');
     if(!items.length||items.some(f=>!f.numero||!f.nombre||!f.opcion_id))return error('solicitud-error','Completa y verifica cada empleado y su platillo.');
-    const btn=$('btn-guardar');btn.disabled=true;btn.textContent='Confirmando…';
-    try{const r=await fetch(API+'/cobertura/solicitud',{method:'POST',headers:auth(),body:JSON.stringify({responsable_numero:RESPONSABLE.numero,zona:$('zona').value,items:items.map(f=>({numero_empleado:f.numero,opcion_id:f.opcion_id}))})});const d=await r.json();if(!r.ok)throw new Error(d.detalle?d.error+' '+d.detalle:d.error||'No se pudo guardar.');ESTADO.solicitud=d.solicitud;cargarSolicitud(d.solicitud);mostrarRecibo(d.solicitud,true)}catch(e){error('solicitud-error',e.message)}finally{btn.disabled=false;btn.textContent='Confirmar solicitud'}
+    const btn=$('btn-guardar');btn.disabled=true;$('turno-servicio').disabled=true;btn.textContent='Confirmando…';
+    try{const r=await fetch(API+'/cobertura/solicitud',{method:'POST',headers:auth(),body:JSON.stringify({turno:$('turno-servicio').value,responsable_numero:RESPONSABLE.numero,zona:$('zona').value,items:items.map(f=>({numero_empleado:f.numero,opcion_id:f.opcion_id}))})});const d=await r.json();if(!r.ok)throw new Error(d.detalle?d.error+' '+d.detalle:d.error||'No se pudo guardar.');ESTADO.solicitud=d.solicitud;cargarSolicitud(d.solicitud);mostrarRecibo(d.solicitud,true)}catch(e){error('solicitud-error',e.message)}finally{btn.disabled=false;$('turno-servicio').disabled=false;btn.textContent='Confirmar solicitud'}
   }
-  async function cancelarSolicitud(){if(!confirm('¿Cancelar toda la cobertura de hoy?'))return;try{const r=await fetch(API+'/cobertura/solicitud',{method:'DELETE',headers:auth()});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cancelar.');await cargar()}catch(e){alert(e.message)}}
+  async function cancelarSolicitud(){if(!confirm('¿Cancelar la solicitud de este turno?'))return;try{const r=await fetch(API+'/cobertura/solicitud?turno='+$('turno-servicio').value,{method:'DELETE',headers:auth()});const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cancelar.');await cargar()}catch(e){alert(e.message)}}
   function salir(recargar=true){SESION=null;localStorage.removeItem(LS);if(recargar)location.reload();else{$('contenido').classList.add('oculto');$('login').classList.remove('oculto')}}
   if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>

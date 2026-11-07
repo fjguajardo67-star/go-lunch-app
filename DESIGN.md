@@ -45,7 +45,7 @@ autorizados, solicitudes/producción y autorizaciones vigentes. En reparto, las
 coberturas se distinguen visualmente, pero comparten el mismo patrón de escaneo
 de las entregas regulares.
 
-El conteo cierra a las 2:45 PM según la hora del servidor. Si hay solicitudes,
+Cada turno tiene su propio conteo: A cierra 7:00 AM; B y horas extras, 2:00 PM (hora del servidor). El menú especial es compartido y la consulta, alarma, comanda y etiquetas distinguen el turno. Si hay solicitudes,
 el panel interrumpe la operación con una alerta sonora y visual, intenta abrir
 la impresión de la comanda y conserva una acción manual de respaldo. La alarma
 solo se apaga cuando el operador confirma que la comanda quedó impresa.

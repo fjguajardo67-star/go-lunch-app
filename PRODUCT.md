@@ -27,7 +27,7 @@ El pedido personal no requiere cuenta ni contraseña: localiza al empleado con s
 - La aplicación web es el canal principal mientras Meta/WhatsApp permanece sin verificar.
 - El panel, la página del empleado, cocina y reparto forman un solo flujo operativo.
 - Desde el 7 de noviembre de 2026 las zonas son ASLA (LZCA, fuera del puerto) y REFIS (LZCR, dentro del puerto). Turno A: 10:00 AM en ambos patios. Turno B: 6:00 PM en ASLA y 5:00 PM en REFIS.
-- Las coberturas se solicitan el mismo día hasta las 2:45 PM. Al cierre, el panel de CICSA activa una alarma y presenta la comanda final para impresión; la producción sale a las 4:30 PM y se entrega con el Turno B según el patio.
+- Las coberturas se solicitan el mismo día hasta las 7:00 AM para turno A y 2:00 PM para turno B y horas extras. Al cierre, el panel de CICSA activa una alarma y presenta la comanda final para impresión; la producción sale a las 4:30 PM para B; A se entrega a las 10:00 AM. Ambos comparten el menú y conservan solicitudes separadas.
 
 ## Capabilities and Constraints
 
