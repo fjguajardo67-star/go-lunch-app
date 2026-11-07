@@ -215,7 +215,7 @@ app.get('/comanda-cobertura/:fecha', async (req, res) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).send('Fecha inválida');
   try {
     res.type('html').send(htmlComandaCobertura(
-      await resumenCobertura(fecha, req.query.turno),
+      await resumenCobertura(fecha, req.query.turno, { solicitud: req.query.solicitud, origen: req.query.origen }),
       { autoPrint: req.query.autoprint === '1', ancho: req.query.ancho }
     ));
   } catch (err) {
@@ -237,6 +237,7 @@ app.get('/etiquetas-cobertura/:fecha', async (req, res) => {
   try {
     const datos = await etiquetasCobertura(fecha, {
       turno: req.query.turno,
+      solicitud: req.query.solicitud, origen: req.query.origen,
       ancho: num(req.query.ancho, 90, 20, 210),
       alto: num(req.query.alto, 62, 15, 297),
       modo: req.query.modo === 'hoja' ? 'hoja' : 'rollo'

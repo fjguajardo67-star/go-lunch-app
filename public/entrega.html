@@ -1606,8 +1606,16 @@
 
   function esTardia(p) {
     if (!p.entregado_en) return false;
-    const limite = limiteDelTurno(p.turno, p.zona || ZONA);
+    const limite = limiteDelPedido(p);
     return limite ? new Date(p.entregado_en) > limite : false;
+  }
+
+  function limiteDelPedido(p) {
+    if (p.entrega_programada_en) {
+      const fecha = new Date(p.entrega_programada_en);
+      return Number.isNaN(fecha.getTime()) ? null : new Date(fecha.getTime() + TOLERANCIA_MIN * 60000);
+    }
+    return limiteDelTurno(p.turno, p.zona || ZONA);
   }
 
   let pedidoEnMotivo = null;
@@ -1620,7 +1628,7 @@
 
   function pedirMotivo(p) {
     pedidoEnMotivo = p;
-    const limite = limiteDelTurno(p.turno, p.zona || ZONA);
+    const limite = limiteDelPedido(p);
     $('motivo-quien').textContent = p.nombre + ' · ' + (TURNO_TXT[p.turno] || '');
     $('motivo-reloj').textContent =
       'Entregada ' + horaLocal(p.entregado_en) +
@@ -1817,6 +1825,7 @@
         <div class="d">
           <b>${esc(p.nombre || '—')} ${p.tipo === 'cobertura' ? '<em class="cobertura-badge">Cobertura</em>' : ''}</b>
           <span>${esc(p.platillo || '')} · ${esc(TURNO_TXT[p.turno] || '')} · ${esc(ZONA_TXT[p.zona] || '')}</span>
+          ${p.entrega_programada_en ? `<span>Extraordinaria · Entrega autorizada: ${esc(horaLocal(p.entrega_programada_en))}</span>` : ''}
           ${p.tipo === 'cobertura'
             ? `<span class="cobertura-receptor">Recibe: ${esc(p.recibido_por || p.responsable_nombre || '—')}${p.receptor_discrepante ? ' · receptor distinto' : ''}</span>`
             : ''}

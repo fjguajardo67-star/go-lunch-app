@@ -11,6 +11,7 @@ import { resumenCocina } from '../services/cocina.js';
 import { fechaServicio } from '../services/pedidos.js';
 import { hashClave, generarClave } from '../services/sesion.js';
 import { horarioCobertura, validarTurnoCobertura } from '../services/cobertura.js';
+import { estadoExtraordinaria, autorizarExtraordinaria } from '../services/cobertura-extraordinaria.js';
 
 export const adminRouter = express.Router();
 
@@ -199,6 +200,17 @@ adminRouter.post('/repartidores/:id/clave', async (req, res) => {
 });
 
 // ── Coberturas del segundo turno ───────────────────────────────
+adminRouter.get('/cobertura/extraordinarias', async (req, res) => {
+  try { res.json(await estadoExtraordinaria()); }
+  catch (err) { res.status(500).json({ error: 'No se pudo consultar el menú especial de hoy.' }); }
+});
+adminRouter.post('/cobertura/extraordinarias', async (req, res) => {
+  try {
+    const solicitud = await autorizarExtraordinaria(req.body || {}, req.rolPanel);
+    res.json({ ok: true, solicitud });
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
+});
+
 // Glovis decide quién está autorizado; CICSA lo selecciona de la plantilla
 // existente. No hay una segunda captura libre de nombre o número.
 adminRouter.get('/cobertura/supervisores', async (req, res) => {
@@ -309,8 +321,11 @@ adminRouter.get('/cobertura/solicitudes/:fecha', async (req, res) => {
     const horario = horarioCobertura(turno);
     const por_turno = ['turno_a', 'turno_b'].map(t => {
       const activas = todas.filter(s => s.turno === t && s.estado !== 'cancelada');
+      const normales = activas.filter(s => s.origen !== 'extraordinaria');
       const h = horarioCobertura(t);
-      return { turno: t, total_solicitudes: activas.length, total_porciones: activas.reduce((n,s) => n + s.total_porciones,0), horario: h.fecha === req.params.fecha ? h : null };
+      return { turno: t, total_solicitudes: activas.length, total_porciones: activas.reduce((n,s) => n + s.total_porciones,0),
+        solicitudes_corte: normales.length, porciones_corte: normales.reduce((n,s) => n + s.total_porciones,0),
+        horario: h.fecha === req.params.fecha ? h : null };
     });
     res.json({
       solicitudes, turno, por_turno,

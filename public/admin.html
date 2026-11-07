@@ -277,6 +277,15 @@
   }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  #cov-extra-form .grid2 > div, #cov-extra-form .grid3 > div { min-width: 0; }
+  #cov-extra-form fieldset { min-inline-size: 0; }
+  #cov-extra-form label { text-transform: none; letter-spacing: 0; }
+  #cov-extra-form input, #cov-extra-form select, #cov-extra-form textarea { min-width: 0; max-width: 100%; min-height: 44px; }
+  #cov-extra-form input[type=time], #cov-extra-form textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--gris-line); border-radius: 8px;
+    font: inherit; background: var(--gris-bg); color: var(--tinta);
+  }
+  #extra-aviso.info { display: block; background: var(--azul-light); color: var(--tinta); }
 
   /* ── Buttons ── */
   button.accion {
@@ -906,6 +915,36 @@
           </div>
           <div id="covSolicitudes"><div class="vacio">Selecciona una fecha para consultar.</div></div>
         </div>
+
+        <details class="card cov-full" id="cov-extra" ontoggle="if(this.open)cargarExtraordinaria()">
+          <summary style="font-weight:800;cursor:pointer;padding:8px 0">Registrar pedido extraordinario de hoy</summary>
+          <p style="font-size:.85rem;line-height:1.5;margin:12px 0">Gerente o administrador autoriza cuando hay capacidad de preparación y ventana de entrega. Se crea un folio adicional con horario propio.</p>
+          <form id="cov-extra-form" onsubmit="guardarExtraordinaria(event)">
+            <div class="grid3">
+              <div><label for="extra-fecha">Fecha de servicio</label><input type="date" id="extra-fecha" readonly required></div>
+              <div><label for="extra-turno">Turno</label><select id="extra-turno" required><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select></div>
+              <div><label for="extra-zona">Zona de entrega</label><select id="extra-zona" required><option value="">Selecciona zona</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
+            </div>
+            <div class="grid2">
+              <div><label for="extra-hora">Hora de entrega autorizada</label><input type="time" id="extra-hora" required><p style="font-size:.78rem;color:var(--gris-text);margin-top:5px">Hora de Lázaro Cárdenas, posterior a la hora actual.</p></div>
+              <div><label for="extra-responsable">N.º de empleado responsable de recibir</label><input type="text" id="extra-responsable" list="extra-empleados" required autocomplete="off" placeholder="Número de empleado"></div>
+            </div>
+            <datalist id="extra-empleados"></datalist>
+            <fieldset style="border:0;padding:0;margin:16px 0">
+              <legend style="font-weight:700;margin-bottom:8px">Empleados y alimentos</legend>
+              <div class="grid3">
+                <div><label for="extra-numero">Número de empleado</label><input type="text" id="extra-numero" list="extra-empleados" autocomplete="off" placeholder="Número de empleado"></div>
+                <div><label for="extra-opcion">Platillo de hoy</label><select id="extra-opcion"><option value="">Cargando menú…</option></select></div>
+                <div style="display:flex;align-items:flex-end"><button class="accion sec" type="button" onclick="agregarExtraordinaria()">Agregar empleado</button></div>
+              </div>
+              <div id="extra-items"></div>
+            </fieldset>
+            <label for="extra-motivo">Motivo de la autorización</label><textarea id="extra-motivo" required minlength="5" maxlength="500" rows="2" style="width:100%;font:inherit;padding:10px" placeholder="Motivo por el que se autoriza este pedido"></textarea>
+            <button class="accion verde" id="extra-guardar" type="submit" style="margin-top:12px" disabled>Autorizar y registrar pedido</button>
+          </form>
+          <div id="extra-aviso" class="aviso" role="status" aria-live="polite"></div>
+          <div id="extra-impresos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+        </details>
 
         <div class="card cov-full">
           <div class="card-header"><h3>Autorizaciones vigentes</h3></div>
@@ -2907,7 +2946,7 @@
     badge.title = total ? total + ' alimento(s) de cobertura para hoy' : '';
   }
 
-  function urlImpresoCobertura(tipo, fecha, autoPrint = false, turno = document.getElementById('cov-turno').value) {
+  function urlImpresoCobertura(tipo, fecha, autoPrint = false, turno = document.getElementById('cov-turno').value, seleccion = {}) {
     let url = tipo === 'comanda'
       ? API_BASE + '/comanda-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
       : API_BASE + '/etiquetas-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
@@ -2918,6 +2957,8 @@
       url += '&ancho=' + encodeURIComponent(ancho) + '&alto=' + encodeURIComponent(alto);
     }
     url += '&turno=' + encodeURIComponent(turno);
+    if (seleccion.solicitud) url += '&solicitud=' + encodeURIComponent(seleccion.solicitud);
+    if (seleccion.origen) url += '&origen=' + encodeURIComponent(seleccion.origen);
     if (autoPrint) url += '&autoprint=1';
     return url;
   }
@@ -2928,11 +2969,11 @@
     if (coberturaImpresionIntentada === intento) return;
     coberturaImpresionIntentada = intento;
     const frame = document.getElementById('cov-print-frame');
-    if (frame) frame.src = urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno) + '&alarma=' + Date.now();
+    if (frame) frame.src = urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno, {origen:'supervisor'}) + '&alarma=' + Date.now();
   }
 
   function activarAlarmaCobertura(datos, fecha) {
-    const total = Number(datos.total_porciones || 0);
+    const total = Number(datos.porciones_corte ?? datos.total_porciones ?? 0);
     const clave = fecha + '|' + datos.turno + '|' + total;
     const yaVisible = coberturaAlarma &&
       (coberturaAlarma.fecha + '|' + coberturaAlarma.turno + '|' + coberturaAlarma.total_porciones) === clave &&
@@ -2961,13 +3002,14 @@
       for (const servicio of datos.por_turno) evaluarCorteCobertura(servicio,fecha);
       return;
     }
-    const total = Number(datos.total_porciones || 0);
+    const total = Number(datos.porciones_corte ?? datos.total_porciones ?? 0);
     const cerrado = datos.horario && datos.horario.abierto === false;
     if (!cerrado || total === 0 || ackCobertura(fecha, datos.turno) === String(total)) {
       if (coberturaAlarma?.fecha === fecha && coberturaAlarma.turno === datos.turno) detenerAlarmaCobertura();
       return;
     }
-    if (!coberturaAlarma || coberturaAlarma.turno === datos.turno) activarAlarmaCobertura(datos, fecha);
+    if (!coberturaAlarma || coberturaAlarma.turno === datos.turno) activarAlarmaCobertura({ ...datos,
+      total_porciones: total, total_solicitudes: datos.solicitudes_corte ?? datos.total_solicitudes }, fecha);
   }
 
   async function revisarCorteCobertura() {
@@ -2987,7 +3029,7 @@
 
   function imprimirComandaFinalCobertura() {
     if (!coberturaAlarma) return;
-    window.open(urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno), '_blank');
+    window.open(urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno, {origen:'supervisor'}), '_blank');
   }
 
   function confirmarComandaCobertura() {
@@ -3014,6 +3056,98 @@
       cargarSupervisoresCobertura(),
       cargarSolicitudesCobertura(fecha)
     ]);
+  }
+
+  let EXTRA_CONFIG = null;
+  let EXTRA_FILAS = [];
+  let EXTRA_INTENTO = null;
+
+  function avisoExtraordinaria(texto, tipo = 'info') {
+    const aviso = document.getElementById('extra-aviso');
+    aviso.className = 'aviso ' + tipo; aviso.textContent = texto;
+  }
+
+  async function cargarExtraordinaria() {
+    if (EXTRA_CONFIG?.fecha === fechaComedor()) return;
+    const boton = document.getElementById('extra-guardar'); boton.disabled = true;
+    try {
+      const config = await api('/api/cobertura/extraordinarias');
+      if (!Object.keys(EMPLEADOS).length) await cargarEmpleados();
+      document.getElementById('extra-fecha').value = config.fecha;
+      document.getElementById('extra-empleados').innerHTML = Object.values(EMPLEADOS)
+        .filter(e => e.activo !== false).map(e => '<option value="' + escaparHtml(e.numero_empleado) + '">' + escaparHtml(e.nombre) + '</option>').join('');
+      document.getElementById('extra-opcion').innerHTML = '<option value="">Selecciona platillo</option>' +
+        config.opciones.map(o => '<option value="' + escaparHtml(o.id) + '">' + escaparHtml(o.texto) + '</option>').join('');
+      if (!config.opciones.length) {
+        EXTRA_CONFIG = null; avisoExtraordinaria('No hay menú especial activo para hoy. Administración debe publicarlo antes de registrar el pedido.', 'err'); return;
+      }
+      EXTRA_CONFIG = config; EXTRA_FILAS = []; EXTRA_INTENTO = null;
+      pintarExtraordinaria(); boton.disabled = false;
+      avisoExtraordinaria('Servicio de hoy: ' + config.fecha + '. Autoriza únicamente si hay ventana de preparación y entrega.');
+    } catch (e) { avisoExtraordinaria(e.message, 'err'); }
+  }
+
+  function empleadoExtraordinaria(numero) {
+    return Object.values(EMPLEADOS).find(e => e.activo !== false && String(e.numero_empleado) === numero);
+  }
+
+  function agregarExtraordinaria() {
+    const numero = document.getElementById('extra-numero').value.trim();
+    const opcion = document.getElementById('extra-opcion').value;
+    const empleado = empleadoExtraordinaria(numero);
+    if (!empleado) { avisoExtraordinaria('Selecciona un número de empleado activo de la plantilla.', 'err'); return; }
+    if (!EXTRA_CONFIG?.opciones.some(o => o.id === opcion)) { avisoExtraordinaria('Selecciona un platillo de hoy.', 'err'); return; }
+    if (EXTRA_FILAS.some(f => f.numero_empleado === numero)) { avisoExtraordinaria('Ese empleado ya está en este pedido.', 'err'); return; }
+    EXTRA_FILAS.push({ numero_empleado: numero, opcion_id: opcion });
+    document.getElementById('extra-numero').value = '';
+    pintarExtraordinaria(); avisoExtraordinaria(EXTRA_FILAS.length + ' alimento(s) listo(s) para autorizar.');
+    document.getElementById('extra-numero').focus();
+  }
+
+  function quitarExtraordinaria(indice) {
+    EXTRA_FILAS.splice(indice, 1); pintarExtraordinaria();
+  }
+
+  function pintarExtraordinaria() {
+    document.getElementById('extra-items').innerHTML = EXTRA_FILAS.length
+      ? '<div style="overflow-x:auto;margin-top:10px"><table><thead><tr><th>Empleado</th><th>Platillo</th><th>Acción</th></tr></thead><tbody>' + EXTRA_FILAS.map((f,i) =>
+        '<tr><td>#' + escaparHtml(f.numero_empleado) + ' · ' + escaparHtml(empleadoExtraordinaria(f.numero_empleado)?.nombre || '') + '</td><td>' +
+        escaparHtml(EXTRA_CONFIG.opciones.find(o => o.id === f.opcion_id)?.texto || '') + '</td><td><button class="accion mini sec" type="button" onclick="quitarExtraordinaria(' + i + ')">Quitar</button></td></tr>').join('') + '</tbody></table></div>'
+      : '<p style="font-size:.8rem;margin-top:10px">Agrega a las personas que recibirán este pedido.</p>';
+  }
+
+  function imprimirFolioCobertura(tipo, id, fecha, turno) {
+    window.open(urlImpresoCobertura(tipo, fecha, false, turno, {solicitud:id}), '_blank');
+  }
+
+  async function guardarExtraordinaria(evento) {
+    evento.preventDefault();
+    const boton = document.getElementById('extra-guardar');
+    if (boton.disabled) return;
+    if (!EXTRA_CONFIG || !EXTRA_FILAS.length) { avisoExtraordinaria('Agrega al menos un empleado y su platillo.', 'err'); return; }
+    const responsable = document.getElementById('extra-responsable').value.trim();
+    if (!empleadoExtraordinaria(responsable)) { avisoExtraordinaria('El responsable debe ser un empleado activo de la plantilla.', 'err'); return; }
+    const entrada = {fecha:EXTRA_CONFIG.fecha, turno:document.getElementById('extra-turno').value,
+      zona:document.getElementById('extra-zona').value, hora_entrega:document.getElementById('extra-hora').value,
+      responsable_numero:responsable, motivo:document.getElementById('extra-motivo').value.trim(), items:EXTRA_FILAS.map(f=>({...f}))};
+    const huella = JSON.stringify(entrada);
+    if (EXTRA_INTENTO?.huella !== huella) EXTRA_INTENTO = {huella,id:crypto.randomUUID()};
+    boton.disabled = true; boton.textContent = 'Registrando autorización…';
+    try {
+      const r = await api('/api/cobertura/extraordinarias', {method:'POST',body:JSON.stringify({...entrada,idempotencia:EXTRA_INTENTO.id})});
+      const s = r.solicitud;
+      avisoExtraordinaria('Autorizado: ' + s.folio + ' · ' + s.total_porciones + ' alimento(s). Imprime este folio para cocina y reparto.', 'ok');
+      const impresos = document.getElementById('extra-impresos'); impresos.replaceChildren();
+      for (const [tipo,texto] of [['comanda','Comanda de este folio'],['etiquetas','Etiquetas de este folio']]) {
+        const b = document.createElement('button'); b.className = 'accion sec'; b.type = 'button'; b.textContent = texto;
+        b.addEventListener('click',()=>imprimirFolioCobertura(tipo,s.id,s.fecha_servicio,s.turno)); impresos.append(b);
+      }
+      EXTRA_FILAS = []; EXTRA_INTENTO = null; pintarExtraordinaria();
+      document.getElementById('extra-motivo').value = '';
+      document.getElementById('cov-fecha').value = s.fecha_servicio; document.getElementById('cov-turno').value = s.turno;
+      await cargarSolicitudesCobertura(s.fecha_servicio);
+    } catch(e) { avisoExtraordinaria(e.message + ' Puedes reintentar con los mismos datos.', 'err'); }
+    finally { boton.disabled = false; boton.textContent = 'Autorizar y registrar pedido'; }
   }
 
   let MENU_COBERTURA_PERIODO_ID = null;
@@ -3198,7 +3332,14 @@
         return '<div class="cov-solicitud" style="' + (cancelada ? 'opacity:.55' : '') + '"><div class="cov-solicitud-cab"><div><b>' + escaparHtml(s.folio) + '</b><p>' +
           escaparHtml(zonaTxt(s.zona)) + ' · Recibe ' + escaparHtml(s.responsable_nombre_snapshot) + ' #' + escaparHtml(s.responsable_numero_snapshot) + '</p></div>' +
           '<span class="badge ' + (cancelada ? 'off' : 'on') + '">' + escaparHtml(s.estado) + ' · ' + s.total_porciones + '</span></div>' +
-          '<div class="cov-items">' + items + '</div></div>';
+          (s.origen === 'extraordinaria' ? '<p style="font-size:.8rem;margin:8px 0">Extraordinaria · Entrega ' + escaparHtml(new Date(s.entrega_programada_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) +
+            ' · Autorizó ' + escaparHtml(s.autorizado_por) +
+            (s.creado_en ? ' a las ' + escaparHtml(new Date(s.creado_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) : '') +
+            ' · ' + escaparHtml(s.motivo_autorizacion) + '</p>' : '') +
+          '<div class="cov-items">' + items + '</div>' +
+          (s.origen === 'extraordinaria' && !cancelada ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+            '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'comanda\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Comanda de este folio</button>' +
+            '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'etiquetas\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Etiquetas de este folio</button></div>' : '') + '</div>';
       }).join('');
     } catch (e) {
       box.innerHTML = '<div class="aviso err" style="display:block">' + escaparHtml(e.message) + '</div>';

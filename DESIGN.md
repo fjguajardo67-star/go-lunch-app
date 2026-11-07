@@ -83,6 +83,10 @@ La tarjeta Impresión comparte fecha, turno (Todos/A/B) y zona (Todas/ASLA/REFIS
 
 El enlace a /cobertura.html está disponible tanto en la identificación como en el estado cerrado o sin menú del servicio regular. Los cortes regulares no ocultan la entrada de supervisores; la autorización y los cortes especiales se verifican dentro de su propio flujo.
 
+## Autorización de pedidos extraordinarios
+
+En Coberturas, gerente o administrador puede registrar un lote adicional para hoy cuando haya ventana de preparación y entrega. El formulario pide personas y platillos del menú especial vigente, responsable, zona, turno, hora futura de entrega y motivo. Registra rol autorizador y hora del servidor, conserva folios entregados y usa una clave de reintento para evitar duplicaciones. La confirmación ofrece comanda y etiquetas del folio nuevo. El consolidado identifica horarios autorizados y reparto conserva esa hora también sin señal. El corte y la alarma de supervisores permanecen independientes.
+
 ## Checklist de salida
 
 En Cocina → Impresión, el checklist comparte fecha, turno y zona con los demás impresos. Lista solo pedidos existentes del servicio regular y separa cada lote por zona/turno en papel carta. Las hojas de continuación repiten identificación y se numeran; una sola firma y hora real de salida se capturan a mano al final de cada lote.

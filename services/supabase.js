@@ -807,6 +807,22 @@ export async function cancelarSolicitudCobertura(supervisorId, fecha, turno = 't
   return data?.[0] || null;
 }
 
+export async function guardarExtraordinariaCobertura(datos) {
+  const { data, error } = await supabase.rpc('autorizar_cobertura_extraordinaria', {
+    p_fecha: datos.fecha, p_turno: datos.turno, p_zona: datos.zona,
+    p_folio: datos.folio, p_responsable_numero: datos.responsable_numero, p_items: datos.items,
+    p_autorizado_por: datos.autorizado_por, p_motivo: datos.motivo,
+    p_entrega_programada_en: datos.entrega_programada_en, p_idempotencia: datos.idempotencia
+  });
+  if (error) throw error;
+  const solicitud = data?.[0];
+  if (!solicitud) throw new Error('La base no devolvió la autorización.');
+  const { data: items, error: e2 } = await supabase.from('solicitudes_cobertura_items')
+    .select('*').eq('solicitud_id', solicitud.id).order('id');
+  if (e2) throw e2;
+  return { ...solicitud, items: items || [] };
+}
+
 export async function listSolicitudesCobertura(fecha, turno) {
   const { data, error } = await supabase
     .from('solicitudes_cobertura')
@@ -838,6 +854,8 @@ export async function getCoberturasParaEntrega(fecha) {
     folio: s.folio,
     zona: s.zona,
     turno: s.turno,
+    origen: s.origen || 'supervisor',
+    entrega_programada_en: s.entrega_programada_en || null,
     responsable_numero: s.responsable_numero_snapshot,
     responsable_nombre: s.responsable_nombre_snapshot,
     estado_solicitud: s.estado

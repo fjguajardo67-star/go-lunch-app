@@ -5,19 +5,21 @@ import { validarTurnoCobertura } from './cobertura.js';
 import { DateTime } from 'luxon';
 import * as db from './supabase.js';
 import { ZONA as ZONA_TZ, ZONAS, horaTexto } from './menu.js';
+import { horaTextoCobertura, seleccionarSolicitudesCobertura } from './impresos-cobertura.js';
 
 const esc = s => String(s ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-export async function resumenCobertura(fecha, turno = 'turno_b') {
-  const solicitudes = (await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno))).filter(s => s.estado !== 'cancelada');
+export async function resumenCobertura(fecha, turno = 'turno_b', seleccion = {}) {
+  const solicitudes = seleccionarSolicitudesCobertura(await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno)), seleccion);
   const items = solicitudes.flatMap(s => s.items.map(item => ({ ...item, solicitud: s })));
   const grupos = new Map();
   for (const item of items) {
-    const clave = item.solicitud.zona + '|' + item.opcion_texto;
+    const horario = horaTextoCobertura(item.solicitud, fecha);
+    const clave = JSON.stringify([item.solicitud.zona, horario, item.opcion_texto]);
     if (!grupos.has(clave)) grupos.set(clave, {
-      zona: item.solicitud.zona, platillo: item.opcion_texto, porciones: 0
+      zona: item.solicitud.zona, horario, platillo: item.opcion_texto, porciones: 0
     });
     grupos.get(clave).porciones++;
   }
@@ -36,19 +38,24 @@ export function htmlComandaCobertura({ fecha, turno = 'turno_b', total, solicitu
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat("dd/MM/yyyy HH:mm 'hrs'");
   const porZona = new Map();
   for (const r of resumen) {
-    if (!porZona.has(r.zona)) porZona.set(r.zona, []);
-    porZona.get(r.zona).push(r);
+    const clave = JSON.stringify([r.zona, r.horario || horaTexto(turno, r.zona, fecha)]);
+    if (!porZona.has(clave)) porZona.set(clave, []);
+    porZona.get(clave).push(r);
   }
-  const secciones = [...porZona.entries()].map(([zona, items]) => `
+  const secciones = [...porZona.entries()].map(([clave, items]) => {
+    const [zona, horario] = JSON.parse(clave);
+    return `
     <section>
-      <h2>${esc((ZONAS[zona] || zona).toUpperCase())} · ${esc(horaTexto(turno, zona, fecha))}</h2>
+      <h2>${esc((ZONAS[zona] || zona).toUpperCase())} · ${esc(horario)}</h2>
       ${items.map(i => `<div class="linea"><b>${esc(i.platillo)}</b><strong>${i.porciones}</strong></div>`).join('')}
       <div class="subtotal"><span>Subtotal zona</span><b>${items.reduce((s, i) => s + i.porciones, 0)}</b></div>
-    </section>`).join('');
+    </section>`; }).join('');
+  const soloExtraordinarias = detalle.length > 0 && detalle.every(s => s.origen === 'extraordinaria');
   const folios = detalle.map(s => `
     <div class="folio">
       <b>${esc(s.folio)}</b> · ${esc(ZONAS[s.zona] || s.zona)} · ${s.total_porciones} alimento(s)<br>
       <span>Solicita: ${esc(s.supervisor_nombre_snapshot)} · Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</span>
+      ${s.origen === 'extraordinaria' ? `<br><span>Extraordinaria · Autorizó: ${esc(s.autorizado_por)} · Entrega: ${esc(horaTextoCobertura(s, fecha))}<br>Motivo: ${esc(s.motivo_autorizacion)}</span>` : ''}
     </div>`).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Comanda de cobertura ${esc(fecha)}</title><style>
@@ -61,7 +68,7 @@ h2{text-align:center;font-size:16px;border-block:2px solid #000;padding:7px 0;ma
 @media print{body{max-width:none;padding:0}.no-print{display:none}.linea,.subtotal,.total,.folio{break-inside:avoid;page-break-inside:avoid}h1,h2{break-after:avoid;page-break-after:avoid}}
 ${termica ? `body{width:58mm;max-width:58mm;margin:0;padding:2mm}h1{font-size:13px;letter-spacing:0}h2{font-size:11px;overflow-wrap:anywhere}.linea{font-size:11px}.linea strong{font-size:15px}.subtotal,.total{font-size:12px}.folio,.folio span,p{font-size:9px;overflow-wrap:anywhere}.folio{line-height:1.4}@media print{@page{size:58mm 200mm;margin:2mm 0}body{max-width:58mm;padding:2mm}}` : ''}
 </style></head><body>
-<h1>COBERTURA · ${turno === 'turno_a' ? 'TURNO A' : 'TURNO B Y HORAS EXTRAS'}</h1><p>CICSA · Glovis</p><p>${esc(horaTexto(turno, null, fecha))}${turno === 'turno_b' ? ' · Salida máxima 4:30 PM' : ''}</p><p>Fecha: <b>${esc(fecha)}</b></p><hr>
+<h1>${soloExtraordinarias ? 'COBERTURA EXTRAORDINARIA' : 'COBERTURA'} · ${turno === 'turno_a' ? 'TURNO A' : 'TURNO B Y HORAS EXTRAS'}</h1><p>CICSA · Glovis</p>${soloExtraordinarias ? '' : `<p>${esc(horaTexto(turno, null, fecha))}${turno === 'turno_b' ? ' · Salida máxima 4:30 PM' : ''}</p>`}<p>Fecha: <b>${esc(fecha)}</b></p><hr>
 ${secciones || '<p>Sin solicitudes confirmadas.</p>'}
 <hr><div class="total"><span>TOTAL</span><span>${total}</span></div><p>${solicitudes} solicitud(es)</p>
 ${folios ? `<hr><h2>FOLIOS Y RECEPCIÓN</h2>${folios}` : ''}
@@ -70,8 +77,8 @@ ${autoPrint ? '<script>window.addEventListener("load",function(){window.setTimeo
 </body></html>`;
 }
 
-export async function etiquetasCobertura(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', turno = 'turno_b' } = {}) {
-  const solicitudes = (await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno))).filter(s => s.estado !== 'cancelada');
+export async function etiquetasCobertura(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', turno = 'turno_b', solicitud, origen } = {}) {
+  const solicitudes = seleccionarSolicitudesCobertura(await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno)), { solicitud, origen });
   const items = solicitudes.flatMap(s => s.items.map((item, i) => ({
     ...item, solicitud: s, secuencia: i + 1
   })));
@@ -92,7 +99,7 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
     const s = item.solicitud;
     const codigo = `EX|${item.codigo_entrega}|${fecha}`;
     return `<div class="marco-etiqueta"><article class="etiqueta">
-      <div class="ruta">${esc((ZONAS[s.zona] || s.zona).split(' (')[0])} · ${esc(horaTexto(s.turno || 'turno_b', s.zona, fecha))}</div>
+      <div class="ruta">${esc((ZONAS[s.zona] || s.zona).split(' (')[0])} · ${esc(horaTextoCobertura(s, fecha))}</div>
       <div class="texto">
         <div class="nombre">${esc(item.empleado_nombre_snapshot)}</div>
         <div class="numero">${esc(item.opcion_texto)}</div>
