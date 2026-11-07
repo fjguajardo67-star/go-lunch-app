@@ -5,3 +5,6 @@ node_modules/
 tools/impresion-windows/config.json
 tools/impresion-windows/clave.dpapi
 tools/impresion-windows/documentos/
+
+# Cache local del CLI de Supabase
+supabase/.temp/

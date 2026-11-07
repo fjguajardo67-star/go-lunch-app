@@ -1,3 +1,4 @@
+import { validarVigenciaMenu, errorPublicarMenu } from '../services/menu-cobertura.js';
 import { autorizarPanel } from '../services/acceso-panel.js';
 // routes/admin.js — API REST para el panel de administración
 import express from 'express';
@@ -285,33 +286,15 @@ adminRouter.get('/cobertura/menu/:fecha', async (req, res) => {
 });
 
 adminRouter.post('/cobertura/menu', async (req, res) => {
+  const validacion = validarVigenciaMenu(req.body);
+  if (validacion.error) return res.status(400).json({ error: validacion.error });
   try {
-    const { fecha, opcion_1, opcion_2, opcion_3, activo } = req.body || {};
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha || '') || !opcion_1?.trim() || !opcion_2?.trim() || !opcion_3?.trim()) {
-      return res.status(400).json({ error: 'Se requieren la fecha y las tres opciones del menú especial.' });
-    }
-    const opciones = [opcion_1.trim(), opcion_2.trim(), opcion_3.trim()];
-    if (new Set(opciones.map(x => x.toLocaleUpperCase('es-MX'))).size !== 3) {
-      return res.status(400).json({ error: 'Las tres opciones del menú deben ser distintas.' });
-    }
-    const anterior = await db.getMenuCobertura(fecha);
-    const solicitudes = await db.contarSolicitudesCobertura(fecha);
-    const cambioTexto = anterior && [
-      anterior.opcion_1 !== opcion_1.trim(),
-      anterior.opcion_2 !== opcion_2.trim(),
-      anterior.opcion_3 !== opcion_3.trim()
-    ].some(Boolean);
-    if (solicitudes && cambioTexto) {
-      return res.status(409).json({
-        error: `Ya existen ${solicitudes} solicitud(es). No se puede cambiar el menú que esas personas confirmaron.`
-      });
-    }
-    const menu = await db.upsertMenuCobertura({
-      fecha, opcion_1: opcion_1.trim(), opcion_2: opcion_2.trim(), opcion_3: opcion_3.trim(), activo
-    });
-    res.json({ ok: true, menu });
+    const resultado = await db.publicarPeriodoMenuCobertura(validacion.menu);
+    res.json({ ok: true, ...resultado });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[Cobertura] Error publicando vigencia:', err.message);
+    const respuesta = errorPublicarMenu(err);
+    res.status(respuesta.status).json({ error: respuesta.error });
   }
 });
 

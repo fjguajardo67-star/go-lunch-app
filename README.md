@@ -242,3 +242,22 @@ largo del ticket. Las etiquetas conservan sus QR y páginas de 62 × 40 mm.
 Para reconstruir el ZIP: `python3 tools/empaquetar-impresion.py`.
 La ejecución de PowerShell, registro de la tarea y salida en hardware requieren
 validación en Windows; las pruebas de repositorio no simulan esos controladores.
+
+## Vigencia del menú especial
+
+Coberturas publica las tres opciones por un periodo inclusivo (`fecha_inicio`,
+`fecha_final`, máximo 366 días). `publicar_menu_cobertura_periodo` materializa
+cada fecha en `menus_cobertura` conservando las referencias de solicitudes.
+Las columnas `vigencia_desde`, `vigencia_hasta` y `periodo_id` permiten volver
+a cargar y editar la publicación completa. Los menús anteriores sin periodo
+siguen funcionando como publicaciones de un día.
+
+La RPC es atómica, comparte los cerrojos diarios de `guardar_solicitud_cobertura`
+y solo puede ejecutarla `service_role`. Rechaza solapamientos entre periodos y
+cambios o retiros de fechas con solicitudes confirmadas. Acortar un periodo
+inactiva sus fechas excluidas sin borrar historial. El supervisor sigue
+consultando solo el menú de su día y las coberturas conservan el corte 14:45.
+
+Migración: `supabase/migrations/20261107014010_menu_cobertura_vigencia.sql`.
+La migración aditiva se aplica antes del código; no publica ni modifica el
+contenido de menús existentes. La cuenta gerente conserva menús en solo lectura.
