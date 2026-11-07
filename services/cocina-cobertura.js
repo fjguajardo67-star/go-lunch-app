@@ -1,4 +1,4 @@
-import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto } from './formato-etiquetas.js';
+import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina-cobertura.js — comanda y etiquetas del menú especial
 
 import { validarTurnoCobertura } from './cobertura.js';
@@ -92,6 +92,7 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
         <div class="numero">${esc(item.opcion_texto)}</div>
         <div class="recibe">Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</div>
       </div><div class="qr" data-codigo="${esc(codigo)}"></div>
+      <div class="identificacion"><span>Empleado #${esc(item.empleado_numero_snapshot || '—')}</span><span>${esc(fechaCorta)}</span></div>
     </article>`;
   }).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Etiquetas cobertura ${esc(fecha)}</title>
@@ -101,5 +102,5 @@ ${estiloEtiquetaReparto(ancho, alto)}
 ${enHoja ? '@page{size:letter;margin:10mm}@media print{.etiqueta{border:.2mm dashed #999}.hoja.prueba{gap:4mm}}' : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.etiqueta{page-break-after:always}.etiqueta:last-child{page-break-after:auto}}`}
 </style></head><body><div class="barra"><b>Etiquetas · cobertura ${esc(fechaCorta)}</b><span>${orden.length} alimento(s)</span><button onclick="window.print()">Imprimir</button></div>
 <div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: papel de 62 mm, largo 90 mm, orientación horizontal. El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}));</script></body></html>`;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}));</script>${scriptAjustarTextoEtiqueta}</body></html>`;
 }

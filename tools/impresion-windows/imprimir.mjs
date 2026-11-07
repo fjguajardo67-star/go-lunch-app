@@ -93,6 +93,20 @@ try {
         const img=document.createElement('img');img.src=imgs[i];e.replaceChildren(img);
       }),imagenes);
       await page.evaluate(async()=>{await Promise.all([...document.images].map(i=>i.decode()));await document.fonts.ready;});
+      await page.locator('.etiqueta .texto').evaluateAll(textos=>textos.forEach(texto=>{
+        if(Math.abs(texto.closest('.etiqueta').getBoundingClientRect().width-90*96/25.4)>2)return;
+        const campos=[...texto.children];
+        const altoNecesario=()=>campos.reduce((n,c)=>n+c.getBoundingClientRect().height,0)+parseFloat(getComputedStyle(texto).rowGap||0)*Math.max(0,campos.length-1);
+        for(let paso=0;paso<16 && altoNecesario()>texto.clientHeight;paso++){
+          let cambio=false;
+          for(const c of campos){
+            const piso=c.classList.contains('nombre')?16:c.classList.contains('recibe')?9.33:12;
+            const actual=parseFloat(getComputedStyle(c).fontSize);
+            if(actual>piso){c.style.fontSize=Math.max(piso,actual-0.67)+'px';cambio=true;}
+          }
+          if(!cambio)break;
+        }
+      }));
       const archivoEtiquetas=path.join(preparacion,'etiquetas.pdf');
       await page.pdf({path:archivoEtiquetas,preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
       await browser.close(); browser=null;
