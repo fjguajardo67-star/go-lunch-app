@@ -1,7 +1,8 @@
 GO LUNCH — IMPRESION AUTOMATICA WINDOWS — 9:30 PM
 
 1. Instale los drivers y pruebe ambas impresoras en Windows.
-   Brother QL-800: papel 62 x 40 mm, escala 100 %, sin margenes.
+   Brother QL-800: rollo de 62 mm, largo de 90 mm, orientacion horizontal.
+   Resultado: 90 mm de ancho x 62 mm de alto; escala 100 %, sin margenes.
    VOLTECK POS58: rollo 58 mm. Use el nombre instalado, no la marca.
 2. Instale Node.js LTS (22 o posterior): https://nodejs.org/
    Instale SumatraPDF: https://www.sumatrapdfreader.org/download-free-pdf-viewer

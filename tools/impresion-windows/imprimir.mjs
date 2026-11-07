@@ -71,7 +71,7 @@ try {
       // Descargar por HTTPS en Node; el navegador solo recibe HTML, sin la clave.
       const [comanda, etiquetas]=await Promise.all([
         get(`/comanda/${fecha}?key=${credencial}&ancho=58`,false),
-        get(`/etiquetas/${fecha}?key=${credencial}&ancho=62&alto=40`,false)
+        get(`/etiquetas/${fecha}?key=${credencial}&ancho=90&alto=62`,false)
       ]);
       if(!comanda.includes('COMANDA DE COCINA')||!etiquetas.includes('class="etiqueta"')) throw new Error('La vista imprimible no es válida.');
       browser=await chromium.launch({executablePath:config.edge,headless:true});
@@ -96,7 +96,7 @@ try {
       const archivoEtiquetas=path.join(preparacion,'etiquetas.pdf');
       await page.pdf({path:archivoEtiquetas,preferCSSPageSize:true,printBackground:true,displayHeaderFooter:false});
       await browser.close(); browser=null;
-      await log(`${fecha}: preparados ${pedidos.count} pedidos. Comanda 58 mm y etiquetas 62 × 40 mm.`);
+      await log(`${fecha}: preparados ${pedidos.count} pedidos. Comanda 58 mm y etiquetas 90 × 62 mm horizontal.`);
       if(modo==='preparar') await log('Solo vista previa. No se envió nada a las impresoras.');
       else {
         for(const [doc,impresora,archivo] of [['comanda',config.comanda,archivoComanda],['etiquetas',config.etiquetas,archivoEtiquetas]]) {

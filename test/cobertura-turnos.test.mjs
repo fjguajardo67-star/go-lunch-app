@@ -32,6 +32,6 @@ test('impresos A identifican el servicio y entrega, conservando QR especial',()=
  assert.match(comanda,/10:00 AM/);
  assert.doesNotMatch(comanda,/Salida máxima 4:30 PM|6:00 PM/);
  const etiqueta=htmlEtiquetasCobertura({fecha:'2026-11-07',modo:'rollo',items:[{solicitud,empleado_nombre_snapshot:'Ejemplo',codigo_entrega:'uuid-prueba',secuencia:1}]});
- assert.match(etiqueta,/COBERTURA A · 10:00 AM · ASLA/);
+ assert.match(etiqueta,/ASLA · 10:00 AM/);
  assert.match(etiqueta,/EX\|uuid-prueba\|2026-11-07/);
 });
