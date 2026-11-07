@@ -218,3 +218,27 @@ impresión, pero el servidor devuelve 403 en cualquier escritura sobre
 `/api/empleados`, `/api/menu` y `/api/cobertura/menu`, incluidas sus subrutas.
 El administrador mantiene todos sus permisos. Si no se configura `GERENTE_KEY`,
 el acceso de gerente permanece deshabilitado.
+
+## Impresión programada en Windows
+
+Paquete: `public/impresion-windows.zip`; fuentes en `tools/impresion-windows/`.
+Instala Node.js LTS (22+) y SumatraPDF en la PC Windows; extrae el paquete y
+abre `Instalar.cmd`. Elige las colas instaladas para Brother QL-800 (62 × 40 mm)
+y POS58 (58 mm), introduce la clave de gerente y prueba los dos PDF.
+Solo escribir ACTIVAR después de revisar la salida física crea la tarea diaria
+GoLunch-Impresion-2130 a las 21:30. Usa el usuario actual, con sesión iniciada,
+y la zona de Windows Central Standard Time (Mexico).
+
+No hay credenciales dentro del ZIP. La clave queda cifrada con DPAPI en
+%LOCALAPPDATA%\GoLunchImpresion. El registro y los PDF quedan por fecha.
+La marca de envío confirma aceptación por la cola, no impresión física.
+Un trabajo con estado enviando no se reintenta automáticamente porque pudo
+haber salido antes de un fallo. Revisar la cola antes de usar Reimprimir.cmd.
+La tarea solo imprime el servicio regular de mañana y omite fechas sin pedidos.
+Las coberturas conservan su flujo independiente.
+
+La comanda térmica se obtiene con `?ancho=58`; el generador Windows calcula el
+largo del ticket. Las etiquetas conservan sus QR y páginas de 62 × 40 mm.
+Para reconstruir el ZIP: `python3 tools/empaquetar-impresion.py`.
+La ejecución de PowerShell, registro de la tarea y salida en hardware requieren
+validación en Windows; las pruebas de repositorio no simulan esos controladores.

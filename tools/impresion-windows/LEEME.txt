@@ -1,0 +1,45 @@
+GO LUNCH — IMPRESION AUTOMATICA WINDOWS — 9:30 PM
+
+1. Instale los drivers y pruebe ambas impresoras en Windows.
+   Brother QL-800: papel 62 x 40 mm, escala 100 %, sin margenes.
+   VOLTECK POS58: rollo 58 mm. Use el nombre instalado, no la marca.
+2. Instale Node.js LTS (22 o posterior): https://nodejs.org/
+   Instale SumatraPDF: https://www.sumatrapdfreader.org/download-free-pdf-viewer
+   Microsoft Edge debe estar instalado.
+3. Extraiga TODO el ZIP y abra Instalar.cmd con su usuario normal de Windows.
+   NO hace falta ejecutar como administrador. Se requiere internet.
+4. Seleccione las dos impresoras de la lista por numero.
+5. Escriba la contrasena de gerente cuando se solicite (no viene en este ZIP).
+6. Elija una fecha con pedidos. Se generan PDF, SIN imprimir.
+   Abra cada PDF y pruebe fisicamente la impresora correspondiente al 100 %.
+   Escanee un QR de prueba con el telefono.
+7. SOLO si ambas pruebas estan correctas, escriba ACTIVAR en el instalador.
+   Si cierra antes, NO queda programada ninguna tarea.
+
+TAREA: GoLunch-Impresion-2130, diaria a las 21:30.
+FECHA: servicio del dia siguiente; sin pedidos = no imprimir.
+PC: encendida, con sesion iniciada (puede estar bloqueada), internet y corriente.
+ZONA WINDOWS: Ciudad de Mexico, Central Standard Time (Mexico).
+No activar ademas otra tarea que imprima lo mismo.
+
+Para pruebas sin papel: Preparar-prueba.cmd.
+Para imprimir pendientes: Imprimir-ahora.cmd (pide confirmacion).
+Para repetir documentos: Reimprimir.cmd (pide doble confirmacion).
+Antes de repetir, revise fisicamente y en la cola si ya se imprimieron.
+
+Documentos, estado y registro:
+%LOCALAPPDATA%\GoLunchImpresion\documentos
+Las marcas enviado_a_windows significan aceptado por la cola, NO papel verificado.
+Una marca enviando se conserva ante fallos para no duplicar una entrega dudosa.
+PDF guardados por fecha y preparacion. No se borra el historial al repetir.
+Una fecha sin pedidos o una PC apagada NO genera una impresion de otro dia.
+
+La clave se guarda cifrada con DPAPI, para este usuario en esta PC.
+Si cambia la clave gerente, vuelva a ejecutar la instalacion despues de eliminar
+la tarea anterior. No copie clave.dpapi a otra PC o usuario: no funcionara.
+Para pausar o quitar: Programador de tareas > GoLunch-Impresion-2130 > Deshabilitar.
+La impresion nocturna es SOLO del servicio regular. Coberturas se imprimen aparte.
+
+Fuentes:
+https://www.sumatrapdfreader.org/docs/Command-line-arguments
+https://learn.microsoft.com/powershell/module/scheduledtasks/register-scheduledtask

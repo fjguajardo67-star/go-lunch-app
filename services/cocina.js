@@ -42,7 +42,8 @@ export async function resumenCocina(fecha) {
 // ── HTML imprimible (impresora térmica o carta) ─────────────────
 // Sin colores, fuente grande, una sección por turno (la cocina prepara
 // cada turno por separado), con subtotal por turno y hora de generación.
-export function htmlComanda({ fecha, total, resumen }) {
+export function htmlComanda({ fecha, total, resumen }, { ancho } = {}) {
+  const termica = Number(ancho) === 58;
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat("dd/MM/yyyy HH:mm 'hrs'");
 
   // Reagrupar: turno → [{ platillo, porciones, por_zona }]
@@ -116,6 +117,20 @@ export function htmlComanda({ fecha, total, resumen }) {
     .no-print { display: none; }
     body { padding: 0; }
   }
+  ${termica ? `
+  /* Rollo POS58. El paquete Windows calcula el largo real del ticket. */
+  body { width: 58mm; max-width: 58mm; margin: 0; padding: 2mm; }
+  h1 { font-size: 13px; letter-spacing: 0; }
+  .sub, .subtotal { font-size: 10px; }
+  .turno-titulo { font-size: 11px; margin-bottom: 6px; overflow-wrap: anywhere; }
+  .nombre { font-size: 11px; overflow-wrap: anywhere; }
+  .cantidad { font-size: 14px; }
+  .total { font-size: 12px; }
+  .pie { font-size: 8px; }
+  hr { margin: 7px 0; border-top-width: 1px; }
+  .platillo { margin-bottom: 7px; break-inside: avoid; }
+  @media print { @page { size: 58mm 200mm; margin: 0; } body { padding: 2mm; } }
+  ` : ''}
 </style>
 </head>
 <body>

@@ -964,6 +964,7 @@
                 <p style="font-size:.8rem;color:var(--gris-text);margin-top:6px">Configura también la impresora en Windows a 62 × 40 mm (ancho × alto), escala 100 % y sin márgenes. Si aparece 29 × 90 mm, cambia el tamaño del papel en las preferencias de la impresora.</p>
               </div>
             </div>
+            <p style="margin:10px 0;font-size:.85rem"><a href="/impresion-windows.zip" download>Descargar instalación Windows: impresión diaria 9:30 PM</a> · Brother 62 × 40 mm y comanda POS58 de 58 mm. Actívala después de probar ambas impresoras.</p>
             <div class="cocina-impresos">
               <button class="accion cocina-accion" onclick="abrirImpreso('comanda')">
                 <span class="cocina-accion-contenido">
@@ -1340,7 +1341,7 @@
     const [ancho, alto] = document.getElementById('im-tamano').value.split('x');
     let url;
     if (tipo === 'comanda') {
-      url = API_BASE + '/comanda/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
+      url = API_BASE + '/comanda/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY) + '&ancho=58';
     } else {
       url = API_BASE + '/etiquetas/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
           + '&ancho=' + ancho + '&alto=' + alto
