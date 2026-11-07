@@ -110,6 +110,15 @@
         ],
         "createdAt": "2026-11-07T22:45:56.635Z",
         "reason": "Agent: the existing .gate-icon is a delivery-truck SVG identifying the delivery application at login, not a repeated feature-card layout. Preserve the established login identity during the extraordinary-order change."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "public/entrega.css"
+        ],
+        "createdAt": "2026-11-07T23:23:14.103Z",
+        "reason": "Agent: .lista-vieja conserva el borde rojo de 4px para advertir una lista de reparto de otro día; el comentario documenta un incidente real de escaneo contra la fecha anterior. La regla ya tenía esta excepción en entrega.html, pero el escaneo independiente del CSS requiere el mismo alcance por archivo."
       }
     ]
   }
