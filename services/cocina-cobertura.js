@@ -90,9 +90,8 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
       <div class="texto">
         <div class="nombre">${esc(item.empleado_nombre_snapshot)}</div>
         <div class="numero">${esc(item.opcion_texto)}</div>
-        <div class="recibe">Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</div>
       </div><div class="qr" data-codigo="${esc(codigo)}"></div>
-      <div class="identificacion"><span>Empleado #${esc(item.empleado_numero_snapshot || '—')}</span><span>${esc(fechaCorta)}</span></div>
+      <div class="identificacion"><span>Empleado #${esc(item.empleado_numero_snapshot || '—')}</span><span>${esc(fechaCorta)}</span><span class="recibe">Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</span></div>
     </article>`;
   }).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Etiquetas cobertura ${esc(fecha)}</title>

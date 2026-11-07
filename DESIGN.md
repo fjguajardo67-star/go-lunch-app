@@ -71,4 +71,4 @@ también a `PRECARGA`.
 
 ## Etiquetas de reparto
 
-Formato predeterminado horizontal de 90 × 62 mm: rollo Brother de 62 mm y corte de 90 mm. Zona y horario de 21 pt ocupan la primera fila; nombre de 16 pt y platillo de 12 pt a la izquierda. QR de 32 mm con zona blanca a la derecha. Margen interior seguro de 5 mm; número de empleado y fecha de servicio en una fila inferior sin línea. Nombres y platillos largos se ajustan antes de imprimir. Los encabezados y pies externos se desactivan en el diálogo del navegador.
+Formato predeterminado horizontal de 90 × 62 mm: rollo Brother de 62 mm y corte de 90 mm. Zona y horario de 21 pt ocupan la primera fila; nombre de 16 pt y platillo de 12 pt a la izquierda. QR de 32 mm con zona blanca a la derecha. Margen interior de 9 mm a ambos lados, con el contenido centrado y el QR conservando su tamaño; número de empleado y fecha de servicio en una fila inferior sin línea. Nombres y platillos largos se ajustan antes de imprimir. Los encabezados y pies externos se desactivan en el diálogo del navegador.

@@ -301,7 +301,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   ${enHoja
       ? 'Imprime esta hoja en papel normal y recórtala para comprobar que la medida cabe en el contenedor <b>antes</b> de comprar el rollo. Cambia el tamaño con <b>?ancho=</b> y <b>?alto=</b> en milímetros.'
       : 'Ajusta el tamaño con <b>?ancho=</b> y <b>?alto=</b> (mm) para que coincida con tu rollo. Para probar en papel carta primero, agrega <b>&amp;modo=hoja</b>.'}
-    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: papel de 62 mm, largo 90 mm y orientación horizontal. El contenido conserva un margen interior de seguridad de 5 mm. Las etiquetas van ordenadas por turno y zona.
+    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: papel de 62 mm, largo 90 mm y orientación horizontal. El contenido conserva un margen interior de 9 mm a ambos lados. Las etiquetas van ordenadas por turno y zona.
   </div>
   <div class="hoja ${enHoja ? 'prueba' : 'rollo'}">
     ${orden.length ? cuerpo : vacio}
