@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 
 export function validarVigenciaMenu(body = {}) {
+  body = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const inicio = body.fecha_inicio ?? body.fecha;
   const final = body.fecha_final ?? body.fecha;
   const fechaValida = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && DateTime.fromISO(v,{zone:'UTC'}).isValid;
