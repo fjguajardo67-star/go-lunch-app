@@ -3,6 +3,7 @@ import { guardarPeriodoMenu } from './menu-cobertura.js';
 import { createClient } from '@supabase/supabase-js';
 import { variantesTelefono, formatoCanonico } from './telefono.js';
 import { guardarEmpleado } from './empleados.js';
+import { validarGrupo } from './reparto-grupos.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -507,16 +508,21 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
   // una caché vieja o un equipo mal configurado registraría entregas de la otra
   // ruta, y eso mueve la evidencia de quién entregó qué. Se lee ANTES de tocar
   // nada para que un escaneo de la zona equivocada no modifique la base.
-  if (zonaEsperada) {
+  let grupoPrevio = null;
+  if (zonaEsperada || extra.turno_esperado) {
     const { data: previo, error: errZona } = await supabase
       .from('pedidos')
-      .select('zona')
+      .select('id,zona,turno')
       .eq('fecha_menu', fecha)
       .eq('empleado_telefono', emp.telefono)
       .limit(1);
     if (errZona) throw errZona;
     if (!previo || !previo.length) return { ok: false, motivo: 'sin_pedido' };
-    if (previo[0].zona !== zonaEsperada) {
+    grupoPrevio = previo[0];
+    if (extra.turno_esperado) {
+      const grupo = validarGrupo(grupoPrevio, zonaEsperada, extra.turno_esperado);
+      if (!grupo.ok) return grupo;
+    } else if (previo[0].zona !== zonaEsperada) {
       return { ok: false, motivo: 'zona_incorrecta', zona_esperada: previo[0].zona };
     }
   }
@@ -555,13 +561,12 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
   // escanea desde otro equipo, la evidencia de a qué hora se entregó no se
   // debe mover — de ella dependen la puntualidad, el motivo del retraso y la
   // duración de la ruta en los reportes.
-  const { data, error } = await supabase
-    .from('pedidos')
-    .update(cambios)
+  let consulta = supabase.from('pedidos').update(cambios)
     .eq('fecha_menu', fecha)
     .eq('empleado_telefono', emp.telefono)
-    .is('entregado_en', null)
-    .select('*, empleados(nombre, numero_empleado)');
+    .is('entregado_en', null);
+  if (grupoPrevio) consulta = consulta.eq('zona', grupoPrevio.zona).eq('turno', grupoPrevio.turno);
+  const { data, error } = await consulta.select('*, empleados(nombre, numero_empleado)');
   if (error) throw error;
   if (data && data.length) return { ok: true, pedido: data[0] };
 
@@ -575,6 +580,7 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
     .limit(1);
   if (errBusca) throw errBusca;
   if (!existente || !existente.length) return { ok: false, motivo: 'sin_pedido' };
+  if (!existente[0].entregado_en) return { ok: false, motivo: 'grupo_actualizado' };
 
   // Ya estaba entregado. Se responde ok a propósito: la entrega SÍ ocurrió, y
   // devolver error dejaría el escaneo atorado en la cola del teléfono para
@@ -883,6 +889,10 @@ export async function marcarCoberturaEntregada(fecha, codigoEntrega, entregadoEn
   if (!solicitud || solicitud.estado === 'cancelada') return { ok: false, motivo: 'solicitud_cancelada' };
   if (zonaEsperada && solicitud.zona && solicitud.zona !== zonaEsperada) {
     return { ok: false, motivo: 'zona_incorrecta', zona_esperada: solicitud.zona };
+  }
+  if (extra.turno_esperado) {
+    const grupo = validarGrupo(solicitud, zonaEsperada, extra.turno_esperado);
+    if (!grupo.ok) return grupo;
   }
   if (item.entregado_en) return { ok: true, ya_entregado: true, item, solicitud };
 

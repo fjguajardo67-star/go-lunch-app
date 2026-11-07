@@ -75,6 +75,10 @@ Formato predeterminado horizontal de 90 × 62 mm: rollo Brother de 62 mm y corte
 
 Las coberturas de 90 × 62 mm incorporan la calibración física indicada por operación: contenido al 85 %, centrado en un marco que conserva la medida del papel. La escala del navegador se mantiene en 100 %; cada marco sigue siendo una sola etiqueta. El ajuste de textos mide el diseño antes de la escala. Las etiquetas regulares conservan su calibración actual.
 
+## Grupo activo de reparto
+
+La app de entrega exige elegir Turno A o B junto a la zona; conserva esa elección únicamente para la misma fecha y zona. Llegada, listas y acciones se limitan a ese grupo. El cierre reúne únicamente regulares pendientes de dicho grupo, identifica zona/turno/cantidad en su confirmación y excluye siempre coberturas. El servidor verifica la asignación almacenada y la escritura vuelve a comparar zona y turno. Cada elemento de la cola mantiene su grupo; se sincronizan lotes separados y un registro antiguo sin contexto sigue pendiente de revisión, salvo que ya estuviera confirmado en servidor. No se modifican marcas históricas al publicar esta corrección.
+
 ## Selección de impresos de cocina
 
 La tarjeta Impresión comparte fecha, turno (Todos/A/B) y zona (Todas/ASLA/REFIS) entre comanda y etiquetas. Los documentos identifican la selección y calculan sus cantidades después de filtrar los pedidos. Los tamaños de etiquetas y márgenes de impresión se conservan.
