@@ -2911,6 +2911,7 @@
     let url = tipo === 'comanda'
       ? API_BASE + '/comanda-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
       : API_BASE + '/etiquetas-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
+    if (tipo === 'comanda') url += '&ancho=58';
     if (tipo === 'etiquetas') {
       const tamano = document.getElementById('im-tamano')?.value || '90x62';
       const [ancho, alto] = tamano.split('x');

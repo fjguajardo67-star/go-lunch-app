@@ -216,7 +216,7 @@ app.get('/comanda-cobertura/:fecha', async (req, res) => {
   try {
     res.type('html').send(htmlComandaCobertura(
       await resumenCobertura(fecha, req.query.turno),
-      { autoPrint: req.query.autoprint === '1' }
+      { autoPrint: req.query.autoprint === '1', ancho: req.query.ancho }
     ));
   } catch (err) {
     console.error('[Comanda cobertura] Error:', err);

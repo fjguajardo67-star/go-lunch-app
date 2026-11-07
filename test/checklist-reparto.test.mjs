@@ -27,7 +27,7 @@ test('paginar conserva todas las filas y una sola firma por lote',()=>{
  assert.equal((html.match(/class="casilla"/g)||[]).length,43);
  assert.equal((html.match(/Servicio: <b>07\/11\/2026<\/b>/g)||[]).length,3);
  assert.match(html,/Hoja 3 de 3/);assert.match(html,/Total del lote: <b>43<\/b>/);
- assert.match(html,/@page\{size:letter portrait;margin:12mm\}/);
+ assert.match(html,/@page\{size:letter portrait;margin:14mm\}/);
 });
 test('la lista usa solo pedidos, conserva ceros iniciales y escapa HTML de los nombres',()=>{
  const datos=prepararChecklistReparto(fecha,[pedido(7,'turno_a','zona_vdc','</td><script>ataque()</script>')]);

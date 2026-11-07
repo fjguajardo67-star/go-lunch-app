@@ -24,12 +24,12 @@
       .resumen{margin:0 0 20px;font-size:10pt}.nota{font-size:9pt;margin-top:20px;color:#39465b}
       table{border-collapse:collapse;width:100%;font-size:9pt;table-layout:fixed}
       th,td{padding:8px 6px;text-align:left;border-bottom:1px solid #bcc5d3;vertical-align:top;overflow-wrap:anywhere}
-      th{font-weight:bold;border-top:1px solid #8290a5}thead{display:table-header-group}tr{break-inside:avoid}
-      .menu-dia{break-before:page}.menu-dia:first-child{break-before:auto}
+      th{font-weight:bold;border-top:1px solid #8290a5}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}
+      .menu-dia{break-before:page;page-break-before:always}.menu-dia:first-child{break-before:auto;page-break-before:auto}
       .platos{margin:18px 0;padding:0;list-style:none}.platos li{padding:12px 0;border-bottom:1px solid #bcc5d3;break-inside:avoid}
       .platos b{display:block;font-size:10pt;margin-bottom:4px}.platos span{font-size:15pt}
-      @page{size:letter portrait;margin:.55in}
-      @media print{body{background:white}.acciones{display:none}main{max-width:none;margin:0;padding:0}.nota{color:#17233b}}
+      @page{size:letter portrait;margin:14mm}
+      @media print{body{background:white}.acciones{display:none}main{max-width:none;margin:0;padding:0}h1,h2{break-after:avoid;page-break-after:avoid}.nota{color:#17233b;break-inside:avoid;page-break-inside:avoid}.platos li{page-break-inside:avoid}}
       @media(max-width:600px){main{margin:0;padding:20px}h1{font-size:20pt}th,td{padding:8px 4px}}
       </style></head><body><div class="acciones">
       <button type="button" onclick="window.print()">Imprimir o guardar PDF</button>

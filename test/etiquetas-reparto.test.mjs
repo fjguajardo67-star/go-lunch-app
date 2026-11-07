@@ -37,7 +37,7 @@ test('tamaños alternativos y prueba carta siguen disponibles; sin QR usa todo e
  const chico=htmlEtiquetas({fecha,ancho:62,alto:40,pedidos:[pedido]});
  assert.match(chico,/@page \{ size: 62mm 40mm; margin: 0; \}/);
  const carta=htmlEtiquetas({fecha,modo:'hoja',qr:false,pedidos:[pedido]});
- assert.match(carta,/@page \{ size: letter; margin: 10mm; \}/);
+ assert.match(carta,/@page \{ size: letter; margin: 14mm; \}/);
  assert.doesNotMatch(carta,/data-codigo=/);
  assert.match(carta,/:not\(:has\(.qr\)\) .texto \{ grid-column: 1 \/ -1/);
 });
