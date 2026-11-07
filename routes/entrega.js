@@ -1,3 +1,4 @@
+import { rolPanel } from '../services/acceso-panel.js';
 // routes/entrega.js — API de confirmación de entregas (escaneo del QR)
 //
 // Va separada de /api porque su clave es distinta: el repartidor usa
@@ -182,7 +183,7 @@ entregaRouter.use(async (req, res, next) => {
   }
 
   const clave = req.headers['x-admin-key'];
-  if (clave && clave === process.env.ADMIN_KEY) {
+  if (rolPanel(clave)) {
     req.esAdmin = true;
     return next();
   }
@@ -362,7 +363,7 @@ entregaRouter.post('/llegada', async (req, res) => {
 // el repartidor pudiera moverlo bastaría con fijarlo donde uno esté parado para
 // que todo saliera "a 0 m del punto". La evidencia dejaría de valer.
 entregaRouter.post('/punto', async (req, res) => {
-  if (req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+  if (!rolPanel(req.headers['x-admin-key'])) {
     return res.status(403).json({ error: 'Solo la clave de administrador puede fijar el punto de entrega' });
   }
   try {

@@ -1,3 +1,4 @@
+import { rolPanel } from './services/acceso-panel.js';
 // index.js — Servidor principal de Go Lunch (comedor CICSA · Glovis)
 import 'dotenv/config';
 import express from 'express';
@@ -20,7 +21,7 @@ const PORT = process.env.PORT || 3000;
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-admin-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-admin-key,x-panel-user');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
@@ -151,7 +152,7 @@ app.use('/cobertura', coberturaRouter);
 // Usa ?key= en lugar del header x-admin-key para poder abrirse directo
 // desde el navegador y mandarse a imprimir.
 app.get('/comanda/:fecha', async (req, res) => {
-  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) {
+  if (!rolPanel(req.query.key)) {
     return res.status(401).send('No autorizado');
   }
   const fecha = req.params.fecha;
@@ -172,7 +173,7 @@ app.get('/comanda/:fecha', async (req, res) => {
 // El tamaño va por parámetro porque depende del rollo que se compre, y
 // &modo=hoja imprime en papel carta para validar la medida sin gastar rollo.
 app.get('/etiquetas/:fecha', async (req, res) => {
-  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) {
+  if (!rolPanel(req.query.key)) {
     return res.status(401).send('No autorizado');
   }
   const fecha = req.params.fecha;
@@ -204,7 +205,7 @@ app.get('/etiquetas/:fecha', async (req, res) => {
 // pero los datos no se mezclan con el pedido regular ni con su restricción de
 // una comida por empleado y fecha.
 app.get('/comanda-cobertura/:fecha', async (req, res) => {
-  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) {
+  if (!rolPanel(req.query.key)) {
     return res.status(401).send('No autorizado');
   }
   const fecha = req.params.fecha;
@@ -221,7 +222,7 @@ app.get('/comanda-cobertura/:fecha', async (req, res) => {
 });
 
 app.get('/etiquetas-cobertura/:fecha', async (req, res) => {
-  if (!process.env.ADMIN_KEY || req.query.key !== process.env.ADMIN_KEY) {
+  if (!rolPanel(req.query.key)) {
     return res.status(401).send('No autorizado');
   }
   const fecha = req.params.fecha;
