@@ -58,12 +58,15 @@ export const scriptAjustarTextoEtiqueta = `<script>
 (function(){
   function ajustar(){
     document.querySelectorAll('.etiqueta').forEach(function(etiqueta){
-      if(Math.abs(etiqueta.getBoundingClientRect().width - 90 * 96 / 25.4)>2)return;
+      var ancho=parseFloat(getComputedStyle(etiqueta).width);
+      if(Math.abs(ancho - 90 * 96 / 25.4)>2)return;
+      var escala=etiqueta.getBoundingClientRect().width/ancho;
+      if(!escala)return;
       var texto=etiqueta.querySelector('.texto');
       if(!texto)return;
       var campos=Array.from(texto.children);
       campos.forEach(function(c){c.style.removeProperty('font-size')});
-      function altoNecesario(){return campos.reduce(function(n,c){return n+c.getBoundingClientRect().height},0)+parseFloat(getComputedStyle(texto).rowGap||0)*Math.max(0,campos.length-1)}
+      function altoNecesario(){return campos.reduce(function(n,c){return n+c.getBoundingClientRect().height/escala},0)+parseFloat(getComputedStyle(texto).rowGap||0)*Math.max(0,campos.length-1)}
       for(var paso=0;paso<16 && altoNecesario()>texto.clientHeight;paso++){
         var cambio=false;
         campos.forEach(function(c){

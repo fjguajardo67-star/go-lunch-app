@@ -73,6 +73,8 @@ también a `PRECARGA`.
 
 Formato predeterminado horizontal de 90 × 62 mm: rollo Brother de 62 mm y corte de 90 mm. Zona y horario de 21 pt ocupan la primera fila; nombre de 16 pt y platillo de 12 pt a la izquierda. QR de 32 mm con zona blanca a la derecha. Margen interior de 9 mm a ambos lados, con el contenido centrado y el QR conservando su tamaño; número de empleado y fecha de servicio en una fila inferior sin línea. Nombres y platillos largos se ajustan antes de imprimir. Los encabezados y pies externos se desactivan en el diálogo del navegador.
 
+Las coberturas de 90 × 62 mm incorporan la calibración física indicada por operación: contenido al 85 %, centrado en un marco que conserva la medida del papel. La escala del navegador se mantiene en 100 %; cada marco sigue siendo una sola etiqueta. El ajuste de textos mide el diseño antes de la escala. Las etiquetas regulares conservan su calibración actual.
+
 ## Selección de impresos de cocina
 
 La tarjeta Impresión comparte fecha, turno (Todos/A/B) y zona (Todas/ASLA/REFIS) entre comanda y etiquetas. Los documentos identifican la selección y calculan sus cantidades después de filtrar los pedidos. Los tamaños de etiquetas y márgenes de impresión se conservan.

@@ -80,6 +80,8 @@ export async function etiquetasCobertura(fecha, { ancho = ANCHO_ETIQUETA, alto =
 
 export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo, items }) {
   const enHoja = modo === 'hoja';
+  // Calibración física de la Brother: conservar el papel y centrar el contenido al 85 %.
+  const escala = Number(ancho) === ANCHO_ETIQUETA && Number(alto) === ALTO_ETIQUETA ? .85 : 1;
   const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const orden = [...items].sort((a, b) =>
@@ -89,21 +91,23 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
   const cuerpo = orden.map(item => {
     const s = item.solicitud;
     const codigo = `EX|${item.codigo_entrega}|${fecha}`;
-    return `<article class="etiqueta">
+    return `<div class="marco-etiqueta"><article class="etiqueta">
       <div class="ruta">${esc((ZONAS[s.zona] || s.zona).split(' (')[0])} · ${esc(horaTexto(s.turno || 'turno_b', s.zona, fecha))}</div>
       <div class="texto">
         <div class="nombre">${esc(item.empleado_nombre_snapshot)}</div>
         <div class="numero">${esc(item.opcion_texto)}</div>
       </div><div class="qr" data-codigo="${esc(codigo)}"></div>
       <div class="identificacion"><span>Empleado #${esc(item.empleado_numero_snapshot || '—')}</span><span>${esc(fechaCorta)}</span><span class="recibe">Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</span></div>
-    </article>`;
+    </article></div>`;
   }).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Etiquetas cobertura ${esc(fecha)}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:#edf1f7;color:#071b42}.barra{position:sticky;top:0;z-index:2;background:#003087;color:#fff;padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.barra button{margin-left:auto;padding:9px 18px;border:0;border-radius:7px;font-weight:800;color:#003087;background:#fff}.ayuda{padding:10px 18px;background:#fff;color:#56627b;font-size:.8rem}.hoja{padding:18px}.hoja.rollo{display:flex;flex-direction:column;gap:10px;align-items:flex-start}.hoja.prueba{display:flex;flex-wrap:wrap;gap:8px}.etiqueta{width:${ancho}mm;height:${alto}mm;background:#fff;border:1px solid #aebbd2;border-radius:2mm;padding:1.5mm 2mm;display:flex;gap:1.5mm;overflow:hidden}.texto{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}.qr{flex:none;align-self:center;width:${Math.min(alto - 5, 18)}mm;height:${Math.min(alto - 5, 18)}mm}.qr canvas,.qr img{width:100%!important;height:100%!important;display:block}.ruta{font-size:6pt;font-weight:900;letter-spacing:.035em;white-space:nowrap}.nombre{font-size:9pt;font-weight:900;line-height:1.05}.numero{font-size:7.2pt;font-weight:750;line-height:1.1}.recibe{font-size:5.8pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pie{display:flex;justify-content:space-between;border-top:.25mm solid #000;padding-top:.5mm;font-size:5.5pt}
 @media print{.barra,.ayuda{display:none}body{background:#fff}.hoja{padding:0;gap:0}.etiqueta{border:0;border-radius:0}}
 ${estiloEtiquetaReparto(ancho, alto)}
-${enHoja ? `@page{size:letter portrait;margin:14mm}@media print{.hoja.prueba{display:block;font-size:0}.hoja.prueba .etiqueta{display:${Number(ancho) === 90 && Number(alto) === 62 ? 'inline-grid' : 'inline-flex'};border:.2mm dashed #999;vertical-align:top;margin:0 4mm 4mm 0;break-inside:avoid;page-break-inside:avoid}.hoja.prueba .etiqueta:nth-child(${columnas}n){margin-right:0}}` : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.etiqueta{page-break-after:always}.etiqueta:last-child{page-break-after:auto}}`}
+.marco-etiqueta{width:${ancho}mm;height:${alto}mm;flex:none;break-inside:avoid;page-break-inside:avoid}
+.marco-etiqueta>.etiqueta{transform:scale(${escala});transform-origin:center center}
+${enHoja ? `@page{size:letter portrait;margin:14mm}@media print{.hoja.prueba{display:block;font-size:0}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.prueba .etiqueta{border:.2mm dashed #999}}` : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.marco-etiqueta{break-after:page;page-break-after:always}.marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}`}
 </style></head><body><div class="barra"><b>Etiquetas · cobertura ${esc(fechaCorta)}</b><span>${orden.length} alimento(s)</span><button onclick="window.print()">Imprimir</button></div>
-<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: papel de 62 mm, largo 90 mm, orientación horizontal. El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
+<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: papel de 62 mm, largo 90 mm, orientación horizontal.${escala === .85 ? ' La reducción de cobertura al <b>85 %</b> ya está incluida y centrada; mantén la escala del navegador en <b>100 %</b>.' : ''} El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}));</script>${scriptAjustarTextoEtiqueta}</body></html>`;
 }
