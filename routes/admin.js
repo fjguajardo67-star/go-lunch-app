@@ -10,7 +10,7 @@ import { diezDigitos, claveEmpleado } from '../services/telefono.js';
 import { resumenCocina } from '../services/cocina.js';
 import { fechaServicio } from '../services/pedidos.js';
 import { hashClave, generarClave } from '../services/sesion.js';
-import { horarioCobertura } from '../services/cobertura.js';
+import { horarioCobertura, validarTurnoCobertura } from '../services/cobertura.js';
 
 export const adminRouter = express.Router();
 
