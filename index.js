@@ -169,7 +169,7 @@ app.get('/comanda/:fecha', async (req, res) => {
 });
 
 // Etiquetas para pegar en cada contenedor:
-//   /etiquetas/2026-08-03?key=ADMIN_KEY&ancho=57&alto=32
+//   /etiquetas/2026-08-03?key=ADMIN_KEY&ancho=62&alto=40
 // El tamaño va por parámetro porque depende del rollo que se compre, y
 // &modo=hoja imprime en papel carta para validar la medida sin gastar rollo.
 app.get('/etiquetas/:fecha', async (req, res) => {
@@ -189,8 +189,8 @@ app.get('/etiquetas/:fecha', async (req, res) => {
 
   try {
     const datos = await etiquetas(fecha, {
-      ancho: num(req.query.ancho, 57, 20, 210),
-      alto:  num(req.query.alto,  32, 15, 297),
+      ancho: num(req.query.ancho, 62, 20, 210),
+      alto:  num(req.query.alto,  40, 15, 297),
       modo:  req.query.modo === 'hoja' ? 'hoja' : 'rollo',
       qr:    req.query.qr !== 'no'
     });
@@ -233,8 +233,8 @@ app.get('/etiquetas-cobertura/:fecha', async (req, res) => {
   };
   try {
     const datos = await etiquetasCobertura(fecha, {
-      ancho: num(req.query.ancho, 57, 20, 210),
-      alto: num(req.query.alto, 32, 15, 297),
+      ancho: num(req.query.ancho, 62, 20, 210),
+      alto: num(req.query.alto, 40, 15, 297),
       modo: req.query.modo === 'hoja' ? 'hoja' : 'rollo'
     });
     res.type('html').send(htmlEtiquetasCobertura(datos));

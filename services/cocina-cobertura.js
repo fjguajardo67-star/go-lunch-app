@@ -65,7 +65,7 @@ ${autoPrint ? '<script>window.addEventListener("load",function(){window.setTimeo
 </body></html>`;
 }
 
-export async function etiquetasCobertura(fecha, { ancho = 57, alto = 32, modo = 'rollo' } = {}) {
+export async function etiquetasCobertura(fecha, { ancho = 62, alto = 40, modo = 'rollo' } = {}) {
   const solicitudes = (await db.listSolicitudesCobertura(fecha)).filter(s => s.estado !== 'cancelada');
   const items = solicitudes.flatMap(s => s.items.map((item, i) => ({
     ...item, solicitud: s, secuencia: i + 1
@@ -73,7 +73,7 @@ export async function etiquetasCobertura(fecha, { ancho = 57, alto = 32, modo = 
   return { fecha, ancho, alto, modo, items };
 }
 
-export function htmlEtiquetasCobertura({ fecha, ancho, alto, modo, items }) {
+export function htmlEtiquetasCobertura({ fecha, ancho = 62, alto = 40, modo, items }) {
   const enHoja = modo === 'hoja';
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const orden = [...items].sort((a, b) =>

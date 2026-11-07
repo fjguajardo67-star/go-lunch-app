@@ -955,12 +955,13 @@
               <div>
                 <label>Tamaño de etiqueta</label>
                 <select id="im-tamano">
-                  <option value="57x32" selected>57 × 32 mm (recomendado)</option>
+                  <option value="57x32">57 × 32 mm</option>
                   <option value="62x29">62 × 29 mm</option>
                   <option value="50x25">50 × 25 mm</option>
-                  <option value="62x40">62 × 40 mm</option>
+                  <option value="62x40" selected>62 × 40 mm (predeterminado)</option>
                   <option value="100x50">100 × 50 mm</option>
                 </select>
+                <p style="font-size:.8rem;color:var(--gris-text);margin-top:6px">Configura también la impresora en Windows a 62 × 40 mm (ancho × alto), escala 100 % y sin márgenes. Si aparece 29 × 90 mm, cambia el tamaño del papel en las preferencias de la impresora.</p>
               </div>
             </div>
             <div class="cocina-impresos">
@@ -2883,7 +2884,7 @@
       ? API_BASE + '/comanda-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
       : API_BASE + '/etiquetas-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
     if (tipo === 'etiquetas') {
-      const tamano = document.getElementById('im-tamano')?.value || '57x32';
+      const tamano = document.getElementById('im-tamano')?.value || '62x40';
       const [ancho, alto] = tamano.split('x');
       url += '&ancho=' + encodeURIComponent(ancho) + '&alto=' + encodeURIComponent(alto);
     }

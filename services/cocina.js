@@ -143,12 +143,12 @@ function esc(s) {
 // Se pegan en el contenedor. El tamaño es configurable porque depende del
 // rollo que se compre; con modo 'hoja' se prueban en papel carta antes de
 // invertir en la impresora.
-export async function etiquetas(fecha, { ancho = 57, alto = 32, modo = 'rollo', qr = true } = {}) {
+export async function etiquetas(fecha, { ancho = 62, alto = 40, modo = 'rollo', qr = true } = {}) {
   const pedidos = await db.getPedidosPorFecha(fecha);
   return { fecha, ancho, alto, modo, qr, pedidos };
 }
 
-export function htmlEtiquetas({ fecha, ancho, alto, modo, qr = true, pedidos }) {
+export function htmlEtiquetas({ fecha, ancho = 62, alto = 40, modo, qr = true, pedidos }) {
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat('dd/MM/yyyy HH:mm');
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const enHoja = modo === 'hoja';
