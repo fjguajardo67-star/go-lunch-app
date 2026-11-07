@@ -92,6 +92,24 @@
         ],
         "createdAt": "2026-11-07T22:40:32.485Z",
         "reason": "Agent: remaining finding is the existing 32-character form label Clave personal (vacía = generar), also present in origin/main; it labels a password field and is not a body passage. New extraordinary-form labels use sentence case."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "public/entrega.html"
+        ],
+        "createdAt": "2026-11-07T22:45:56.619Z",
+        "reason": "Agent: finding is the existing .lista-vieja warning (4px red border) for an outdated offline delivery list. Its source documents an actual wrong-day scanning incident; the border is an intentional operational warning, not decorative card styling."
+      },
+      {
+        "rule": "icon-tile-stack",
+        "value": "*",
+        "files": [
+          "public/entrega.html"
+        ],
+        "createdAt": "2026-11-07T22:45:56.635Z",
+        "reason": "Agent: the existing .gate-icon is a delivery-truck SVG identifying the delivery application at login, not a repeated feature-card layout. Preserve the established login identity during the extraordinary-order change."
       }
     ]
   }
