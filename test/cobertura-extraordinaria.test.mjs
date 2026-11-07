@@ -37,7 +37,8 @@ test('gerente autoriza un folio adicional; la clave de supervisor y la captura p
  let server;
  try{
   const {adminRouter}=await import('../routes/admin.js');const {guardarSolicitud}=await import('../services/cobertura.js');
-  const app=express();app.use(express.json());app.use('/api',adminRouter);server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+  const {entregaRouter}=await import('../routes/entrega.js');
+  const app=express();app.use(express.json());app.use('/api/entrega',entregaRouter);app.use('/api',adminRouter);server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
   const url=`http://127.0.0.1:${server.address().port}`;
   const pedir=async(body,key='gerente-prueba',usuario='gerente')=>{
    const r=await fetch(url+'/api/cobertura/extraordinarias',{method:body?'POST':'GET',headers:{'content-type':'application/json','x-admin-key':key,'x-panel-user':usuario},...(body?{body:JSON.stringify(body)}:{})});
@@ -69,6 +70,10 @@ test('gerente autoriza un folio adicional; la clave de supervisor y la captura p
   const etiquetas=htmlEtiquetasCobertura(await etiquetasCobertura(fecha,{turno:'turno_b',solicitud:'2'}));
   assert.match(etiquetas,/REFIS · 6:20 PM/);assert.match(etiquetas,/EX\|qr-extra\|2026-11-07/);assert.match(etiquetas,/transform:scale\(0\.85\)/);
   assert.equal((await resumenCobertura(fecha,'turno_b',{origen:'supervisor'})).total,4);
+  const reparto=await fetch(url+'/api/entrega/'+fecha,{headers:{'x-admin-key':'gerente-prueba'}});
+  const repartoDatos=await reparto.json();assert.equal(reparto.status,200,JSON.stringify(repartoDatos));
+  const extra=repartoDatos.pedidos.find(p=>p.codigo_entrega==='qr-extra');
+  assert.equal(extra.origen,'extraordinaria');assert.match(extra.entrega_programada_en,/18:20/);
  }finally{
   if(server)await new Promise(r=>server.close(r));await new Promise(r=>base.close(r));Settings.now=reloj;
   for(const k of variables)if(originales[k]===undefined)delete process.env[k];else process.env[k]=originales[k];

@@ -83,6 +83,15 @@
         ],
         "createdAt": "2026-11-07T06:33:48.382Z",
         "reason": "Agent: hoja institucional de reparto para papel carta; Arial es intencional para imprimir con fuente local y sin descargas adicionales."
+      },
+      {
+        "rule": "all-caps-body",
+        "value": "*",
+        "files": [
+          "public/admin.html"
+        ],
+        "createdAt": "2026-11-07T22:40:32.485Z",
+        "reason": "Agent: remaining finding is the existing 32-character form label Clave personal (vacía = generar), also present in origin/main; it labels a password field and is not a body passage. New extraordinary-form labels use sentence case."
       }
     ]
   }

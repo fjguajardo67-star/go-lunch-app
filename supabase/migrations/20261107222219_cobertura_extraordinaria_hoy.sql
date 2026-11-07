@@ -1,4 +1,6 @@
 -- Alta adicional desde el panel; las funciones de supervisores conservan sus cortes.
+ALTER TABLE public.solicitudes_cobertura ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.solicitudes_cobertura_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.solicitudes_cobertura
   ALTER COLUMN supervisor_id DROP NOT NULL,
   ADD COLUMN IF NOT EXISTS origen varchar NOT NULL DEFAULT 'supervisor',
