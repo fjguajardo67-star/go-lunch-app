@@ -59,10 +59,12 @@
     border-radius: 10px; padding: 12px 16px; font-size: .87rem; margin-top: 16px;
   }
   .nota b { color: var(--azul); }
+  @page { size: letter portrait; margin: 14mm; }
   @media print {
     .barra { display: none; }
     body { background: #fff; }
-    .hoja { margin: 0; border: none; max-width: none; }
+    .hoja { margin: 0; padding: 0; border: none; max-width: none; }
+    .paso, .nota, .qr-caja { break-inside: avoid; page-break-inside: avoid; }
   }
 </style>
 </head>

@@ -135,8 +135,18 @@
     body { background: #fff; }
     .hoja { margin: 0; padding: 0; max-width: none; border: none; border-radius: 0; page-break-after: always; }
     .hoja:last-child { page-break-after: auto; }
+    .cartel { padding: 0; }
+    .tarjeta { padding: 3mm; }
+    .tarjeta .logo { margin-bottom: 2mm; }
+    .tarjeta .qr-caja canvas, .tarjeta .qr-caja img { width: 30mm !important; height: 30mm !important; }
+    .tarjeta .pie { font-size: 8pt; line-height: 1.25; margin-top: 2mm; }
+    .prueba-entrega h1 { font-size: 18pt; line-height: 1.15; margin-bottom: 2mm; }
+    .prueba-entrega .lema { font-size: 10pt; line-height: 1.25; margin-bottom: 3mm; }
+    .prueba-entrega .qr-caja { padding: 3mm; margin-bottom: 3mm; }
+    .prueba-entrega .qr-caja canvas, .prueba-entrega .qr-caja img { width: 50mm !important; height: 50mm !important; }
+    .tarjeta, .paso, .instalar { break-inside: avoid; page-break-inside: avoid; }
   }
-  @page { margin: 14mm; }
+  @page { size: letter portrait; margin: 14mm; }
 </style>
 </head>
 <body>

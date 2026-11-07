@@ -101,9 +101,12 @@ export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } =
   .no-print button {
     font-family: inherit; font-size: 15px; padding: 8px 24px; cursor: pointer;
   }
+  @page { size: letter portrait; margin: 14mm; }
   @media print {
     .no-print { display: none; }
-    body { padding: 0; }
+    body { max-width: none; padding: 0; }
+    .platillo, .subtotal, .total, .pie { break-inside: avoid; page-break-inside: avoid; }
+    .turno-titulo { break-after: avoid; page-break-after: avoid; }
   }
   ${termica ? `
   /* Rollo POS58. El paquete Windows calcula el largo real del ticket. */
@@ -117,7 +120,7 @@ export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } =
   .pie { font-size: 8px; }
   hr { margin: 7px 0; border-top-width: 1px; }
   .platillo { margin-bottom: 7px; break-inside: avoid; }
-  @media print { @page { size: 58mm 200mm; margin: 0; } body { padding: 2mm; } }
+  @media print { @page { size: 58mm 200mm; margin: 2mm 0; } body { padding: 2mm; } }
   ` : ''}
 </style>
 </head>
@@ -157,6 +160,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat('dd/MM/yyyy HH:mm');
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const enHoja = modo === 'hoja';
+  const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
 
   // Las etiquetas salen agrupadas por turno y zona: así se empacan y se
   // reparten en el mismo orden en que la cocina las va a necesitar.
@@ -270,8 +274,12 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   ${estiloEtiquetaReparto(ancho, alto)}
   ${enHoja
     ? `/* Prueba en papel carta: se recortan para validar la medida */
-       @page { size: letter; margin: 10mm; }
-       @media print { .etiqueta { border: .2mm dashed #999; } .hoja.prueba { gap: 4mm; } }`
+       @page { size: letter; margin: 14mm; }
+       @media print {
+         .hoja.prueba { display: block; font-size: 0; }
+         .hoja.prueba .etiqueta { display: ${Number(ancho) === 90 && Number(alto) === 62 ? 'inline-grid' : 'inline-flex'}; border: .2mm dashed #999; vertical-align: top; margin: 0 4mm 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+         .hoja.prueba .etiqueta:nth-child(${columnas}n) { margin-right: 0; }
+       }`
     : `/* Rollo continuo: una etiqueta por página, del tamaño exacto */
        @page { size: ${ancho}mm ${alto}mm; margin: 0; }
        @media print { .etiqueta { page-break-after: always; } .etiqueta:last-child { page-break-after: auto; } }`}

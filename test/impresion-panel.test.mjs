@@ -39,6 +39,6 @@ test('periodo incluye todos los días y distingue los que no tienen platillos', 
   const html = impresos.menus([{fecha:'2026-11-07',fija_a:'Pollo'},{fecha:'2026-11-08'}],'ahora');
   assert.equal((html.match(/<section class="menu-dia">/g)||[]).length,2);
   assert.ok(html.includes('Sin platillos capturados'));
-  assert.ok(html.includes('.menu-dia{break-before:page}'));
+  assert.ok(html.includes('.menu-dia{break-before:page;page-break-before:always}'));
 });
 

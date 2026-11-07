@@ -84,3 +84,7 @@ El enlace a /cobertura.html está disponible tanto en la identificación como en
 ## Checklist de salida
 
 En Cocina → Impresión, el checklist comparte fecha, turno y zona con los demás impresos. Lista solo pedidos existentes del servicio regular y separa cada lote por zona/turno en papel carta. Las hojas de continuación repiten identificación y se numeran; una sola firma y hora real de salida se capturan a mano al final de cada lote.
+
+## Márgenes y paginación de impresos
+
+Los documentos carta usan márgenes de 14 mm. Al imprimir, el checklist sigue flujo normal, sin altura mínima ni pie empujado con flex: Safari debe mantener conteo, continuación y firma dentro de su hoja. Listas y menús repiten cabeceras y evitan cortar filas. Las etiquetas en carta se distribuyen en filas de elementos indivisibles; el rollo conserva sus medidas y márgenes calibrados. Las comandas de 58 mm mantienen un área propia con margen vertical repetido de 2 mm.

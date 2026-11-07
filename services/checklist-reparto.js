@@ -99,9 +99,9 @@ th{font-size:9pt;height:8mm}td{height:8mm}.nombre{font-weight:600}
 .conteo{margin:0 0 4mm}.firma-salida{break-inside:avoid}.firma-salida p{margin:0}.linea-firma{height:13mm;border-bottom:1px solid #000;width:90mm;margin-bottom:2mm}
 .generado{font-size:8pt;margin:4mm 0 0}.continuacion{font-size:9pt;margin:0}
 .vacio{padding:24px;background:#fff}thead{display:table-header-group}tr{break-inside:avoid}
-@page{size:letter portrait;margin:12mm}
+@page{size:letter portrait;margin:14mm}
 @media screen{.hoja-checklist{padding:12mm}}
-@media print{body{background:#fff}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja-checklist{margin:0;break-after:page}.hoja-checklist:last-child{break-after:auto}}
+@media print{body{background:#fff}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja-checklist{margin:0;min-height:0;display:block;break-after:page;page-break-after:always}.hoja-checklist:last-child{break-after:auto;page-break-after:auto}header{margin-bottom:3mm}.marca{font-size:9pt;margin-bottom:1mm}h1{font-size:18pt;margin-bottom:2mm}.encabezado{font-size:10.5pt;margin:1mm 0}.referencia{font-size:8.5pt;margin-top:1mm}.cierre{margin-top:4mm;padding-top:0;break-inside:avoid;page-break-inside:avoid}.conteo{margin-bottom:3mm}.linea-firma{height:10mm}.generado{margin-top:3mm}tr{page-break-inside:avoid}}
 </style></head><body>
 <div class="barra"><b>Checklist de salida</b><span>${esc(datos.fecha_texto)} · ${esc(textoSeleccionCocina(datos.filtros))}</span><span>${datos.total} comida(s) · ${datos.lotes.length} lote(s)</span><button onclick="window.print()">Imprimir</button></div>
 <p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Cada zona y turno tiene su propia lista; una sola firma al final de cada lote.</p>
