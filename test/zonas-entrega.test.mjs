@@ -64,7 +64,7 @@ test('etiquetas y comandas muestran el patio y hora sin alterar los QR', async (
   const items = pedidos.map((p, i) => ({ empleado_nombre_snapshot: 'Ejemplo', empleado_numero_snapshot: String(i+1), codigo_entrega: `codigo-${i}`, secuencia: 1,
     solicitud: { zona: p.zona, folio: `F${i}`, total_porciones: 1 } }));
   const cobertura = htmlEtiquetasCobertura({ fecha, ancho: 57, alto: 32, modo: 'hoja', items });
-  assert.match(cobertura, /COBERTURA · 6:00 PM · ASLA/);
-  assert.match(cobertura, /COBERTURA · 5:00 PM · REFIS/);
+  assert.match(cobertura, /COBERTURA B · 6:00 PM · ASLA/);
+  assert.match(cobertura, /COBERTURA B · 5:00 PM · REFIS/);
   assert.match(cobertura, /EX\|codigo-0\|2026-11-07/);
 });

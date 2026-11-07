@@ -127,7 +127,7 @@
       <li><a href="#general">Cómo funciona el sistema</a></li>
       <li><a href="#empleado">Para el empleado — pedir comida</a></li>
       <li><a href="#admin">Para el administrador — el panel</a></li>
-      <li><a href="#cobertura">Coberturas del segundo turno</a></li>
+      <li><a href="#cobertura">Pedidos especiales por turno</a></li>
       <li><a href="#reparto">Para el personal de reparto — entregar y escanear</a></li>
       <li><a href="#problemas">Problemas comunes y su solución</a></li>
       <li><a href="#direcciones">Direcciones y claves</a></li>
@@ -345,11 +345,10 @@
 
   <!-- ══════════════ 4. COBERTURAS ══════════════ -->
   <section id="cobertura">
-    <h2>4 · Coberturas del segundo turno</h2>
+    <h2>4 · Pedidos especiales por turno</h2>
     <span class="rol adm">Supervisores Glovis autorizados · CICSA</span>
 
-    <p>Este servicio es para empleados del primer turno que deben continuar en
-      el segundo. Se administra aparte del pedido personal: una persona puede
+    <p>Los supervisores autorizados solicitan pedidos especiales para el turno A y para el turno B con horas extras. El menú es el mismo para ambos turnos. Se administra aparte del pedido personal: una persona puede
       tener su comida regular y también una cobertura el mismo día.</p>
 
     <h3>Preparación en el panel</h3>
@@ -358,12 +357,12 @@
     <div class="paso"><div class="n">3</div><div class="t"><b>Anota la clave cuando aparece.</b> Después no se puede consultar; si se pierde, genera una nueva. Desactivar al supervisor o cambiar su clave cierra las sesiones abiertas.</div></div>
 
     <p>Para consultar o editar un periodo, elige un día que le pertenezca en <b>Solicitudes y producción → Fecha de servicio a consultar</b>: el formulario recupera su inicio, final y opciones. <b>Nuevo periodo</b> comienza otra publicación sin mover la anterior. No se permiten periodos que se crucen. Al acortar una vigencia se retiran los días excluidos de ese mismo periodo; si alguno ya tiene solicitudes confirmadas, se rechaza todo el cambio. Tampoco se cambian las opciones de un día que ya tenga solicitudes. El usuario gerente conserva únicamente consulta e impresión de menús.</p>
-    <p>La fecha de consulta controla solo las solicitudes, conteos, comanda y etiquetas de ese día. La vigencia del menú no cambia el cierre diario de las coberturas a las <b>2:45 PM</b>.</p>
+    <p>La fecha de consulta controla solo las solicitudes, conteos, comanda y etiquetas de ese día. La vigencia del menú no cambia el cierre diario: <b>7:00 AM para turno A</b> y <b>2:00 PM para turno B y horas extras</b>.</p>
 
     <h3>Solicitud del supervisor</h3>
     <div class="paso"><div class="n">1</div><div class="t">Entra a <b>Cobertura</b> desde la pantalla principal con su número de empleado y clave personal.</div></div>
-    <div class="paso"><div class="n">2</div><div class="t">Selecciona <b>ASLA o REFIS</b>, captura el número del empleado responsable de recibir y agrega una fila por persona: número de empleado + uno de los tres platillos.</div></div>
-    <div class="paso"><div class="n">3</div><div class="t">Confirma una sola solicitud consolidada. Puede modificarla o cancelarla hasta las <b>2:45 PM</b>. A esa hora cierra el conteo; el panel de CICSA activa una alarma y presenta la comanda final para impresión. Cocina produce hasta las <b>4:30 PM</b>. Desde el 7 de noviembre de 2026, la entrega es a las <b>5:00 PM en REFIS</b> y a las <b>6:00 PM en ASLA</b>.</div></div>
+    <div class="paso"><div class="n">2</div><div class="t">Elige primero <b>Turno A</b> o <b>Turno B y horas extras</b>. Después selecciona <b>ASLA o REFIS</b>, captura el número del empleado responsable de recibir y agrega una fila por persona: número de empleado + uno de los tres platillos.</div></div>
+    <div class="paso"><div class="n">3</div><div class="t">Confirma una solicitud consolidada <b>por turno</b>. Puede modificarla o cancelarla antes de las <b>7:00 AM para A</b> o <b>2:00 PM para B y horas extras</b>. El turno A se entrega a las <b>10:00 AM</b> en ambas zonas. A esa hora cierra el conteo; el panel de CICSA activa una alarma y presenta la comanda final para impresión. Para el turno B, cocina produce hasta las <b>4:30 PM</b>. Desde el 7 de noviembre de 2026, la entrega es a las <b>5:00 PM en REFIS</b> y a las <b>6:00 PM en ASLA</b>.</div></div>
     <div class="caja importante">
       La app del supervisor <b>no muestra precios, importes ni condiciones financieras</b>.
       Esas condiciones pertenecen al catálogo de servicios acordado entre Glovis y CICSA.
@@ -371,9 +370,9 @@
 
     <h3>Cocina y entrega</h3>
     <ul>
-      <li>Mantén el <b>panel abierto y el equipo despierto</b> antes de las 2:45 PM. Si existen solicitudes, a esa hora suena la alarma y el navegador intenta abrir la impresión de la comanda final.</li>
+      <li>Mantén el <b>panel abierto y el equipo despierto</b> antes de cada corte (7:00 AM y 2:00 PM). Si existen solicitudes, a esa hora suena la alarma y el navegador intenta abrir la impresión de la comanda final.</li>
       <li>Si el navegador bloquea el diálogo automático, usa <b>Imprimir comanda</b> en la alerta. Verifica el documento y después pulsa <b>Comanda impresa</b>; solo esa confirmación detiene la alarma.</li>
-      <li>La comanda y las etiquetas de cobertura también pueden abrirse manualmente desde <b>Panel → Coberturas</b>. No se mezclan con la comanda regular.</li>
+      <li>La comanda y las etiquetas de cobertura también pueden abrirse manualmente desde <b>Panel → Coberturas</b>, seleccionando fecha y turno. Cada turno tiene su propia comanda y etiquetas. No se mezclan con la comanda regular.</li>
       <li>Cada alimento lleva su propia etiqueta y QR, con empleado, platillo, zona, folio y responsable.</li>
       <li>El repartidor escanea <b>cada etiqueta</b>, igual que en el servicio regular.</li>
       <li>En el primer paquete del folio, la tablet pregunta si recibe la persona indicada. Si sí, guarda su nombre para todo el lote.</li>

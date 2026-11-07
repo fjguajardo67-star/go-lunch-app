@@ -10,7 +10,13 @@ import * as db from './supabase.js';
 import { ZONA, ZONAS_VALIDAS, horaTexto } from './menu.js';
 
 export const HORA_CORTE_COBERTURA = 14;
-export const MINUTO_CORTE_COBERTURA = 45;
+export const MINUTO_CORTE_COBERTURA = 0;
+export function validarTurnoCobertura(turno = "turno_b") {
+  if (!["turno_a", "turno_b"].includes(turno)) {
+    const e = new Error("Selecciona Turno A o Turno B y horas extras."); e.status = 400; throw e;
+  }
+  return turno;
+}
 export const OPCIONES_COBERTURA = ['especial_1', 'especial_2', 'especial_3'];
 
 export function ahoraCobertura() {
@@ -21,21 +27,23 @@ export function fechaCobertura() {
   return ahoraCobertura().toISODate();
 }
 
-export function horarioCobertura() {
+export function horarioCobertura(turno = "turno_b") {
+  validarTurnoCobertura(turno);
   const ahora = ahoraCobertura();
   const corte = ahora.startOf('day').set({
-    hour: HORA_CORTE_COBERTURA,
+    hour: turno === "turno_a" ? 7 : HORA_CORTE_COBERTURA,
     minute: MINUTO_CORTE_COBERTURA,
     second: 0,
     millisecond: 0
   });
   return {
+    turno,
     fecha: ahora.toISODate(),
     abierto: ahora < corte,
     corte_iso: corte.toISO(),
-    corte_texto: '2:45 PM',
-    entrega_texto: horaTexto('turno_b', null, ahora.toISODate()),
-    entrega_por_zona: Object.fromEntries(ZONAS_VALIDAS.map(z => [z, horaTexto('turno_b', z, ahora.toISODate())])),
+    corte_texto: turno === 'turno_a' ? '7:00 AM' : '2:00 PM',
+    entrega_texto: horaTexto(turno, null, ahora.toISODate()),
+    entrega_por_zona: Object.fromEntries(ZONAS_VALIDAS.map(z => [z, horaTexto(turno, z, ahora.toISODate())])),
     minutos_restantes: Math.max(0, Math.ceil(corte.diff(ahora, 'minutes').minutes))
   };
 }
@@ -49,11 +57,11 @@ function opcionesMenu(menu) {
   ];
 }
 
-export async function estadoSupervisor(supervisorId) {
-  const horario = horarioCobertura();
+export async function estadoSupervisor(supervisorId, turno = "turno_b") {
+  const horario = horarioCobertura(turno);
   const [menu, solicitud] = await Promise.all([
     db.getMenuCobertura(horario.fecha),
-    db.getSolicitudCobertura(supervisorId, horario.fecha)
+    db.getSolicitudCobertura(supervisorId, horario.fecha, horario.turno)
   ]);
   const disponible = horario.abierto && menu?.activo === true;
   return {
@@ -86,9 +94,9 @@ export function validarSolicitudEntrada({ responsable_numero, zona, items }) {
 }
 
 export async function guardarSolicitud(supervisorId, entrada) {
-  const horario = horarioCobertura();
+  const horario = horarioCobertura(entrada.turno);
   if (!horario.abierto) {
-    const e = new Error('Las solicitudes de cobertura cerraron a las 2:45 PM.');
+    const e = new Error("Las solicitudes de este turno cerraron a las " + horario.corte_texto + ".");
     e.status = 409; e.motivo = 'fuera_de_horario'; throw e;
   }
   const valida = validarSolicitudEntrada(entrada);
@@ -100,13 +108,14 @@ export async function guardarSolicitud(supervisorId, entrada) {
   try {
     await db.guardarSolicitudCobertura({
       fecha: horario.fecha,
+      turno: horario.turno,
       supervisor_id: supervisorId,
       folio,
       responsable_numero: String(entrada.responsable_numero).trim(),
       zona: entrada.zona,
       items: valida.items
     });
-    return db.getSolicitudCobertura(supervisorId, horario.fecha);
+    return db.getSolicitudCobertura(supervisorId, horario.fecha, horario.turno);
   } catch (err) {
     const traducido = traducirErrorBD(err);
     if (traducido.motivo === 'error_servidor') {
@@ -120,13 +129,15 @@ export async function guardarSolicitud(supervisorId, entrada) {
   }
 }
 
-export async function cancelarSolicitud(supervisorId) {
-  const horario = horarioCobertura();
+export async function cancelarSolicitud(supervisorId, turno = "turno_b") {
+  const horario = horarioCobertura(turno);
   if (!horario.abierto) {
     const e = new Error('La solicitud ya quedó cerrada para producción y no puede cancelarse desde la app.');
     e.status = 409; e.motivo = 'fuera_de_horario'; throw e;
   }
-  const solicitud = await db.cancelarSolicitudCobertura(supervisorId, horario.fecha);
+  let solicitud;
+  try { solicitud = await db.cancelarSolicitudCobertura(supervisorId, horario.fecha, horario.turno); }
+  catch (err) { throw traducirErrorBD(err); }
   if (!solicitud) {
     const e = new Error('No encontramos una solicitud activa para cancelar.');
     e.status = 404; e.motivo = 'sin_solicitud'; throw e;
@@ -150,7 +161,7 @@ export function validarReceptorEscaneado(empleado, numero, nombre) {
 function traducirErrorBD(err) {
   const bruto = String(err?.message || err || '');
   const casos = [
-    ['cobertura_cerrada', 409, 'fuera_de_horario', 'Las solicitudes cerraron a las 2:45 PM.'],
+    ['cobertura_cerrada', 409, 'fuera_de_horario', 'El periodo de solicitudes de este turno ya cerró.'],
     ['fecha_cobertura_invalida', 409, 'fecha_invalida', 'La cobertura solo puede solicitarse para hoy.'],
     ['supervisor_no_autorizado', 403, 'no_autorizado', 'Tu autorización de supervisor no está activa.'],
     ['responsable_no_encontrado', 404, 'responsable_no_encontrado', 'No encontramos al responsable en la plantilla activa.'],
@@ -159,7 +170,7 @@ function traducirErrorBD(err) {
     ['opcion_especial_invalida', 400, 'opcion_invalida', 'Uno de los platillos ya no está disponible. Actualiza la pantalla.'],
     ['empleados_repetidos:', 409, 'empleados_repetidos', 'Un empleado aparece más de una vez.'],
     ['empleados_no_encontrados:', 404, 'empleados_no_encontrados', 'Uno o más números no existen en la plantilla activa.'],
-    ['empleados_ya_asignados:', 409, 'empleados_ya_asignados', 'Uno o más empleados ya tienen alimento de cobertura para hoy.'],
+    ['empleados_ya_asignados:', 409, 'empleados_ya_asignados', 'Uno o más empleados ya tienen alimento de cobertura para este turno.'],
     ['solicitud_ya_entregada', 409, 'ya_entregada', 'Esta solicitud ya fue entregada y no puede modificarse.']
   ];
   const hallado = casos.find(([marca]) => bruto.includes(marca));

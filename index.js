@@ -212,12 +212,12 @@ app.get('/comanda-cobertura/:fecha', async (req, res) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return res.status(400).send('Fecha inválida');
   try {
     res.type('html').send(htmlComandaCobertura(
-      await resumenCobertura(fecha),
+      await resumenCobertura(fecha, req.query.turno),
       { autoPrint: req.query.autoprint === '1' }
     ));
   } catch (err) {
     console.error('[Comanda cobertura] Error:', err);
-    res.status(500).send('Error generando la comanda de cobertura');
+    res.status(err.status || 500).send(err.status ? err.message : 'Error generando la comanda de cobertura');
   }
 });
 
@@ -233,6 +233,7 @@ app.get('/etiquetas-cobertura/:fecha', async (req, res) => {
   };
   try {
     const datos = await etiquetasCobertura(fecha, {
+      turno: req.query.turno,
       ancho: num(req.query.ancho, 62, 20, 210),
       alto: num(req.query.alto, 40, 15, 297),
       modo: req.query.modo === 'hoja' ? 'hoja' : 'rollo'
@@ -240,7 +241,7 @@ app.get('/etiquetas-cobertura/:fecha', async (req, res) => {
     res.type('html').send(htmlEtiquetasCobertura(datos));
   } catch (err) {
     console.error('[Etiquetas cobertura] Error:', err);
-    res.status(500).send('Error generando las etiquetas de cobertura');
+    res.status(err.status || 500).send(err.status ? err.message : 'Error generando las etiquetas de cobertura');
   }
 });
 

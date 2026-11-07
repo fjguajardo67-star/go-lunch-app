@@ -763,11 +763,12 @@ export async function contarSolicitudesCobertura(fecha) {
   return count || 0;
 }
 
-export async function getSolicitudCobertura(supervisorId, fecha) {
+export async function getSolicitudCobertura(supervisorId, fecha, turno = 'turno_b') {
   const { data, error } = await supabase
     .from('solicitudes_cobertura')
     .select('*')
     .eq('supervisor_id', supervisorId)
+    .eq('turno', turno)
     .eq('fecha_servicio', fecha)
     .limit(1);
   if (error) throw error;
@@ -783,11 +784,12 @@ export async function getSolicitudCobertura(supervisorId, fecha) {
 }
 
 export async function guardarSolicitudCobertura({
-  fecha, supervisor_id, folio, responsable_numero, zona, items
+  fecha, supervisor_id, folio, responsable_numero, zona, items, turno = 'turno_b'
 }) {
   const { data, error } = await supabase.rpc('guardar_solicitud_cobertura', {
     p_fecha: fecha,
     p_supervisor_id: supervisor_id,
+    p_turno: turno,
     p_folio: folio,
     p_responsable_numero: responsable_numero,
     p_zona: zona,
@@ -797,27 +799,22 @@ export async function guardarSolicitudCobertura({
   return data?.[0] || null;
 }
 
-export async function cancelarSolicitudCobertura(supervisorId, fecha) {
-  const { data, error } = await supabase
-    .from('solicitudes_cobertura')
-    .update({ estado: 'cancelada', cancelado_en: new Date().toISOString(), actualizado_en: new Date().toISOString() })
-    .eq('supervisor_id', supervisorId)
-    .eq('fecha_servicio', fecha)
-    .neq('estado', 'entregada')
-    .select()
-    .limit(1);
+export async function cancelarSolicitudCobertura(supervisorId, fecha, turno = 'turno_b') {
+  const { data, error } = await supabase.rpc('cancelar_solicitud_cobertura', {
+    p_supervisor_id: supervisorId, p_fecha: fecha, p_turno: turno
+  });
   if (error) throw error;
   return data?.[0] || null;
 }
 
-export async function listSolicitudesCobertura(fecha) {
+export async function listSolicitudesCobertura(fecha, turno) {
   const { data, error } = await supabase
     .from('solicitudes_cobertura')
     .select('*')
     .eq('fecha_servicio', fecha)
     .order('creado_en');
   if (error) throw error;
-  const solicitudes = data || [];
+  const solicitudes = turno ? (data || []).filter(s => s.turno === turno) : (data || []);
   if (!solicitudes.length) return [];
   const ids = solicitudes.map(s => s.id);
   const { data: items, error: e2 } = await supabase

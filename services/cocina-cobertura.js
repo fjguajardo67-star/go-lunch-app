@@ -1,5 +1,6 @@
 // services/cocina-cobertura.js — comanda y etiquetas del menú especial
 
+import { validarTurnoCobertura } from './cobertura.js';
 import { DateTime } from 'luxon';
 import * as db from './supabase.js';
 import { ZONA as ZONA_TZ, ZONAS, horaTexto } from './menu.js';
@@ -8,8 +9,8 @@ const esc = s => String(s ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
-export async function resumenCobertura(fecha) {
-  const solicitudes = (await db.listSolicitudesCobertura(fecha)).filter(s => s.estado !== 'cancelada');
+export async function resumenCobertura(fecha, turno = 'turno_b') {
+  const solicitudes = (await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno))).filter(s => s.estado !== 'cancelada');
   const items = solicitudes.flatMap(s => s.items.map(item => ({ ...item, solicitud: s })));
   const grupos = new Map();
   for (const item of items) {
@@ -20,7 +21,7 @@ export async function resumenCobertura(fecha) {
     grupos.get(clave).porciones++;
   }
   return {
-    fecha,
+    fecha, turno,
     total: items.length,
     solicitudes: solicitudes.length,
     resumen: [...grupos.values()].sort((a, b) =>
@@ -29,7 +30,7 @@ export async function resumenCobertura(fecha) {
   };
 }
 
-export function htmlComandaCobertura({ fecha, total, solicitudes, resumen, detalle }, { autoPrint = false } = {}) {
+export function htmlComandaCobertura({ fecha, turno = 'turno_b', total, solicitudes, resumen, detalle }, { autoPrint = false } = {}) {
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat("dd/MM/yyyy HH:mm 'hrs'");
   const porZona = new Map();
   for (const r of resumen) {
@@ -38,7 +39,7 @@ export function htmlComandaCobertura({ fecha, total, solicitudes, resumen, detal
   }
   const secciones = [...porZona.entries()].map(([zona, items]) => `
     <section>
-      <h2>${esc((ZONAS[zona] || zona).toUpperCase())} · ${esc(horaTexto('turno_b', zona, fecha))}</h2>
+      <h2>${esc((ZONAS[zona] || zona).toUpperCase())} · ${esc(horaTexto(turno, zona, fecha))}</h2>
       ${items.map(i => `<div class="linea"><b>${esc(i.platillo)}</b><strong>${i.porciones}</strong></div>`).join('')}
       <div class="subtotal"><span>Subtotal zona</span><b>${items.reduce((s, i) => s + i.porciones, 0)}</b></div>
     </section>`).join('');
@@ -56,7 +57,7 @@ h2{text-align:center;font-size:16px;border-block:2px solid #000;padding:7px 0;ma
 .total{font-size:19px;font-weight:900}.folio{font-size:12px;line-height:1.45;padding:7px 0;border-bottom:1px dotted #888}.folio span{font-size:11px}.no-print{text-align:center;margin-top:18px}.no-print button{padding:8px 20px;font:inherit}
 @media print{body{padding:0}.no-print{display:none}}
 </style></head><body>
-<h1>COBERTURA · SEGUNDO TURNO</h1><p>CICSA · Glovis</p><p>${esc(horaTexto('turno_b', null, fecha))} · Salida máxima 4:30 PM</p><p>Fecha: <b>${esc(fecha)}</b></p><hr>
+<h1>COBERTURA · ${turno === 'turno_a' ? 'TURNO A' : 'TURNO B Y HORAS EXTRAS'}</h1><p>CICSA · Glovis</p><p>${esc(horaTexto(turno, null, fecha))}${turno === 'turno_b' ? ' · Salida máxima 4:30 PM' : ''}</p><p>Fecha: <b>${esc(fecha)}</b></p><hr>
 ${secciones || '<p>Sin solicitudes confirmadas.</p>'}
 <hr><div class="total"><span>TOTAL</span><span>${total}</span></div><p>${solicitudes} solicitud(es)</p>
 ${folios ? `<hr><h2>FOLIOS Y RECEPCIÓN</h2>${folios}` : ''}
@@ -65,8 +66,8 @@ ${autoPrint ? '<script>window.addEventListener("load",function(){window.setTimeo
 </body></html>`;
 }
 
-export async function etiquetasCobertura(fecha, { ancho = 62, alto = 40, modo = 'rollo' } = {}) {
-  const solicitudes = (await db.listSolicitudesCobertura(fecha)).filter(s => s.estado !== 'cancelada');
+export async function etiquetasCobertura(fecha, { ancho = 62, alto = 40, modo = 'rollo', turno = 'turno_b' } = {}) {
+  const solicitudes = (await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno))).filter(s => s.estado !== 'cancelada');
   const items = solicitudes.flatMap(s => s.items.map((item, i) => ({
     ...item, solicitud: s, secuencia: i + 1
   })));
@@ -85,7 +86,7 @@ export function htmlEtiquetasCobertura({ fecha, ancho = 62, alto = 40, modo, ite
     const codigo = `EX|${item.codigo_entrega}|${fecha}`;
     return `<article class="etiqueta">
       <div class="texto">
-        <div class="ruta">COBERTURA · ${esc(horaTexto('turno_b', s.zona, fecha))} · ${esc((ZONAS[s.zona] || s.zona).split(' (')[0])}</div>
+        <div class="ruta">COBERTURA ${s.turno === 'turno_a' ? 'A' : 'B'} · ${esc(horaTexto(s.turno || 'turno_b', s.zona, fecha))} · ${esc((ZONAS[s.zona] || s.zona).split(' (')[0])}</div>
         <div class="nombre">${esc(item.empleado_nombre_snapshot)}</div>
         <div class="numero">#${esc(item.empleado_numero_snapshot)} · ${esc(item.opcion_texto)}</div>
         <div class="recibe">Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</div>
