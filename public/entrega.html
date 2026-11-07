@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Entrega">
 <script src="/operacion.js"></script>
+<script src="/reparto-grupos.js"></script>
 <script>
   // Evita un destello claro al abrir la PWA cuando el equipo usa tema oscuro.
   try {
@@ -309,6 +310,13 @@
       <span class="zona-activa-copy"><small>Zona activa</small><b id="zona-activa-txt">—</b></span>
       <button id="btn-cambiar-zona" class="btn-texto" type="button" onclick="abrirSelectorZona()">Cambiar zona</button>
     </div>
+    <div class="turno-activo">
+      <label for="turno-reparto">Turno de reparto</label>
+      <select id="turno-reparto" onchange="seleccionarTurno(this.value)">
+        <option value="">Selecciona turno</option>
+        <option value="turno_a">Turno A</option><option value="turno_b">Turno B</option>
+      </select>
+    </div>
     <!-- Versión que este aparato está corriendo de verdad. Un teléfono con el
          service worker viejo se ve idéntico a uno al día, y así estuvo uno
          trabajando con la fecha equivocada sin que nadie lo notara. -->
@@ -326,7 +334,7 @@
   <div class="marcador">
     <div class="m-entregado"><div class="n" id="n-entregado">0</div><div class="e">Entregadas</div></div>
     <div class="m-falta"><div class="n" id="n-falta">0</div><div class="e">Pendientes</div></div>
-    <div class="m-cola vacia" id="caja-cola"><div class="n" id="n-cola">0</div><div class="e">Por subir</div></div>
+    <div class="m-cola vacia" id="caja-cola"><div class="n" id="n-cola">0</div><div class="e">Por subir · equipo</div></div>
   </div>
 
   <main>
@@ -498,6 +506,7 @@
     cola:   'cicsa_entrega_cola',    // [{ tipo, codigo_entrega, numero_empleado, entregado_en, fecha, zona }]
     lector: 'cicsa_entrega_lector',  // modo pistola/escáner integrado
     zona:   'cicsa_entrega_zona',    // 'zona_vdc' | 'zona_refris' — se fija por equipo
+    turno:  'cicsa_entrega_turno',   // {fecha,zona,turno}; elección expresa del día
     indice: 'cicsa_entrega_indice',  // { fecha, mapa: { numero: zona } } de TODAS las zonas
     tema:   'cicsa_entrega_tema',
     // Llegadas por subir. Cola aparte de la de escaneos porque va a otro
@@ -522,6 +531,7 @@
   let PEDIDOS = [];
   let FECHA = '';
   let ZONA = '';
+  let TURNO = '';
   // El índice numero→zona de TODO el día. Es lo que permite decir "este pedido
   // es de la otra ruta" en vez de "no existe" cuando no hay señal.
   let INDICE_ZONAS = {};
@@ -824,6 +834,7 @@
     if (z === ZONA) return cerrarSelectorZona();
 
     ZONA = z;
+    TURNO = '';
     localStorage.setItem(LS.zona, z);
     EPOCA_ZONA++;                 // invalida cualquier descarga en vuelo
     // Se limpia la pantalla, NO la caché de la otra zona: volver a ella no
@@ -851,6 +862,7 @@
     if (cache.turno_hora) TURNO_HORA = cache.turno_hora;
     if (cache.tolerancia_min != null) TOLERANCIA_MIN = cache.tolerancia_min;
     if (cache.motivos) MOTIVOS = cache.motivos;
+    restaurarTurno();
   }
 
   // Decide si se puede operar o si primero hay que preguntar la zona.
@@ -933,24 +945,34 @@
   // se puede, devuelve vacío y el elemento viaja SIN zona — el servidor lo
   // acepta sin verificar antes que perder una entrega que sí ocurrió.
   // ── Llegada al punto ──────────────────────────────────────
-  // Qué turno se está entregando. Se deduce de lo que queda pendiente, que es
-  // más confiable que el reloj: si la ruta se atrasó, el turno sigue siendo el
-  // de la comida que traes. El reloj solo decide cuando no hay pendientes.
+  // El operador selecciona el turno; los pendientes nunca cambian esa selección.
   function turnoEnCurso() {
-    const pend = PEDIDOS.filter(p => !p.entregado_en && p.turno);
-    if (pend.length) {
-      const cuenta = {};
-      pend.forEach(p => { cuenta[p.turno] = (cuenta[p.turno] || 0) + 1; });
-      return Object.entries(cuenta).sort((a, b) => b[1] - a[1])[0][0];
+    return TURNO;
+  }
+
+  function restaurarTurno() {
+    const guardado = leerLS(LS.turno, null);
+    TURNO = guardado?.fecha === FECHA && guardado?.zona === ZONA && GoLunchReparto.turnoValido(guardado.turno)
+      ? guardado.turno : '';
+  }
+
+  function seleccionarTurno(turno) {
+    if (!FECHA || !ZONA) return;
+    if (!GoLunchReparto.turnoValido(turno)) {
+      TURNO = ''; localStorage.removeItem(LS.turno); pintar(); return;
     }
-    const ahora = new Date();
-    const minutos = ahora.getHours() * 60 + ahora.getMinutes();
-    const horas = GoLunchOperacion.horarioZona(ZONA, FECHA);
-    if (!horas.turno_a || !horas.turno_b) return 'turno_a';
-    const [ha, ma] = horas.turno_a.split(':').map(Number);
-    const [hb, mb] = horas.turno_b.split(':').map(Number);
-    const medio = ((ha * 60 + ma) + (hb * 60 + mb)) / 2;
-    return minutos < medio ? 'turno_a' : 'turno_b';
+    if (RECEPTOR_PENDIENTE) cancelarReceptor();
+    if (escaneando) detenerCamara();
+    TURNO = turno; guardar(LS.turno, {fecha:FECHA,zona:ZONA,turno}); pintar();
+  }
+
+  function validarGrupoEnPantalla(pedido) {
+    const grupo = GoLunchReparto.validarGrupo(pedido,ZONA,TURNO);
+    if (grupo.ok) return true;
+    const mensaje = grupo.motivo === 'turno_incorrecto'
+      ? 'Este pedido pertenece a ' + (TURNO_TXT[pedido.turno] || 'otro turno') + '. Cambia el turno de reparto para registrarlo.'
+      : grupo.motivo === 'zona_incorrecta' ? 'El pedido corresponde a otra zona.' : 'Selecciona la zona y el turno que estás repartiendo.';
+    flash('mal','Revisa zona y turno',mensaje); return false;
   }
 
   function llegadaRegistrada(turno) {
@@ -970,7 +992,7 @@
   }
 
   async function registrarLlegada() {
-    if (!ZONA || !FECHA) return;
+    if (!ZONA || !FECHA || !TURNO) return;
     const turno = turnoEnCurso();
     if (llegadaRegistrada(turno)) {
       return flash('dup', 'La llegada ya estaba registrada',
@@ -1018,13 +1040,15 @@
   function cerrarRuta() {
     // Una cobertura nunca se cierra en masa: sus etiquetas deben escanearse y
     // quedar ligadas al responsable declarado o al gafete del receptor real.
-    const especiales = PEDIDOS.filter(p => p.tipo === 'cobertura' && !p.entregado_en);
-    const pend = PEDIDOS.filter(p => p.tipo !== 'cobertura' && !p.entregado_en);
+    const grupo = GoLunchReparto.pedidosDelGrupo(PEDIDOS, ZONA, TURNO);
+    const especiales = grupo.filter(p => p.tipo === 'cobertura' && !p.entregado_en);
+    const pend = GoLunchReparto.pendientesDelCierre(PEDIDOS, ZONA, TURNO);
     if (!pend.length) return mostrarAviso('avisoSync', 'No queda nada pendiente por cerrar.', 'info');
 
     const previo = localStorage.getItem(LS.supervisor) || '';
     const quien = prompt(
-      'Vas a registrar ' + pend.length + ' comida(s) como entregadas al supervisor.\n\n' +
+      (ZONA_TXT[ZONA] || ZONA) + ' · ' + TURNO_TXT[TURNO] + '\n' +
+      'Vas a registrar ' + pend.length + ' comida(s) regulares como entregadas al supervisor.\n\n' +
       '¿Quién las recibió?', previo);
     if (quien === null) return;
     const nombre = quien.trim();
@@ -1040,7 +1064,7 @@
       COLA.push({
         tipo: 'regular', codigo_entrega: p.numero_empleado,
         numero_empleado: p.numero_empleado, entregado_en: ahora,
-        fecha: FECHA, zona: p.zona || ZONA,
+        fecha: FECHA, zona: ZONA, turno: TURNO, accion: 'cierre_ruta',
         entregado_a: 'supervisor', recibido_por: nombre,
         repartidor_id: SESION?.repartidor?.id ?? null,
         lat: pos ? pos.lat : null, lon: pos ? pos.lon : null,
@@ -1090,6 +1114,7 @@
     const l = llegadaRegistrada(turno);
     const btn = $('btn-llegada'), est = $('llegada-estado');
     if (!btn || !est) return;
+    btn.disabled = !TURNO;
     btn.classList.toggle('oculto', !!l);
     est.classList.toggle('oculto', !l);
     if (l) {
@@ -1154,16 +1179,17 @@
       COLA.forEach(e => {
         const f = e.fecha || FECHA;   // escaneos viejos sin fecha: la de la app
         const z = zonaDeElemento(e);
-        (porLote[f + '|' + (z || '')] = porLote[f + '|' + (z || '')] || []).push(e);
+        const llave = f + '|' + (z || '') + '|' + (e.turno || '');
+        (porLote[llave] = porLote[llave] || []).push(e);
       });
 
       for (const [llave, lote] of Object.entries(porLote)) {
-        const corte = llave.lastIndexOf('|');
-        const fechaLote = llave.slice(0, corte);
-        const zonaLote  = llave.slice(corte + 1) || null;
+        const [fechaLote, zonaTexto, turnoTexto] = llave.split('|');
+        const zonaLote = zonaTexto || null, turnoLote = turnoTexto || null;
         try {
           const cuerpo = { fecha: fechaLote, entregas: lote };
           if (zonaLote) cuerpo.zona = zonaLote;
+          if (turnoLote) cuerpo.turno = turnoLote;
           const r = await fetch(API_BASE + '/api/entrega', {
             method: 'POST',
             headers: cabecerasAuth({ 'Content-Type': 'application/json' }),
@@ -1209,7 +1235,7 @@
           COLA = COLA.filter(e => {
             const f = e.fecha || FECHA;
             const z = zonaDeElemento(e) || null;
-            if (f !== fechaLote || z !== zonaLote) return true;   // otro lote: no tocar
+            if (f !== fechaLote || z !== zonaLote || (e.turno || null) !== turnoLote) return true;
             const clave = clavePedido(e);
             return !confirmados.has(clave) && !definitivos.has(clave);
           });
@@ -1221,6 +1247,9 @@
                 ? (x.numero_empleado || x.codigo_entrega) + ' es de ' + (ZONA_TXT[x.zona_esperada] || 'otra zona') + ' — regístralo desde ese equipo'
                 : (x.numero_empleado || x.codigo_entrega) + ' (' + x.motivo + ')').join(', '), 'err');
           }
+          const revisar = d.resultados.filter(x => !x.ok && !RECHAZO_DEFINITIVO.includes(x.motivo));
+          if (revisar.length) mostrarAviso('avisoSync', revisar.length +
+            ' registro(s) siguen en el equipo para revisión. Actualiza la app; verifica zona y turno antes de volver a registrar. No borres los datos del navegador.', 'err');
         } catch {}
       }
     }
@@ -1262,12 +1291,15 @@
       // fecha real solo se conoce al responder el servidor.
       if (FECHA && d.fecha && d.fecha !== FECHA) { PEDIDOS = []; }
       FECHA = d.fecha;
+      restaurarTurno();
       // Lo del servidor manda, EXCEPTO para lo que sigue en la cola local:
       // esas entregas ya ocurrieron aunque el servidor todavía no las tenga.
-      const enCola = new Map(COLA.map(e => [clavePedido(e), e.entregado_en]));
+      const enCola = new Map(COLA.filter(e => GoLunchReparto.turnoValido(e.turno) &&
+        !(e.tipo === 'cobertura' && (e.accion === 'cierre_ruta' || e.entregado_a === 'supervisor'))).map(e => [clavePedido(e), e]));
       PEDIDOS = d.pedidos.map(p =>
-        !p.entregado_en && enCola.has(clavePedido(p))
-          ? { ...p, entregado_en: enCola.get(clavePedido(p)) }
+        !p.entregado_en && enCola.has(clavePedido(p)) &&
+          GoLunchReparto.validarGrupo(p,enCola.get(clavePedido(p)).zona,enCola.get(clavePedido(p)).turno).ok
+          ? { ...p, entregado_en: enCola.get(clavePedido(p)).entregado_en }
           : p);
       if (d.turno_hora) TURNO_HORA = d.turno_hora;
       if (d.tolerancia_min != null) TOLERANCIA_MIN = d.tolerancia_min;
@@ -1512,6 +1544,7 @@
         ? 'Esta etiqueta de cobertura no pertenece a la lista de hoy.'
         : 'El número ' + identificador + ' no tiene pedido para hoy.');
     }
+    if (!validarGrupoEnPantalla(p)) return;
     if (p.entregado_en) return flash('dup', 'Ya estaba entregada', p.nombre + ' — se registró antes.');
 
     if (p.tipo === 'cobertura') {
@@ -1523,7 +1556,7 @@
   }
 
   function registrarEntrega(p, receptor) {
-    if (!p || p.entregado_en) return;
+    if (!p || p.entregado_en || !validarGrupoEnPantalla(p)) return;
 
     p.entregado_en = new Date().toISOString();
     if (p.tipo === 'cobertura' && receptor) {
@@ -1550,7 +1583,7 @@
       tipo: p.tipo === 'cobertura' ? 'cobertura' : 'regular',
       codigo_entrega: p.tipo === 'cobertura' ? p.codigo_entrega : p.numero_empleado,
       numero_empleado: p.numero_empleado, entregado_en: p.entregado_en,
-      fecha: FECHA, zona: p.zona || ZONA,
+      fecha: FECHA, zona: ZONA, turno: TURNO, accion: 'entrega',
       entregado_a: p.tipo === 'cobertura' ? 'responsable' : 'empleado',
       receptor_numero: receptor?.numero || null,
       receptor_nombre: receptor?.nombre || null,
@@ -1782,11 +1815,17 @@
       ses.classList.toggle('legado', !SESION?.repartidor);
     }
     $('zona-activa').dataset.zona = ZONA || '';
+    const selector = $('turno-reparto');
+    selector.value = TURNO;
+    selector.disabled = !FECHA || !ZONA;
+    for (const opcion of selector.options) if (opcion.value) opcion.textContent = TURNO_TXT[opcion.value] +
+      (FECHA && ZONA ? ' · ' + GoLunchOperacion.horaTexto(opcion.value,ZONA,FECHA) : '');
+    $('btn-camara').disabled = !TURNO;
 
     // El servidor ya filtra por zona; este segundo filtro es por si quedó una
     // caché mezclada de la versión anterior. Contadores, listas y "última
     // entrega" salen todos de aquí, así que con esto ninguno cuenta de más.
-    const delDia = ZONA ? PEDIDOS.filter(p => !p.zona || p.zona === ZONA) : PEDIDOS;
+    const delDia = GoLunchReparto.pedidosDelGrupo(PEDIDOS, ZONA, TURNO);
     const hechas = delDia.filter(p => p.entregado_en);
     const faltan = delDia.filter(p => !p.entregado_en);
 
@@ -1795,9 +1834,10 @@
     // Cerrar ruta solo tiene sentido con algo pendiente y la ruta ya empezada:
     // ofrecerlo antes del primer escaneo invita a cerrar sin haber repartido.
     const cr = $('cerrar-ruta');
-    const faltanRegulares = faltan.filter(p => p.tipo !== 'cobertura');
-    const hechasRegulares = hechas.filter(p => p.tipo !== 'cobertura');
+    const faltanRegulares = GoLunchReparto.pendientesDelCierre(PEDIDOS, ZONA, TURNO);
+    const hechasRegulares = hechas.filter(p => p.tipo === 'regular');
     if (cr) cr.classList.toggle('oculto', !(faltanRegulares.length && hechasRegulares.length));
+    $('btn-cerrar-ruta').textContent = 'Entregar pendientes de ' + (TURNO_TXT[TURNO] || 'este turno') + ' al supervisor';
 
     $('n-entregado').textContent = hechas.length;
     $('n-falta').textContent = faltan.length;
@@ -1846,7 +1886,7 @@
 
     $('lista-pendientes').innerHTML = faltan.length
       ? faltan.map(p => fila(p, false)).join('')
-      : '<p class="lista-vacia">No quedan entregas pendientes.</p>';
+      : '<p class="lista-vacia">' + (TURNO ? 'No quedan entregas pendientes en esta zona y turno.' : 'Selecciona Turno A o B para consultar y registrar entregas.') + '</p>';
     $('lista-hechas').innerHTML = hechas.length
       ? hechas.map(p => fila(p, true)).join('')
       : '<p class="lista-vacia">Aún no hay entregas registradas.</p>';

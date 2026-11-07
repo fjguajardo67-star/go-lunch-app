@@ -2531,3 +2531,21 @@ main {
   font-weight: 700;
   line-height: 1.45;
 }
+
+/* Contexto explícito de la operación; permanece visible junto a la zona. */
+.turno-activo {
+  grid-column: 1 / -1;
+  width: 100%; min-width: 0;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px;
+  align-items: center; padding: 8px 12px;
+  border-radius: 12px; background: var(--azul-light); color: var(--tinta);
+}
+.turno-activo label { font-size: .8rem; font-weight: 800; }
+.turno-activo select {
+  min-width: 0; width: 100%; min-height: 44px; padding: 8px;
+  font: inherit; font-weight: 700; font-size: .85rem;
+  border: 1px solid var(--azul-line); border-radius: 8px;
+  background: var(--blanco); color: var(--tinta);
+}
+.turno-activo select:focus-visible { outline: 2px solid var(--azul-vivo); outline-offset: 2px; }
+@media (max-width: 360px) { .turno-activo { grid-template-columns: 1fr; gap: 4px; } }

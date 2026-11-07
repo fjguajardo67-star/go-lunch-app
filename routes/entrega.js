@@ -18,6 +18,7 @@ import {
   ZONAS_VALIDAS, TURNOS_VALIDOS, hoy
 } from '../services/menu.js';
 import { validarReceptorEscaneado } from '../services/cobertura.js';
+import { turnoValido } from '../services/reparto-grupos.js';
 
 export const entregaRouter = express.Router();
 
@@ -223,6 +224,8 @@ function puedeConZona(req, zona) {
 entregaRouter.get('/:fecha', async (req, res) => {
   try {
     const zona = req.query.zona || null;
+    const turno = req.query.turno || null;
+    if (turno && !turnoValido(turno)) return res.status(400).json({ error: 'Turno inválido' });
     if (zona && !ZONAS_VALIDAS.includes(zona)) {
       return res.status(400).json({ error: 'Zona inválida', zonas_validas: ZONAS_VALIDAS });
     }
@@ -238,8 +241,8 @@ entregaRouter.get('/:fecha', async (req, res) => {
     try { coberturas = await db.getCoberturasParaEntrega(fecha); } catch (err) {
       if (err?.code !== '42P01') console.error('[Entrega] No se pudieron cargar coberturas:', err.message);
     }
-    const regularesZona = zona ? regulares.filter(p => p.zona === zona) : regulares;
-    const coberturasZona = zona ? coberturas.filter(p => p.zona === zona) : coberturas;
+    const regularesZona = regulares.filter(p => (!zona || p.zona === zona) && (!turno || p.turno === turno));
+    const coberturasZona = coberturas.filter(p => (!zona || p.zona === zona) && (!turno || p.turno === turno));
 
     const pedidos = [
       ...regularesZona.map(p => ({
@@ -301,6 +304,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
     res.json({
       fecha,
       zona,
+      turno,
       total: pedidos.length,
       entregados: pedidos.filter(p => p.entregado_en).length,
       indice_zonas,
@@ -432,12 +436,46 @@ entregaRouter.post('/', async (req, res) => {
     }
 
     const resultados = [];
+    let registrosLegados = null;
     for (const e of entregas) {
       const numero = e?.numero_empleado;
       const tipo = e?.tipo === 'cobertura' ? 'cobertura' : 'regular';
       const codigoEntrega = tipo === 'cobertura' ? String(e?.codigo_entrega || '') : String(numero || '');
       if (!codigoEntrega || !numero) {
         resultados.push({ tipo, codigo_entrega: codigoEntrega || null, numero_empleado: numero || null, ok: false, motivo: 'sin_numero' });
+        continue;
+      }
+      const turnoItem = e.turno;
+      const zonaDeclarada = e.zona || zona;
+      if (!turnoValido(turnoItem) || !ZONAS_VALIDAS.includes(zonaDeclarada)) {
+        // Un reintento antiguo ya confirmado puede liberarse sin volver a escribir.
+        // Los registros antiguos aún pendientes conservan la cola para revisión.
+        if (!registrosLegados) {
+          const [regulares, coberturas] = await Promise.all([db.getPedidosPorFecha(fecha), db.getCoberturasParaEntrega(fecha)]);
+          registrosLegados = { regulares, coberturas };
+        }
+        const anterior = tipo === 'cobertura'
+          ? registrosLegados.coberturas.find(p => String(p.codigo_entrega) === codigoEntrega)
+          : registrosLegados.regulares.find(p => String(p.empleados?.numero_empleado) === String(numero));
+        if (anterior?.entregado_en && puedeConZona(req,anterior.zona) &&
+          (!zonaDeclarada || anterior.zona === zonaDeclarada) && (!req.body.turno || anterior.turno === req.body.turno)) {
+          resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: true, ya_entregado: true });
+          continue;
+        }
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false,
+          motivo: 'grupo_requerido', error: 'Actualiza la app y selecciona zona y turno. Este registro se conserva para revisión.' });
+        continue;
+      }
+      if (req.body.turno && req.body.turno !== turnoItem) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'turno_incorrecto' });
+        continue;
+      }
+      if (zona && zona !== zonaDeclarada) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'zona_incorrecta', zona_esperada: zona });
+        continue;
+      }
+      if (tipo === 'cobertura' && (e.accion === 'cierre_ruta' || e.entregado_a === 'supervisor')) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'cobertura_requiere_escaneo' });
         continue;
       }
 
@@ -471,6 +509,7 @@ entregaRouter.post('/', async (req, res) => {
                        numero, 'del', fecha, '— declarada:', reloj.declarada || '(ninguna)');
         }
         const datosComunes = {
+          turno_esperado: turnoItem,
           lat: util ? e?.lat : null,
           lon: util ? e?.lon : null,
           precision_m: e?.precision_m,
