@@ -76,3 +76,7 @@ Formato predeterminado horizontal de 90 × 62 mm: rollo Brother de 62 mm y corte
 ## Selección de impresos de cocina
 
 La tarjeta Impresión comparte fecha, turno (Todos/A/B) y zona (Todas/ASLA/REFIS) entre comanda y etiquetas. Los documentos identifican la selección y calculan sus cantidades después de filtrar los pedidos. Los tamaños de etiquetas y márgenes de impresión se conservan.
+
+## Acceso de supervisores desde portada
+
+El enlace a /cobertura.html está disponible tanto en la identificación como en el estado cerrado o sin menú del servicio regular. Los cortes regulares no ocultan la entrada de supervisores; la autorización y los cortes especiales se verifican dentro de su propio flujo.
