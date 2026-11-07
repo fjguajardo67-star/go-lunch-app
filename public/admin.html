@@ -962,9 +962,11 @@
               <div><h3>Impresión</h3><p>Documentos para cocina y acceso de empleados.</p></div>
             </div>
             <div class="grid2">
-              <div><label>Fecha de servicio</label><input type="date" id="im-fecha"></div>
+              <div><label for="im-fecha">Fecha de servicio</label><input type="date" id="im-fecha"></div>
+              <div><label for="im-turno">Turno a imprimir</label><select id="im-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
+              <div><label for="im-zona">Zona a imprimir</label><select id="im-zona"><option value="">Todas las zonas</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
               <div>
-                <label>Tamaño de etiqueta</label>
+                <label for="im-tamano">Tamaño de etiqueta</label>
                 <select id="im-tamano">
                   <option value="57x32">57 × 32 mm</option>
                   <option value="62x29">62 × 29 mm</option>
@@ -973,22 +975,23 @@
                   <option value="62x40">62 × 40 mm</option>
                   <option value="100x50">100 × 50 mm</option>
                 </select>
-                <p style="font-size:.8rem;color:var(--gris-text);margin-top:6px">Brother QL-800: rollo de 62 mm y largo de 90 mm, orientación horizontal (resultado: 90 mm de ancho × 62 mm de alto). Escala 100 %, sin márgenes y desactivar “Encabezados y pies de página” en el navegador para quitar fecha de impresión, título, URL y número de página externos. La fecha de servicio y el número de empleado sí se imprimen dentro de la etiqueta, con margen interior de 9 mm a ambos lados.</p>
+
               </div>
             </div>
+            <p style="font-size:.8rem;color:var(--gris-text);margin-top:6px">Brother QL-800: rollo de 62 mm y largo de 90 mm, orientación horizontal (resultado: 90 mm de ancho × 62 mm de alto). Escala 100 %, sin márgenes y desactivar “Encabezados y pies de página” en el navegador para quitar fecha de impresión, título, URL y número de página externos. La fecha de servicio y el número de empleado sí se imprimen dentro de la etiqueta, con margen interior de 9 mm a ambos lados.</p>
             <p style="margin:10px 0;font-size:.85rem"><a href="/impresion-windows.zip" download>Descargar instalación Windows: impresión diaria 9:30 PM</a> · Brother 90 × 62 mm horizontal y comanda POS58 de 58 mm. Actívala después de probar ambas impresoras.</p>
             <div class="cocina-impresos">
               <button class="accion cocina-accion" onclick="abrirImpreso('comanda')">
                 <span class="cocina-accion-contenido">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h6M9 9h6M9 13h4"/><path d="M6 3h12a2 2 0 0 1 2 2v16l-3-2-2 2-3-2-3 2-3-2-2 2V5a2 2 0 0 1 2-2Z"/></svg>
-                  <span><span class="cocina-accion-titulo">Comanda de cocina</span><span class="cocina-accion-detalle">Resumen separado por turnos</span></span>
+                  <span><span class="cocina-accion-titulo">Comanda de cocina</span><span class="cocina-accion-detalle">Porciones del turno y zona seleccionados</span></span>
                 </span>
                 <span aria-hidden="true">→</span>
               </button>
               <button class="accion cocina-accion" onclick="abrirImpreso('etiquetas')">
                 <span class="cocina-accion-contenido">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12 12 20l-9-9V4h7l10 8Z"/><circle cx="7.5" cy="8.5" r="1"/></svg>
-                  <span><span class="cocina-accion-titulo">Etiquetas del servicio</span><span class="cocina-accion-detalle">Rollo para todos los pedidos</span></span>
+                  <span><span class="cocina-accion-titulo">Etiquetas del servicio</span><span class="cocina-accion-detalle">Etiquetas del turno y zona seleccionados</span></span>
                 </span>
                 <span aria-hidden="true">→</span>
               </button>
@@ -1358,6 +1361,10 @@
           + '&ancho=' + ancho + '&alto=' + alto
           + (tipo === 'etiquetas-hoja' ? '&modo=hoja' : '');
     }
+    const turno = document.getElementById('im-turno').value;
+    const zona = document.getElementById('im-zona').value;
+    if (turno) url += '&turno=' + encodeURIComponent(turno);
+    if (zona) url += '&zona=' + encodeURIComponent(zona);
     window.open(url, '_blank');
   }
 
