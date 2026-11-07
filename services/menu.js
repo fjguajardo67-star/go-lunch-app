@@ -8,7 +8,7 @@ export const { horaEntrega, horarioZona, horaTexto } = globalThis.GoLunchOperaci
 // fuentes de verdad para la hora del comedor es exactamente como se producen
 // reportes que no cuadran con la operación (hallazgo GL-018).
 export const ZONA = process.env.TZ || 'America/Mexico_City';
-const HORA_CORTE = 22; // 22:00 hrs (10:00 PM)
+const HORA_CORTE = 21; // 21:00 hrs (9:00 PM)
 
 // Etiquetas legibles de cada opción
 export const OPCION_LABELS = {
@@ -83,13 +83,13 @@ export function manana() {
   return DateTime.now().setZone(ZONA).plus({ days: 1 }).toISODate();
 }
 
-// ¿Estamos dentro del horario para pedir? (antes de las 22:00)
+// ¿Estamos dentro del horario para pedir? (antes de las 21:00)
 //
 // ────────────────────────────────────────────────────────────────────
 // NO CAMBIAR ESTO POR UN CORTE ATADO A LA FECHA DE SERVICIO.
 //
 // Mirar solo la hora del día en curso hace que un menú publicado con varios
-// días de anticipación se cierre cada noche a las 22:00 y vuelva a abrir a la
+// días de anticipación se cierre cada noche a las 21:00 y vuelva a abrir a la
 // mañana siguiente. Eso PARECE un defecto —la auditoría lo levantó como GL-005
 // con severidad HIGH— y no lo es: es el mecanismo de planeación de la cocina.
 //
@@ -111,7 +111,7 @@ export function dentroDeHorario() {
 }
 
 export function horaCorteTexto() {
-  return '10:00 PM';
+  return '9:00 PM';
 }
 
 // "2026-07-27" → "lunes 27 de julio". Nunca decimos "mañana": cuando el

@@ -618,7 +618,7 @@
       </div>
     </div>
     <div class="header-right">
-      <span class="header-sub">Corte 10:00 PM · Lázaro Cárdenas, Mich. <span id="versionPanel" style="opacity:.75"></span></span>
+      <span class="header-sub">Corte 9:00 PM · Lázaro Cárdenas, Mich. <span id="versionPanel" style="opacity:.75"></span></span>
       <button class="btn-salir" onclick="window.open('manual.html','_blank')" title="Manual de operación">📖 Manual</button>
       <button class="btn-salir" onclick="salir()">Cerrar sesión</button>
     </div>
@@ -1200,7 +1200,7 @@
   // ── Fechas del comedor ──
   // NUNCA usar toISOString() para una fecha sin hora: convierte a UTC, y en
   // Lázaro Cárdenas (UTC-6) a partir de las 18:00 ya devuelve el día
-  // siguiente. Eso caía justo en la rutina posterior al corte de las 10 PM:
+  // siguiente. Eso caía justo en la rutina posterior al corte de las 9 PM:
   // el panel ofrecía imprimir la comanda del día equivocado.
   // Se ancla a la zona del comedor y no a la del equipo, para que el panel dé
   // la misma fecha desde cualquier computadora.
@@ -1343,7 +1343,7 @@
       const m = dias[0];
       if (!m.publicado) {
         alerta.className = 'aviso err';
-        alerta.textContent = '⚠ Mañana ' + m.dia_semana + ' ' + m.dia_num + ' no tiene menú publicado. Si no se publica antes de las 10:00 PM de hoy, nadie podrá pedir para ese día.';
+        alerta.textContent = '⚠ Mañana ' + m.dia_semana + ' ' + m.dia_num + ' no tiene menú publicado. Si no se publica antes de las 9:00 PM de hoy, nadie podrá pedir para ese día.';
       } else {
         alerta.className = 'aviso';
       }
