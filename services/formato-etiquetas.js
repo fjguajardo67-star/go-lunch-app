@@ -10,7 +10,7 @@ export function estiloEtiquetaReparto(ancho, alto) {
   `;
   return `
   .etiqueta {
-    position: relative; padding: 5mm 5mm 10mm; display: grid; grid-template-columns: minmax(0,1fr) 32mm;
+    position: relative; padding: 5mm 9mm 10mm; display: grid; grid-template-columns: minmax(0,1fr) 32mm;
     grid-template-rows: auto minmax(0,1fr); gap: 1.5mm 3mm;
     color: #000; background: #fff; break-inside: avoid;
   }
@@ -34,9 +34,12 @@ export function estiloEtiquetaReparto(ancho, alto) {
   .etiqueta:has(.recibe) .texto { gap: 1.5mm; }
   .etiqueta:has(.recibe) .nombre { font-size: 15pt; }
   .etiqueta .identificacion {
-    position: absolute; left: 5mm; right: 5mm; bottom: 5mm; display: flex; justify-content: space-between;
+    position: absolute; left: 9mm; right: 9mm; bottom: 5mm; display: flex; justify-content: space-between;
     gap: 2mm; font-size: 9pt; line-height: 1.15; font-weight: 750;
   }
+  .etiqueta:has(.identificacion .recibe) { padding-bottom: 14mm; }
+  .etiqueta .identificacion:has(.recibe) { display: grid; grid-template-columns: 1fr auto; row-gap: .5mm; }
+  .etiqueta .identificacion .recibe { grid-column: 1 / -1; font-size: 7pt; line-height: 1.1; overflow: visible; }
   .etiqueta .qr {
     grid-column: 2; grid-row: 2; width: 32mm; height: 32mm;
     align-self: center; background: #fff; padding: 2mm;

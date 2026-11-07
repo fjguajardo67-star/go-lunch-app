@@ -18,7 +18,8 @@ test('etiqueta regular horizontal conserva número y fecha sin pie externo',()=>
  assert.match(html,/Pollo &lt;especial&gt;/);
  assert.match(html,/<span>Empleado #00123<\/span>/);
  assert.match(html,/<span>07\/11\/2026<\/span>/);
- assert.match(html,/padding: 5mm 5mm 10mm/);
+ assert.match(html,/padding: 5mm 9mm 10mm/);
+ assert.match(html,/left: 9mm; right: 9mm/);
  assert.doesNotMatch(html,/<div class="pie">|<span>#00123<\/span>/);
  assert.match(html,/desactivar Encabezados y pies de página/);
 });
