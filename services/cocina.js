@@ -1,3 +1,4 @@
+import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto } from './formato-etiquetas.js';
 // services/cocina.js — Comanda de cocina: resumen por platillo y vista imprimible
 import { DateTime } from 'luxon';
 import * as db from './supabase.js';
@@ -158,12 +159,12 @@ function esc(s) {
 // Se pegan en el contenedor. El tamaño es configurable porque depende del
 // rollo que se compre; con modo 'hoja' se prueban en papel carta antes de
 // invertir en la impresora.
-export async function etiquetas(fecha, { ancho = 62, alto = 40, modo = 'rollo', qr = true } = {}) {
+export async function etiquetas(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', qr = true } = {}) {
   const pedidos = await db.getPedidosPorFecha(fecha);
   return { fecha, ancho, alto, modo, qr, pedidos };
 }
 
-export function htmlEtiquetas({ fecha, ancho = 62, alto = 40, modo, qr = true, pedidos }) {
+export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo, qr = true, pedidos }) {
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat('dd/MM/yyyy HH:mm');
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const enHoja = modo === 'hoja';
@@ -185,14 +186,10 @@ export function htmlEtiquetas({ fecha, ancho = 62, alto = 40, modo, qr = true, p
     const codigo = `${numero}|${fecha}`;
     return `
     <div class="etiqueta">
+      <div class="ruta">${esc(zonaCorta(p.zona))} &nbsp;·&nbsp; ${esc(horaEntrega(p.turno, p.zona, fecha) || 'Sin hora')}</div>
       <div class="texto">
-        <div class="ruta">${esc(zonaCorta(p.zona))} &nbsp;·&nbsp; ${esc(horaEntrega(p.turno, p.zona, fecha) || 'Sin hora')}</div>
         <div class="nombre">${esc(p.empleados?.nombre || 'Sin nombre')}</div>
         <div class="platillo">${esc(p.opcion_texto || p.opcion_id)}</div>
-        <div class="pie">
-          <span>#${esc(numero || '—')}</span>
-          <span>${esc(fechaCorta)}</span>
-        </div>
       </div>
       ${qr ? `<div class="qr" data-codigo="${esc(codigo)}"></div>` : ''}
     </div>`;
@@ -280,6 +277,7 @@ export function htmlEtiquetas({ fecha, ancho = 62, alto = 40, modo, qr = true, p
     .etiqueta { border: none; border-radius: 0; }
   }
 
+  ${estiloEtiquetaReparto(ancho, alto)}
   ${enHoja
     ? `/* Prueba en papel carta: se recortan para validar la medida */
        @page { size: letter; margin: 10mm; }
@@ -298,10 +296,11 @@ export function htmlEtiquetas({ fecha, ancho = 62, alto = 40, modo, qr = true, p
     <button onclick="window.print()">Imprimir</button>
   </div>
   <div class="ayuda">
-    ${enHoja
+    ${estiloEtiquetaReparto(ancho, alto)}
+  ${enHoja
       ? 'Imprime esta hoja en papel normal y recórtala para comprobar que la medida cabe en el contenedor <b>antes</b> de comprar el rollo. Cambia el tamaño con <b>?ancho=</b> y <b>?alto=</b> en milímetros.'
       : 'Ajusta el tamaño con <b>?ancho=</b> y <b>?alto=</b> (mm) para que coincida con tu rollo. Para probar en papel carta primero, agrega <b>&amp;modo=hoja</b>.'}
-    Las etiquetas van ordenadas por turno y zona, en el orden en que se empacan.
+    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: papel de 62 mm, largo 90 mm y orientación horizontal. Las etiquetas van ordenadas por turno y zona.
   </div>
   <div class="hoja ${enHoja ? 'prueba' : 'rollo'}">
     ${orden.length ? cuerpo : vacio}
@@ -313,7 +312,7 @@ ${qr ? `  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrc
     document.querySelectorAll('.qr[data-codigo]').forEach(function (caja) {
       new QRCode(caja, {
         text: caja.dataset.codigo,
-        width: 160, height: 160,
+        width: 320, height: 320,
         colorDark: '#000000', colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });

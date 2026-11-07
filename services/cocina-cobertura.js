@@ -1,3 +1,4 @@
+import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto } from './formato-etiquetas.js';
 // services/cocina-cobertura.js — comanda y etiquetas del menú especial
 
 import { validarTurnoCobertura } from './cobertura.js';
@@ -66,7 +67,7 @@ ${autoPrint ? '<script>window.addEventListener("load",function(){window.setTimeo
 </body></html>`;
 }
 
-export async function etiquetasCobertura(fecha, { ancho = 62, alto = 40, modo = 'rollo', turno = 'turno_b' } = {}) {
+export async function etiquetasCobertura(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', turno = 'turno_b' } = {}) {
   const solicitudes = (await db.listSolicitudesCobertura(fecha, validarTurnoCobertura(turno))).filter(s => s.estado !== 'cancelada');
   const items = solicitudes.flatMap(s => s.items.map((item, i) => ({
     ...item, solicitud: s, secuencia: i + 1
@@ -74,7 +75,7 @@ export async function etiquetasCobertura(fecha, { ancho = 62, alto = 40, modo = 
   return { fecha, ancho, alto, modo, items };
 }
 
-export function htmlEtiquetasCobertura({ fecha, ancho = 62, alto = 40, modo, items }) {
+export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo, items }) {
   const enHoja = modo === 'hoja';
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const orden = [...items].sort((a, b) =>
@@ -85,20 +86,20 @@ export function htmlEtiquetasCobertura({ fecha, ancho = 62, alto = 40, modo, ite
     const s = item.solicitud;
     const codigo = `EX|${item.codigo_entrega}|${fecha}`;
     return `<article class="etiqueta">
+      <div class="ruta">${esc((ZONAS[s.zona] || s.zona).split(' (')[0])} · ${esc(horaTexto(s.turno || 'turno_b', s.zona, fecha))}</div>
       <div class="texto">
-        <div class="ruta">COBERTURA ${s.turno === 'turno_a' ? 'A' : 'B'} · ${esc(horaTexto(s.turno || 'turno_b', s.zona, fecha))} · ${esc((ZONAS[s.zona] || s.zona).split(' (')[0])}</div>
         <div class="nombre">${esc(item.empleado_nombre_snapshot)}</div>
-        <div class="numero">#${esc(item.empleado_numero_snapshot)} · ${esc(item.opcion_texto)}</div>
+        <div class="numero">${esc(item.opcion_texto)}</div>
         <div class="recibe">Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</div>
-        <div class="pie"><span>${esc(s.folio)} · ${item.secuencia}/${s.total_porciones}</span><span>${esc(fechaCorta)}</span></div>
       </div><div class="qr" data-codigo="${esc(codigo)}"></div>
     </article>`;
   }).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Etiquetas cobertura ${esc(fecha)}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:#edf1f7;color:#071b42}.barra{position:sticky;top:0;z-index:2;background:#003087;color:#fff;padding:12px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}.barra button{margin-left:auto;padding:9px 18px;border:0;border-radius:7px;font-weight:800;color:#003087;background:#fff}.ayuda{padding:10px 18px;background:#fff;color:#56627b;font-size:.8rem}.hoja{padding:18px}.hoja.rollo{display:flex;flex-direction:column;gap:10px;align-items:flex-start}.hoja.prueba{display:flex;flex-wrap:wrap;gap:8px}.etiqueta{width:${ancho}mm;height:${alto}mm;background:#fff;border:1px solid #aebbd2;border-radius:2mm;padding:1.5mm 2mm;display:flex;gap:1.5mm;overflow:hidden}.texto{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}.qr{flex:none;align-self:center;width:${Math.min(alto - 5, 18)}mm;height:${Math.min(alto - 5, 18)}mm}.qr canvas,.qr img{width:100%!important;height:100%!important;display:block}.ruta{font-size:6pt;font-weight:900;letter-spacing:.035em;white-space:nowrap}.nombre{font-size:9pt;font-weight:900;line-height:1.05}.numero{font-size:7.2pt;font-weight:750;line-height:1.1}.recibe{font-size:5.8pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pie{display:flex;justify-content:space-between;border-top:.25mm solid #000;padding-top:.5mm;font-size:5.5pt}
 @media print{.barra,.ayuda{display:none}body{background:#fff}.hoja{padding:0;gap:0}.etiqueta{border:0;border-radius:0}}
+${estiloEtiquetaReparto(ancho, alto)}
 ${enHoja ? '@page{size:letter;margin:10mm}@media print{.etiqueta{border:.2mm dashed #999}.hoja.prueba{gap:4mm}}' : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.etiqueta{page-break-after:always}.etiqueta:last-child{page-break-after:auto}}`}
 </style></head><body><div class="barra"><b>Etiquetas · cobertura ${esc(fechaCorta)}</b><span>${orden.length} alimento(s)</span><button onclick="window.print()">Imprimir</button></div>
-<div class="ayuda">Una etiqueta por recipiente. El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:160,height:160,correctLevel:QRCode.CorrectLevel.M}));</script></body></html>`;
+<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: papel de 62 mm, largo 90 mm, orientación horizontal. El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}));</script></body></html>`;
 }

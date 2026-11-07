@@ -68,3 +68,7 @@ En móvil el crédito acompaña la fila de navegación horizontal.
 Todo cambio dentro de `/public` debe acompañarse de un incremento de `VERSION`
 en `public/sw.js`. Cualquier asset nuevo que deba funcionar sin señal se agrega
 también a `PRECARGA`.
+
+## Etiquetas de reparto
+
+Formato predeterminado horizontal de 90 × 62 mm: rollo Brother de 62 mm y corte de 90 mm. Zona y horario de 21 pt ocupan la primera fila; nombre de 16 pt y platillo de 12 pt a la izquierda. QR de 32 mm con zona blanca a la derecha. Sin línea ni pie inferior. Los encabezados y pies externos se desactivan en el diálogo del navegador.
