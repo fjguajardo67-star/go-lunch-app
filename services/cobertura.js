@@ -158,7 +158,7 @@ export function validarReceptorEscaneado(empleado, numero, nombre) {
     normalizarNombre(empleado.nombre) === normalizarNombre(nombre);
 }
 
-function traducirErrorBD(err) {
+export function traducirErrorBD(err) {
   const bruto = String(err?.message || err || '');
   const casos = [
     ['cobertura_cerrada', 409, 'fuera_de_horario', 'El periodo de solicitudes de este turno ya cerró.'],

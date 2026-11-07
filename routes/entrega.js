@@ -263,6 +263,8 @@ entregaRouter.get('/:fecha', async (req, res) => {
         platillo: item.opcion_texto,
         zona: item.zona,
         turno: item.turno || 'turno_b',
+        origen: item.origen || 'supervisor',
+        entrega_programada_en: item.entrega_programada_en || null,
         entregado_en: item.entregado_en || null,
         motivo_tardia: item.motivo_tardia || null,
         entregado_a: 'responsable',
