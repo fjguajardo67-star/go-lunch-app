@@ -82,7 +82,7 @@
           "services/checklist-reparto.js"
         ],
         "createdAt": "2026-11-07T06:33:48.382Z",
-        "reason": "Agent: hoja institucional de reparto para papel carta; Arial es intencional para imprimir con fuente local y sin descargas adicionales."
+        "reason": "Agent: Arial es intencional en el checklist institucional para papel carta, con fuente local y sin descargas; conservar legibilidad y paginación del formato de impresión existente."
       },
       {
         "rule": "all-caps-body",
