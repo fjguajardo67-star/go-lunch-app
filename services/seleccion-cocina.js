@@ -1,6 +1,6 @@
 // Selección compartida para etiquetas y comanda: filtrar antes de contar.
 import { TURNOS, ZONAS } from './menu.js';
-import { contarServicios, horarioComida } from './comidas.js';
+import { contarServicios, horaComida } from './comidas.js';
 
 export function normalizarSeleccionCocina({ turno, zona, servicio } = {}) {
   const valido = (valor, opciones, todos, nombre) => {
@@ -49,8 +49,9 @@ export function resumirPedidosCocina(fecha, pedidos, seleccion = {}) {
   })).sort((a, b) => b.porciones - a.porciones);
   const porLote = new Map();
   for (const p of elegidos) {
-    const horario = horarioComida(p, fecha), clave = JSON.stringify([p.turno || null, p.zona || null, horario]);
-    if (!porLote.has(clave)) porLote.set(clave, { turno: p.turno, zona: p.zona, horario, comidas: [] });
+    const turno = Object.hasOwn(TURNOS, p.turno) ? p.turno : null;
+    const horario = horaComida(p, fecha), clave = JSON.stringify([turno, p.zona || null, horario]);
+    if (!porLote.has(clave)) porLote.set(clave, { turno, zona: p.zona, horario, comidas: [] });
     porLote.get(clave).comidas.push(p);
   }
   const lotes = [...porLote.values()].sort((a, b) => String(a.turno || 'z').localeCompare(String(b.turno || 'z')) ||

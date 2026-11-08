@@ -12,8 +12,9 @@ const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<'
 
 function compararFilas(a, b) {
   const indice = fila => {
-    const i = OPCIONES_VALIDAS.indexOf(fila.opcion_id);
-    return i < 0 ? OPCIONES_VALIDAS.length : i;
+    const opciones = [...OPCIONES_VALIDAS, 'especial_1', 'especial_2', 'especial_3'];
+    const i = opciones.indexOf(fila.opcion_id);
+    return i < 0 ? opciones.length : i;
   };
   return indice(a) - indice(b) || porTexto.compare(a.platillo, b.platillo) ||
     porTexto.compare(a.opcion_id, b.opcion_id) || porNumero.compare(a.numero, b.numero) ||
@@ -63,7 +64,7 @@ export function prepararChecklistReparto(fecha, pedidos, seleccion = {}) {
       numero: String(pedido.empleados?.numero_empleado ?? ''),
       nombre: String(pedido.empleados?.nombre || 'Sin nombre'),
       opcion_id: String(pedido.opcion_id ?? ''),
-      opcion: pedido.tipo === 'cobertura' ? 'Cobertura' : Object.hasOwn(OPCION_LABELS, pedido.opcion_id) ? OPCION_LABELS[pedido.opcion_id] : (pedido.opcion_texto ? 'Otra opción' : 'Sin opción'),
+      opcion: pedido.tipo === 'cobertura' ? (/^especial_[123]$/.test(pedido.opcion_id) ? 'Cobertura ' + pedido.opcion_id.at(-1) : 'Cobertura') : Object.hasOwn(OPCION_LABELS, pedido.opcion_id) ? OPCION_LABELS[pedido.opcion_id] : (pedido.opcion_texto ? 'Otra opción' : 'Sin opción'),
       platillo: String(pedido.opcion_texto || 'Sin platillo registrado'),
       opcion_clave: JSON.stringify([pedido.tipo || 'regular', pedido.opcion_id ?? null, pedido.opcion_texto || 'Sin platillo registrado']),
       tipo: pedido.tipo || 'regular', folio: pedido.folio || null,

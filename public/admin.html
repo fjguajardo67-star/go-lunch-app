@@ -610,8 +610,22 @@
   .reporte-desglose { margin: 12px 0 20px; line-height: 1.65; font-size: .95rem; }
   .reporte-nota { margin: 10px 0; color: var(--gris-text); font-size: .85rem; line-height: 1.5; }
   .reporte-tabla { overflow-x: auto; }
-  .reporte-tabla table { min-width: 460px; }
+  .reporte-tabla table { min-width: 0; width: 100%; table-layout: fixed; }
+  .reporte-tabla th, .reporte-tabla td { padding: 10px 5px; overflow-wrap: anywhere; }
+  .reporte-tabla th { font-size: .7rem; letter-spacing: 0; }
+  .reporte-tabla th:first-child { width: 42%; }
   .reporte-tabla th:not(:first-child), .reporte-tabla td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .reporte-rutas table { min-width: 740px; table-layout: auto; }
+  .reporte-rutas th:first-child { width: auto; }
+  .reporte-bloque { overflow-x: auto; }
+  @media (max-width: 640px) {
+    .reporte-tabla:not(.reporte-rutas) th:first-child { width: 30%; }
+    .reporte-tabla:not(.reporte-rutas) th:nth-child(2) { width: 25%; }
+    .reporte-tabla:not(.reporte-rutas) th:nth-child(3) { width: 30%; }
+    .reporte-tabla:not(.reporte-rutas) th:nth-child(4) { width: 15%; }
+    .reporte-tabla:not(.reporte-rutas) th { font-size: .65rem; }
+    .reporte-tabla:not(.reporte-rutas) td { font-size: .82rem; }
+  }
 </style>
 </head>
 <body>
@@ -1741,6 +1755,8 @@
 
       let h = desgloseServicios(d);
 
+      h += '<p class="reporte-nota">Las cantidades incluyen ambos servicios. Las calificaciones corresponden únicamente a pedidos regulares con encuesta.</p>';
+
       // 1 · Pedidos por día
       h += bloque('Comidas por día', tablaServicios('Fecha', d.pedidos_por_dia.map(x => ({ ...x, etiqueta:x.fecha }))));
       h += bloque('Porciones por platillo', tablaServicios('Platillo', d.porciones_por_platillo.map(x => ({ ...x, etiqueta:x.platillo }))));
@@ -1868,7 +1884,7 @@
                          'var(--azul)', '#eef2fa')).join('') +
                 '</div>'
               : '') +
-            '<div class="reporte-tabla"><table><tr><th>Fecha</th><th>Turno</th><th>Zona</th><th>Horario</th><th>Entregas</th><th>Primera</th><th>Última</th><th>Duración</th></tr>' +
+            '<div class="reporte-tabla reporte-rutas"><table><tr><th>Fecha</th><th>Turno</th><th>Zona</th><th>Horario</th><th>Entregas</th><th>Primera</th><th>Última</th><th>Duración</th></tr>' +
             d.ruta.por_dia.map(r =>
               '<tr><td>' + r.fecha + '</td><td>' + etiquetaTurno(r.turno) + '</td><td>' + etiquetaZona(r.zona) + '</td><td>' + escaparHtml(r.horario) + '</td><td>' + r.entregas + '</td>' +
               '<td>' + r.primera + '</td><td>' + r.ultima + '</td>' +
@@ -1886,7 +1902,7 @@
   }
 
   const bloque = (titulo, contenido) =>
-    '<div style="margin-bottom:26px"><div style="font-size:.8rem;font-weight:800;letter-spacing:.06em;' +
+    '<div class="reporte-bloque" style="margin-bottom:26px"><div style="font-size:.8rem;font-weight:800;letter-spacing:.06em;' +
     'text-transform:uppercase;color:var(--azul);margin-bottom:10px">' + titulo + '</div>' + contenido + '</div>';
 
   const cajita = (n, etiqueta, color, fondo) =>
