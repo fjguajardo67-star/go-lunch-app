@@ -235,11 +235,12 @@ entregaRouter.get('/:fecha', async (req, res) => {
 
     const fecha = fechaPedida(req.params.fecha);
     const regulares = await db.getPedidosPorFecha(fecha);
-    // Si la migración de coberturas todavía no se ha ejecutado, el reparto
-    // regular no se cae: simplemente no aparecen extraordinarios ese día.
-    let coberturas = [];
+    // Una lista parcial podría usarse para cerrar una ruta incompleta.
+    // El teléfono conserva su última descarga y permite reintentar.
+    let coberturas;
     try { coberturas = await db.getCoberturasParaEntrega(fecha); } catch (err) {
-      if (err?.code !== '42P01') console.error('[Entrega] No se pudieron cargar coberturas:', err.message);
+      console.error('[Entrega] No se pudieron cargar coberturas:', err.message);
+      return res.status(503).json({ error: 'No se pudieron cargar las coberturas. Conserva la última lista y vuelve a descargar antes de cerrar la entrega.' });
     }
     const regularesZona = regulares.filter(p => (!zona || p.zona === zona) && (!turno || p.turno === turno));
     const coberturasZona = coberturas.filter(p => (!zona || p.zona === zona) && (!turno || p.turno === turno));

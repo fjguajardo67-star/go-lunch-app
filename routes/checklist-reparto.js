@@ -8,7 +8,7 @@ export const checklistRepartoRouter = express.Router();
 checklistRepartoRouter.get('/:fecha', async (req, res) => {
   if (!rolPanel(req.query.key)) return res.status(401).send('No autorizado');
   try {
-    const datos = await checklistReparto(req.params.fecha, { turno: req.query.turno, zona: req.query.zona });
+    const datos = await checklistReparto(req.params.fecha, req.query);
     res.type('html').send(htmlChecklistReparto(datos));
   } catch (error) {
     if (!error.status) console.error('[Checklist reparto] Error generando la lista:', error.message);

@@ -607,6 +607,25 @@
     .cov-alerta-acciones { grid-template-columns: 1fr; }
   }
   @media (prefers-reduced-motion: reduce) { .cov-alerta-senal { animation: none; } }
+  .reporte-desglose { margin: 12px 0 20px; line-height: 1.65; font-size: .95rem; }
+  .reporte-nota { margin: 10px 0; color: var(--gris-text); font-size: .85rem; line-height: 1.5; }
+  .reporte-tabla { overflow-x: auto; }
+  .reporte-tabla table { min-width: 0; width: 100%; table-layout: fixed; }
+  .reporte-tabla th, .reporte-tabla td { padding: 10px 5px; overflow-wrap: anywhere; }
+  .reporte-tabla th { font-size: .7rem; letter-spacing: 0; }
+  .reporte-tabla th:first-child { width: 42%; }
+  .reporte-tabla th:not(:first-child), .reporte-tabla td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .reporte-rutas table { min-width: 740px; table-layout: auto; }
+  .reporte-rutas th:first-child { width: auto; }
+  .reporte-bloque { overflow-x: auto; }
+  @media (max-width: 640px) {
+    .reporte-tabla:not(.reporte-rutas) th:first-child { width: 30%; }
+    .reporte-tabla:not(.reporte-rutas) th:nth-child(2) { width: 25%; }
+    .reporte-tabla:not(.reporte-rutas) th:nth-child(3) { width: 30%; }
+    .reporte-tabla:not(.reporte-rutas) th:nth-child(4) { width: 15%; }
+    .reporte-tabla:not(.reporte-rutas) th { font-size: .65rem; }
+    .reporte-tabla:not(.reporte-rutas) td { font-size: .82rem; }
+  }
 </style>
 </head>
 <body>
@@ -1013,6 +1032,9 @@
             </div>
             <div class="row-fin">
               <div><label>Fecha de producción</label><input type="date" id="co-fecha" style="max-width:180px"></div>
+              <div><label for="co-turno">Turno</label><select id="co-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
+              <div><label for="co-zona">Zona</label><select id="co-zona"><option value="">Todas las zonas</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
+              <div><label for="co-servicio">Servicio</label><select id="co-servicio"><option value="">Regulares y coberturas</option><option value="regular">Regulares</option><option value="cobertura">Coberturas</option></select></div>
               <button class="accion" onclick="verCocina()">Ver producción</button>
             </div>
             <div id="cocinaBox" style="margin-top:18px"></div>
@@ -1032,6 +1054,7 @@
               <div><label for="im-fecha">Fecha de servicio</label><input type="date" id="im-fecha"></div>
               <div><label for="im-turno">Turno a imprimir</label><select id="im-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
               <div><label for="im-zona">Zona a imprimir</label><select id="im-zona"><option value="">Todas las zonas</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
+              <div><label for="im-servicio">Servicio a imprimir</label><select id="im-servicio"><option value="">Regulares y coberturas</option><option value="regular">Regulares</option><option value="cobertura">Coberturas</option></select></div>
               <div>
                 <label for="im-tamano">Tamaño de etiqueta</label>
                 <select id="im-tamano">
@@ -1206,6 +1229,10 @@
           <div><label>Hasta</label><input type="date" id="rep-fin"></div>
           <button class="accion" onclick="verReportes()">Ver reportes</button>
         </div>
+        <div class="row-fin" style="margin-top:16px"><div><label for="rep-turno">Turno</label><select id="rep-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
+              <div><label for="rep-zona">Zona</label><select id="rep-zona"><option value="">Todas las zonas</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
+              <div><label for="rep-servicio">Servicio</label><select id="rep-servicio"><option value="">Regulares y coberturas</option><option value="regular">Regulares</option><option value="cobertura">Coberturas</option></select></div></div>
+        <p class="reporte-nota">Estos filtros se aplican a los reportes en pantalla y a las tres descargas de Excel.</p>
         <div id="reportesBox" style="margin-top:18px"></div>
       </div>
 
@@ -1274,6 +1301,7 @@
 <iframe id="cov-print-frame" class="cov-print-frame" title="Impresión automática de comanda de cobertura"></iframe>
 
 <script src="/operacion.js"></script>
+<script src="/reportes-excel.js"></script>
 <script>
 
   // ⚙️ La URL pública del backend en Railway; en local usa el mismo origen
@@ -1441,6 +1469,8 @@
     const zona = document.getElementById('im-zona').value;
     if (turno) url += '&turno=' + encodeURIComponent(turno);
     if (zona) url += '&zona=' + encodeURIComponent(zona);
+    const servicio = document.getElementById('im-servicio').value;
+    if (servicio) url += '&servicio=' + encodeURIComponent(servicio);
     window.open(url, '_blank');
   }
 
@@ -1692,6 +1722,24 @@
     } catch { /* el panel funciona igual sin esto */ }
   })();
 
+  const parametrosServicio = (prefijo = 'rep') => new URLSearchParams(Object.fromEntries(
+    ['turno', 'zona', 'servicio'].map(k => [k, document.getElementById(prefijo + '-' + k)?.value || '']))).toString();
+  const servicioTexto = p => p.tipo === 'cobertura' ? (p.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : 'Regular';
+  const horarioServicio = p => {
+    if (!p.entrega_programada_en) return GoLunchOperacion.horaEntrega(p.turno,p.zona,p.fecha_menu) || 'Por confirmar';
+    const fecha = new Date(p.entrega_programada_en);
+    return Number.isNaN(fecha.getTime()) ? 'Por confirmar' : new Intl.DateTimeFormat('es-MX',
+      {timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(fecha);
+  };
+  const desgloseServicios = d => '<p class="reporte-desglose"><strong>Regulares: ' + d.regulares +
+    '</strong> + <strong>Coberturas: ' + d.coberturas + '</strong> = <strong>' + d.total + ' comidas</strong></p>';
+  const tablaServicios = (titulo, filas) => '<div class="reporte-tabla"><table><thead><tr><th>' + titulo +
+    '</th><th>Regulares</th><th>Coberturas</th><th>Total</th></tr></thead><tbody>' + filas.map(x =>
+    '<tr><td>' + escaparHtml(x.etiqueta) + '</td><td>' + x.regulares + '</td><td>' + x.coberturas + '</td><td><strong>' + x.total +
+    '</strong></td></tr>').join('') + '</tbody></table></div>';
+  const textoFiltrosReporte = f => [f?.turno ? etiquetaTurno(f.turno) : 'Todos los turnos',
+    f?.zona ? etiquetaZona(f.zona) : 'Todas las zonas', f?.servicio === 'regular' ? 'Regulares' : f?.servicio === 'cobertura' ? 'Coberturas' : 'Regulares y coberturas'].join(' · ');
+
   // ── Reportes del periodo ──
   // Las gráficas van en SVG a mano: el proyecto corre en Railway con recursos
   // limitados y no vale la pena una librería para cuatro vistas.
@@ -1702,20 +1750,16 @@
     if (!ini || !fin) { box.innerHTML = '<p class="aviso err">Selecciona el periodo.</p>'; return; }
     box.innerHTML = '<p style="color:var(--gris-text)">Cargando...</p>';
     try {
-      const d = await api('/api/reportes?ini=' + ini + '&fin=' + fin);
+      const d = await api('/api/reportes?ini=' + ini + '&fin=' + fin + '&' + parametrosServicio());
       if (!d.total) { box.innerHTML = '<div class="vacio">Sin pedidos en ese periodo.</div>'; return; }
 
-      let h = '';
+      let h = desgloseServicios(d);
+
+      h += '<p class="reporte-nota">Las cantidades incluyen ambos servicios. Las calificaciones corresponden únicamente a pedidos regulares con encuesta.</p>';
 
       // 1 · Pedidos por día
-      h += bloque('Pedidos por día', barras(
-        d.pedidos_por_dia.map(x => ({ etiqueta: x.fecha.slice(8) + '/' + x.fecha.slice(5,7), valor: x.pedidos })),
-        'var(--azul)'));
-
-      // 2 · Porciones por platillo
-      h += bloque('Porciones por platillo', barrasH(
-        d.porciones_por_platillo.map(x => ({ etiqueta: x.platillo, valor: x.porciones })),
-        'var(--verde)'));
+      h += bloque('Comidas por día', tablaServicios('Fecha', d.pedidos_por_dia.map(x => ({ ...x, etiqueta:x.fecha }))));
+      h += bloque('Porciones por platillo', tablaServicios('Platillo', d.porciones_por_platillo.map(x => ({ ...x, etiqueta:x.platillo }))));
 
       // 3 · Calificaciones. Las etiquetas dicen lo mismo que la app le
       // pregunta al empleado ("¿Qué te pareció ese platillo?"); antes decían
@@ -1732,7 +1776,7 @@
               { etiqueta: 'No me gustó', valor: r.no }
             ], 'var(--dorado)') +
             '<p style="font-size:.78rem;color:var(--gris-text);margin-top:8px">' +
-            respondidos + ' de ' + d.total + ' pedidos calificados · ' +
+            respondidos + ' de ' + d.rating_elegibles + ' pedidos regulares calificados · ' +
             r.sin_responder + ' sin responder</p>'
           : '<div class="vacio">Nadie ha calificado todavía en este periodo.</div>');
 
@@ -1786,6 +1830,7 @@
         cajita(e.entregados, 'Entregados a tiempo', 'var(--verde)', '#f0f7f0') +
         cajita(e.tardios, 'Tardíos', '#b8860b', '#fff9e6') +
         cajita(e.no_entregados, 'No entregados', 'var(--rojo)', '#fdecec') +
+        (e.indeterminados ? cajita(e.indeterminados, 'Entregados sin puntualidad verificable', 'var(--gris-text)', 'var(--gris-bg)') : '') +
         '</div>' +
         (e.pendientes
           ? '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">De los ' +
@@ -1835,18 +1880,18 @@
           ? (d.ruta.promedio_por_turno.length
               ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
                 d.ruta.promedio_por_turno.map(t =>
-                  cajita(t.minutos_promedio + ' min', etiquetaTurno(t.turno) + ' · promedio de ' + t.dias + ' día(s)',
+                  cajita(t.minutos_promedio + ' min', etiquetaTurno(t.turno) + ' · promedio de ' + (t.tramos ?? t.dias) + ' tramos',
                          'var(--azul)', '#eef2fa')).join('') +
                 '</div>'
               : '') +
-            '<table><tr><th>Fecha</th><th>Turno</th><th>Entregas</th><th>Primera</th><th>Última</th><th>Duración</th></tr>' +
+            '<div class="reporte-tabla reporte-rutas"><table><tr><th>Fecha</th><th>Turno</th><th>Zona</th><th>Horario</th><th>Entregas</th><th>Primera</th><th>Última</th><th>Duración</th></tr>' +
             d.ruta.por_dia.map(r =>
-              '<tr><td>' + r.fecha + '</td><td>' + etiquetaTurno(r.turno) + '</td><td>' + r.entregas + '</td>' +
+              '<tr><td>' + r.fecha + '</td><td>' + etiquetaTurno(r.turno) + '</td><td>' + etiquetaZona(r.zona) + '</td><td>' + escaparHtml(r.horario) + '</td><td>' + r.entregas + '</td>' +
               '<td>' + r.primera + '</td><td>' + r.ultima + '</td>' +
               '<td>' + (r.entregas < 2 ? '—' : r.minutos + ' min') + '</td></tr>').join('') +
-            '</table>' +
+            '</table></div>' +
             '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">' +
-            'Medido entre el primer y el último escaneo de ese turno. Un día con una sola entrega no ' +
+            'Medido entre la primera y la última marca de entrega de cada zona y horario. Un grupo con una sola entrega no ' +
             'cuenta como ruta y no entra al promedio.</p>'
           : '<div class="vacio">Sin entregas escaneadas en este periodo.</div>');
 
@@ -1857,7 +1902,7 @@
   }
 
   const bloque = (titulo, contenido) =>
-    '<div style="margin-bottom:26px"><div style="font-size:.8rem;font-weight:800;letter-spacing:.06em;' +
+    '<div class="reporte-bloque" style="margin-bottom:26px"><div style="font-size:.8rem;font-weight:800;letter-spacing:.06em;' +
     'text-transform:uppercase;color:var(--azul);margin-bottom:10px">' + titulo + '</div>' + contenido + '</div>';
 
   const cajita = (n, etiqueta, color, fondo) =>
@@ -2532,137 +2577,37 @@
   }
 
   async function verCocina() {
-    const f = document.getElementById('co-fecha').value;
-    const box = document.getElementById('cocinaBox');
+    const f = document.getElementById('co-fecha').value, box = document.getElementById('cocinaBox');
+    if (!f) { box.innerHTML = '<p class="aviso err">Selecciona la fecha de producción.</p>'; return; }
+    box.innerHTML = '<p>Cargando producción…</p>';
     try {
-      const r = await api('/api/pedidos/' + f);
-      if (!r.count) return box.innerHTML = '<div class="vacio">Sin pedidos para calcular.</div>';
-
-      // Agrupar por turno y, dentro de cada turno, contar platillos
-      const turnos = {};
-      for (const p of r.pedidos) {
-        const t = p.turno || 'sin_turno';
-        if (!turnos[t]) turnos[t] = { total: 0, platillos: {} };
-        turnos[t].total++;
-        turnos[t].platillos[p.opcion_texto] = (turnos[t].platillos[p.opcion_texto] || 0) + 1;
-      }
-
-      const ordenTurnos = ['turno_a', 'turno_b', 'sin_turno'];
-      let h = '';
-      for (const t of ordenTurnos) {
-        if (!turnos[t]) continue;
-        const grupo = turnos[t];
-        h += `<h3 style="margin:18px 0 8px"><span class="dot"></span> ${turnoTxt(t === 'sin_turno' ? '' : t)} — ${grupo.total} porciones</h3>`;
-        h += `<table><tr><th>Platillo</th><th>Porciones</th><th style="width:35%">Distribución</th></tr>`;
-        const filas = Object.entries(grupo.platillos).sort((a,b)=>b[1]-a[1]);
-        for (const [platillo, porciones] of filas) {
-          const pct = Math.round((porciones/grupo.total)*100);
-          h += `<tr><td>${platillo}</td><td><strong>${porciones}</strong></td>
-            <td>${pct}%<div class="bar"><span style="width:${pct}%"></span></div></td></tr>`;
+      const d = await api('/api/resumen-cocina/' + f + '?' + parametrosServicio('co'));
+      if (!d.total) { box.innerHTML = '<div class="vacio">Sin comidas para esta fecha y selección.</div>'; return; }
+      let h = desgloseServicios(d);
+      for (const turno of ['turno_a', 'turno_b', null]) {
+        const grupos = d.grupos.filter(g => (g.turno || null) === turno);
+        if (!grupos.length) continue;
+        const total = grupos.reduce((n,g) => n + g.total, 0);
+        h += '<h3 style="margin:22px 0 10px">' + (turno ? etiquetaTurno(turno) : 'Sin turno') + ' — ' + total + ' porciones</h3>';
+        for (const grupo of grupos) {
+          h += '<h4 style="margin:16px 0 8px">' + escaparHtml(etiquetaZona(grupo.zona)) + ' · ' + escaparHtml(grupo.horario) + '</h4>';
+          h += tablaServicios('Platillo', grupo.resumen.map(p => ({...p, etiqueta:p.platillo, total:p.porciones})));
+          h += '<p class="reporte-nota">Subtotal de este grupo: ' + grupo.regulares + ' regulares + ' + grupo.coberturas + ' coberturas = ' + grupo.total + ' porciones.</p>';
         }
-        h += `</table>`;
       }
       box.innerHTML = h;
-    } catch(e) { box.innerHTML = `<div class="aviso err">Error: ${e.message}</div>`; }
+    } catch(e) { box.innerHTML = '<div class="aviso err">No se pudo cargar la producción completa: ' + escaparHtml(e.message) + '</div>'; }
   }
 
   // ── Reportes Excel (SheetJS) ──────────────────────────────────
 
-  // Construye el workbook de Cocina a partir de datos ya consultados.
-  // Función pura: facilita probarla fuera del navegador.
-  function buildWorkbookCocina(fecha, resumen, pedidos) {
-    const wb = XLSX.utils.book_new();
-
-    // Hoja 1 — Resumen_Cocina (separado por turno)
-    const ordenT = ['turno_a', 'turno_b', 'sin_turno'];
-    const grupos = {};
-    for (const p of pedidos) {
-      const t = p.turno || 'sin_turno';
-      (grupos[t] = grupos[t] || {});
-      grupos[t][p.opcion_texto] = (grupos[t][p.opcion_texto] || 0) + 1;
-    }
-
-    const filas1 = [['Turno', 'Platillo', 'Porciones']];
-    for (const t of ordenT) {
-      if (!grupos[t]) continue;
-      const etiqueta = turnoTxt(t === 'sin_turno' ? '' : t);
-      const platillos = Object.entries(grupos[t]).sort((a, b) => b[1] - a[1]);
-      let subtotal = 0;
-      for (const [platillo, n] of platillos) { filas1.push([etiqueta, platillo, n]); subtotal += n; }
-      filas1.push([`Subtotal ${etiqueta}`, '', subtotal]);
-      filas1.push(['', '', '']); // separador
-    }
-    const totalRow = filas1.length + 1;
-    filas1.push(['TOTAL GENERAL', '', null]);
-    const ws1 = XLSX.utils.aoa_to_sheet(filas1);
-    // Total general: suma solo de las filas de detalle (no subtotales) sería complejo;
-    // usamos el total de pedidos como valor verificable.
-    ws1['C' + totalRow] = { t: 'n', v: pedidos.length };
-    ws1['!cols'] = [{ wch: 22 }, { wch: 38 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, ws1, 'Resumen_Cocina');
-
-    // Hoja 2 — Etiquetas (para impresora térmica)
-    const filas2 = [['No_Empleado', 'Nombre_Comensal', 'Platillo_Seleccionado', 'Zona', 'Turno', 'Fecha_Entrega']];
-    for (const p of pedidos) {
-      filas2.push([
-        p.empleados?.numero_empleado || '',
-        p.empleados?.nombre || '',
-        p.opcion_texto,
-        zonaTxt(p.zona),
-        turnoTxt(p.turno, p.zona, fecha),
-        fecha
-      ]);
-    }
-    const ws2 = XLSX.utils.aoa_to_sheet(filas2);
-    ws2['!cols'] = [{ wch: 14 }, { wch: 30 }, { wch: 38 }, { wch: 18 }, { wch: 20 }, { wch: 14 }];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Etiquetas');
-
-    return wb;
+  const formatosExcel = () => ({zona:zonaTxt, turno:etiquetaTurno, horario:horarioServicio,
+    servicio:servicioTexto, telefono:telefonoVisible, filtros:textoFiltrosReporte});
+  function buildWorkbookCocina(fecha, resumen, comidas) {
+    return GoLunchReportesExcel.cocina(XLSX, formatosExcel(), fecha, resumen, comidas);
   }
-
-  // Construye el workbook de Facturación a partir de pedidos de un rango.
-  function buildWorkbookFacturacion(ini, fin, costoUnitario, pedidos) {
-    const wb = XLSX.utils.book_new();
-
-    // Agrupar servicios por día
-    const porDia = {};
-    for (const p of pedidos) porDia[p.fecha_menu] = (porDia[p.fecha_menu] || 0) + 1;
-    const fechas = Object.keys(porDia).sort();
-
-    // Hoja 1 — Resumen_Facturacion (Subtotal y Total con fórmulas vivas)
-    const filas1 = [['Fecha', 'Total_Servicios_Dia', 'Costo_Unitario ($)', 'Subtotal ($)']];
-    fechas.forEach(f => filas1.push([f, porDia[f], costoUnitario, null]));
-    const totalRow = filas1.length + 1;
-    filas1.push(['TOTAL', null, null, null]);
-    const ws1 = XLSX.utils.aoa_to_sheet(filas1);
-    for (let i = 0; i < fechas.length; i++) {
-      const r = i + 2;
-      ws1['D' + r] = { t: 'n', f: `B${r}*C${r}`, z: '$#,##0.00' };
-      if (ws1['C' + r]) ws1['C' + r].z = '$#,##0.00';
-    }
-    ws1['B' + totalRow] = { t: 'n', f: `SUM(B2:B${totalRow - 1})` };
-    ws1['D' + totalRow] = { t: 'n', f: `SUM(D2:D${totalRow - 1})`, z: '$#,##0.00' };
-    ws1['!cols'] = [{ wch: 14 }, { wch: 20 }, { wch: 18 }, { wch: 16 }];
-    XLSX.utils.book_append_sheet(wb, ws1, 'Resumen_Facturacion');
-
-    // Hoja 2 — Auditoria_Detalle (comprobante para el cliente corporativo)
-    const filas2 = [['No_Empleado', 'Nombre', 'Telefono', 'Fecha_Pedido', 'Platillo_Consumido', 'Zona', 'Turno']];
-    for (const p of pedidos) {
-      filas2.push([
-        p.empleados?.numero_empleado || '',
-        p.empleados?.nombre || '',
-        telefonoVisible(p.empleados?.telefono || p.empleado_telefono),
-        p.fecha_menu,
-        p.opcion_texto,
-        zonaTxt(p.zona),
-        turnoTxt(p.turno, p.zona, p.fecha_menu)
-      ]);
-    }
-    const ws2 = XLSX.utils.aoa_to_sheet(filas2);
-    ws2['!cols'] = [{ wch: 14 }, { wch: 30 }, { wch: 16 }, { wch: 14 }, { wch: 38 }, { wch: 18 }, { wch: 20 }];
-    XLSX.utils.book_append_sheet(wb, ws2, 'Auditoria_Detalle');
-
-    return wb;
+  function buildWorkbookFacturacion(ini, fin, costo, comidas, filtros) {
+    return GoLunchReportesExcel.facturacion(XLSX, formatosExcel(), ini, fin, costo, comidas, filtros);
   }
 
   async function excelCocina() {
@@ -2670,13 +2615,13 @@
     if (!f) return aviso('repCocinaAviso', 'Selecciona la fecha', false);
     try {
       const [resumen, ped] = await Promise.all([
-        api('/api/resumen-cocina/' + f),
-        api('/api/pedidos/' + f)
+        api('/api/resumen-cocina/' + f + '?' + parametrosServicio()),
+        api('/api/comidas/' + f + '?' + parametrosServicio())
       ]);
       if (!ped.count) return aviso('repCocinaAviso', 'Sin pedidos para esa fecha', false);
-      const wb = buildWorkbookCocina(f, resumen, ped.pedidos);
+      const wb = buildWorkbookCocina(f, resumen, ped.comidas);
       XLSX.writeFile(wb, `CICSA_Cocina_${f}.xlsx`);
-      aviso('repCocinaAviso', `Reporte generado: ${ped.count} pedidos`);
+      aviso('repCocinaAviso', `Reporte generado: ${ped.regulares} regulares + ${ped.coberturas} coberturas = ${ped.count} comidas`);
     } catch (e) { aviso('repCocinaAviso', 'Error: ' + e.message, false); }
   }
 
@@ -2684,92 +2629,28 @@
     const ini = val('op-ini'), fin = val('op-fin');
     if (!ini || !fin) return aviso('repOpAviso', 'Selecciona el rango de fechas', false);
     try {
-      const d = await api('/api/reportes?ini=' + ini + '&fin=' + fin);
+      const d = await api('/api/reportes?ini=' + ini + '&fin=' + fin + '&' + parametrosServicio());
       if (!d.total) return aviso('repOpAviso', 'Sin pedidos en ese rango', false);
       XLSX.writeFile(buildWorkbookOperacion(d), `CICSA_Operacion_${ini}_a_${fin}.xlsx`);
-      aviso('repOpAviso', `Reporte generado: ${d.total} pedidos del periodo`);
+      aviso('repOpAviso', `Reporte generado: ${d.regulares} regulares + ${d.coberturas} coberturas = ${d.total} comidas del periodo`);
     } catch (e) { aviso('repOpAviso', 'Error: ' + e.message, false); }
   }
 
   function buildWorkbookOperacion(d) {
-    const wb = XLSX.utils.book_new();
-    const hoja = (nombre, filas, anchos) => {
-      const ws = XLSX.utils.aoa_to_sheet(filas);
-      ws['!cols'] = anchos.map(wch => ({ wch }));
-      XLSX.utils.book_append_sheet(wb, ws, nombre);
-    };
-
-    // Hoja 1 — quién no recoge, que es la que se revisa con el supervisor
-    const f1 = [['No_Empleado', 'Nombre', 'Pedidos', 'No_Recogidos', 'Porcentaje']];
-    d.sin_recoger.forEach(x => f1.push([x.numero_empleado, x.nombre, x.pedidos, x.no_recogidos, x.pct / 100]));
-    const ws1 = XLSX.utils.aoa_to_sheet(f1);
-    for (let i = 0; i < d.sin_recoger.length; i++) {
-      const c = ws1['E' + (i + 2)];
-      if (c) c.z = '0.0%';
-    }
-    ws1['!cols'] = [14, 32, 12, 16, 14].map(wch => ({ wch }));
-    XLSX.utils.book_append_sheet(wb, ws1, 'Sin_Recoger');
-
-    // Hoja 2 — merma, turno y zona en la misma hoja para compararlas de un ojo
-    const f2 = [['MERMA POR TURNO'], ['Turno', 'Evaluables', 'Entregados', 'No_Recogidos', 'Merma_%']];
-    d.merma.por_turno.forEach(m => f2.push([etiquetaTurno(m.turno), m.evaluables, m.entregados, m.no_recogidos, m.pct_merma]));
-    f2.push([], ['MERMA POR ZONA'], ['Zona', 'Evaluables', 'Entregados', 'No_Recogidos', 'Merma_%']);
-    d.merma.por_zona.forEach(m => f2.push([etiquetaZona(m.zona), m.evaluables, m.entregados, m.no_recogidos, m.pct_merma]));
-    hoja('Merma', f2, [26, 14, 14, 16, 12]);
-
-    // Hoja 3 — ruta día por día, más el promedio por turno al final
-    const f3 = [['Fecha', 'Turno', 'Entregas', 'Primera', 'Ultima', 'Duracion_Min']];
-    d.ruta.por_dia.forEach(r => f3.push([
-      r.fecha, etiquetaTurno(r.turno), r.entregas, r.primera, r.ultima,
-      r.entregas < 2 ? '' : r.minutos
-    ]));
-    if (d.ruta.promedio_por_turno.length) {
-      f3.push([], ['PROMEDIO POR TURNO'], ['Turno', 'Dias_Con_Ruta', 'Minutos_Promedio']);
-      d.ruta.promedio_por_turno.forEach(t => f3.push([etiquetaTurno(t.turno), t.dias, t.minutos_promedio]));
-    }
-    hoja('Tiempos_Ruta', f3, [14, 26, 12, 12, 12, 16]);
-
-    // Hoja 4 — qué platillo gustó, que es lo que decide el menú de la semana
-    const f4 = [['Platillo', 'Porciones', 'Entregados', 'Me_gusto', 'Estuvo_bien',
-                 'No_me_gusto', 'Opiniones', 'Aprobacion_%', 'Participacion_%']];
-    (d.rating_por_platillo || []).forEach(x => f4.push([
-      x.platillo, x.porciones, x.entregados, x.si, x.tal_vez, x.no,
-      x.respondidos, x.aprobacion === null ? '' : x.aprobacion, x.participacion
-    ]));
-    f4.push([], ['Aprobacion: "Me gustó" vale 100, "Estuvo bien" 50, "No me gustó" 0.'],
-      ['Participacion: qué porcentaje de los entregados fue calificado.'],
-      ['Ordenado de peor a mejor. Vacío en Aprobacion = nadie opinó ese platillo.']);
-    hoja('Calificaciones', f4, [38, 12, 12, 12, 13, 13, 11, 15, 16]);
-
-    // Hoja 5 — de dónde salen los números, para que el reporte se explique solo
-    hoja('Resumen', [
-      ['Periodo', d.ini + ' a ' + d.fin],
-      ['Pedidos del periodo', d.total],
-      ['Entregados a tiempo', d.entrega.entregados],
-      ['Entregados tarde', d.entrega.tardios],
-      ['No entregados', d.entrega.no_entregados],
-      ['— de esos, aún no vence su hora', d.entrega.pendientes],
-      [],
-      ['Nota', 'La merma y el conteo de "no recogidos" solo incluyen pedidos cuya hora de'],
-      ['', 'entrega ya pasó (hora del turno + 15 min de tolerancia). Un pedido del día en'],
-      ['', 'curso que todavía no vence no cuenta como merma.'],
-      ['', 'La duración de ruta se mide entre el primer y el último escaneo de ese turno.']
-    ], [34, 70]);
-
-    return wb;
+    return GoLunchReportesExcel.operacion(XLSX, formatosExcel(), d);
   }
 
   async function excelFacturacion() {
     const ini = val('r-ini'), fin = val('r-fin');
     const costo = parseFloat(val('r-costo'));
     if (!ini || !fin) return aviso('repFactAviso', 'Selecciona el rango de fechas', false);
-    if (!(costo > 0)) return aviso('repFactAviso', 'Ingresa el costo unitario', false);
+    if (!Number.isFinite(costo) || !(costo > 0)) return aviso('repFactAviso', 'Ingresa el costo unitario', false);
     try {
-      const r = await api(`/api/pedidos?ini=${ini}&fin=${fin}`);
+      const r = await api(`/api/comidas?ini=${ini}&fin=${fin}&${parametrosServicio()}`);
       if (!r.count) return aviso('repFactAviso', 'Sin pedidos en ese rango', false);
-      const wb = buildWorkbookFacturacion(ini, fin, costo, r.pedidos);
+      const wb = buildWorkbookFacturacion(ini, fin, costo, r.comidas, r.filtros);
       XLSX.writeFile(wb, `CICSA_Facturacion_${ini}_a_${fin}.xlsx`);
-      aviso('repFactAviso', `Reporte generado: ${r.count} servicios`);
+      aviso('repFactAviso', `Reporte generado: ${r.regulares} regulares + ${r.coberturas} coberturas = ${r.count} servicios`);
     } catch (e) { aviso('repFactAviso', 'Error: ' + e.message, false); }
   }
 

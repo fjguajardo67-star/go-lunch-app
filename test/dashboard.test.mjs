@@ -56,7 +56,7 @@ test('API integra ambas fuentes para gerente y admin; no oculta fallos de cobert
     const u=new URL(req.url,'http://prueba'), tabla=u.pathname.split('/').at(-1);res.setHeader('content-type','application/json');
     if(falla&&tabla==='solicitudes_cobertura'){res.statusCode=500;res.end(JSON.stringify({message:'No se pudieron leer coberturas'}));return;}
     let filas=tabla==='empleados'?d.empleados:tabla==='pedidos'?d.pedidos:tabla==='solicitudes_cobertura'?[d.solicitud]:tabla==='solicitudes_cobertura_items'?d.items:tabla==='accesos'?d.accesos:[];
-    filas=filas.filter(f=>[...u.searchParams].every(([k,v])=>v.startsWith('eq.')?String(f[k])===v.slice(3):v.startsWith('in.(')?v.slice(4,-1).split(',').includes(String(f[k])):true));
+    filas=filas.filter(f=>[...u.searchParams].every(([k,v])=>v.startsWith('eq.')?String(f[k])===v.slice(3):v.startsWith('gte.')?String(f[k])>=v.slice(4):v.startsWith('lte.')?String(f[k])<=v.slice(4):v.startsWith('in.(')?v.slice(4,-1).split(',').includes(String(f[k])):true));
     res.end(JSON.stringify(filas));
   });
   await new Promise(r=>base.listen(0,'127.0.0.1',r));process.env.SUPABASE_URL=`http://127.0.0.1:${base.address().port}`;

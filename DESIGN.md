@@ -101,7 +101,7 @@ La hora se captura como texto de 24 horas, con ejemplo 17:30 = 5:30 p. m., para 
 
 ## Checklist de salida
 
-En Cocina → Impresión, el checklist comparte fecha, turno y zona con los demás impresos. Lista solo pedidos existentes del servicio regular y separa cada lote por zona/turno en papel carta. Las hojas de continuación repiten identificación y se numeran; una sola firma y hora real de salida se capturan a mano al final de cada lote.
+En Cocina → Impresión, el checklist comparte fecha, turno y zona con los demás impresos. Lista comidas regulares y coberturas existentes, con folio y horario propio, y separa cada lote por zona/turno en papel carta. Las hojas de continuación repiten identificación y se numeran; una sola firma y hora real de salida se capturan a mano al final de cada lote.
 
 ## Márgenes y paginación de impresos
 
@@ -110,3 +110,9 @@ Los documentos carta usan márgenes de 14 mm. Al imprimir, el checklist sigue fl
 ## Orden del checklist por menú
 
 Dentro de cada lote de turno y zona, el checklist agrupa por opción en el orden del menú y ordena por número de empleado de forma numérica, con nombre como desempate. Opción, número y nombre son las primeras columnas; horario y casilla quedan al final. Cada grupo muestra platillo original y total de la opción. La paginación reserva espacio para encabezados y nombres largos, conserva las continuaciones identificadas y una sola firma al final del lote.
+
+## Reportes consolidados
+
+Cocina, comanda general, etiquetas, checklist y los Excel usan la misma consulta de comidas regulares y coberturas vigentes, incluidas extraordinarias. Cada comida tiene identidad y estado propios; una misma persona puede aparecer varias veces. Los reportes separan Regulares, Coberturas y Total, con filtros de fecha, turno, zona y servicio. Los impresos de folio y las alarmas de supervisores permanecen disponibles para imprimir solo nuevos agregados.
+
+Las extraordinarias usan la hora autorizada para preparación y puntualidad. Las calificaciones solo incluyen regulares, que son los que permiten encuesta. Facturación aplica temporalmente el mismo costo unitario a ambos servicios, decisión confirmada por Francisco el 7/nov/2026; muestra entregados y pendientes para conciliación. Un error de lectura de coberturas no se presenta como una lista completa. Los formatos de papel, QR y calibraciones físicas se conservan.

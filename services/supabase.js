@@ -310,15 +310,14 @@ export async function upsertPedido(pedido) {
 }
 
 export async function getPedidosPorFecha(fecha) {
-  const { data, error } = await supabase
+  return leerPaginas(() => supabase
     .from('pedidos')
     .select('*, empleados(nombre, numero_empleado)')
     .eq('fecha_menu', fecha)
     .order('turno')        // agrupa Turno A antes que Turno B
     .order('zona')
-    .order('creado_en');
-  if (error) throw error;
-  return data;
+    .order('creado_en')
+    .order('id'));
 }
 
 // Marca entregas entrando por número de empleado, que es lo que trae el QR
@@ -625,16 +624,27 @@ export async function pedidoPorCalificar(telefono, desdeFecha) {
 }
 
 export async function getPedidosRango(fechaIni, fechaFin) {
-  const { data, error } = await supabase
+  return leerPaginas(() => supabase
     .from('pedidos')
     .select('*, empleados(nombre, numero_empleado, telefono)')
     .gte('fecha_menu', fechaIni)
     .lte('fecha_menu', fechaFin)
     .order('fecha_menu')
     .order('turno')
-    .order('zona');
-  if (error) throw error;
-  return data;
+    .order('zona')
+    .order('id'));
+}
+
+// Lotes pequeños y orden estable: los reportes no se truncan al superar
+// el máximo de filas por respuesta de PostgREST.
+async function leerPaginas(consulta) {
+  const filas = [], lote = 500;
+  for (let desde = 0; ; desde += lote) {
+    const { data, error } = await consulta().range(desde, desde + lote - 1);
+    if (error) throw error;
+    filas.push(...(data || []));
+    if (!data || data.length < lote) return filas;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -830,21 +840,21 @@ export async function guardarExtraordinariaCobertura(datos) {
 }
 
 export async function listSolicitudesCobertura(fecha, turno) {
-  const { data, error } = await supabase
-    .from('solicitudes_cobertura')
-    .select('*')
-    .eq('fecha_servicio', fecha)
-    .order('creado_en');
-  if (error) throw error;
-  const solicitudes = turno ? (data || []).filter(s => s.turno === turno) : (data || []);
+  return getSolicitudesCoberturaRango(fecha, fecha, turno);
+}
+
+export async function getSolicitudesCoberturaRango(ini, fin, turno) {
+  const data = await leerPaginas(() => supabase.from('solicitudes_cobertura').select('*')
+    .gte('fecha_servicio', ini).lte('fecha_servicio', fin).order('creado_en').order('id'));
+  const solicitudes = turno ? data.filter(s => s.turno === turno) : data;
   if (!solicitudes.length) return [];
   const ids = solicitudes.map(s => s.id);
-  const { data: items, error: e2 } = await supabase
-    .from('solicitudes_cobertura_items')
-    .select('*')
-    .in('solicitud_id', ids)
-    .order('id');
-  if (e2) throw e2;
+  const items = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const lote = ids.slice(i, i + 100);
+    items.push(...await leerPaginas(() => supabase.from('solicitudes_cobertura_items')
+      .select('*').in('solicitud_id', lote).order('id')));
+  }
   const porSolicitud = new Map();
   for (const item of items || []) {
     if (!porSolicitud.has(item.solicitud_id)) porSolicitud.set(item.solicitud_id, []);

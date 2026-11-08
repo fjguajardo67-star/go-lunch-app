@@ -252,20 +252,21 @@
       el pedido no.
     </p>
 
+    <p>Si no se pueden descargar las coberturas, reparto avisa que la lista no está completa. Conserva su última descarga y vuelve a intentar con conexión antes de cerrar la entrega.</p>
+
     <h3>🍽️ Pedidos</h3>
-    <p>La lista completa de una fecha: quién, qué platillo, zona y turno. Útil para dudas puntuales ("¿sí quedó mi pedido?").</p>
+    <p>La lista de pedidos regulares de una fecha: quién, qué platillo, zona y turno. Los folios especiales se consultan en Coberturas. Dashboard, Cocina y Reportes reúnen ambos servicios.</p>
 
     <h3>🍳 Cocina</h3>
     <p>La sección está separada para que las herramientas ocasionales no estorben
       durante la preparación del servicio:</p>
     <ul>
-      <li><b>Operación diaria:</b> consulta cuántas porciones se preparan por platillo,
-        turno y zona. Aquí mismo encuentras los impresos operativos:
+      <li><b>Operación diaria:</b> incluye pedidos regulares y coberturas, también las extraordinarias. Consulta por fecha, turno, zona y servicio. Muestra columnas de regulares, coberturas y total por platillo, con el horario de cada grupo. Aquí mismo encuentras los impresos operativos:
         <ul>
-          <li><b>Filtros de impresión:</b> elige la <b>fecha de servicio</b>, <b>Turno A, B o Todos</b> y <b>ASLA, REFIS o Todas las zonas</b>. La misma selección aplica a los botones de comanda, etiquetas y checklist de salida. Para documentos carta, usa papel carta vertical, escala 100 % y los márgenes del documento (14 mm). En Safari desactiva “Imprimir encabezados y pies de página” para quitar el título, la fecha y la URL externos. Por ejemplo, A + REFIS imprime solo ese lote; A + Todas produce el consolidado de la mañana. Para volver al día completo elige Todos y Todas.</li>
+          <li><b>Filtros de impresión:</b> elige la <b>fecha de servicio</b>, <b>Turno A, B o Todos</b> y <b>ASLA, REFIS o Todas las zonas</b>. Elige también <b>Regulares y coberturas, Regulares o Coberturas</b>. La misma selección aplica a los botones de comanda, etiquetas y checklist de salida. Para documentos carta, usa papel carta vertical, escala 100 % y los márgenes del documento (14 mm). En Safari desactiva “Imprimir encabezados y pies de página” para quitar el título, la fecha y la URL externos. Por ejemplo, A + REFIS imprime solo ese lote; A + Todas produce el consolidado de la mañana. Para volver al día completo elige Todos y Todas.</li>
           <li><b>Comanda de cocina</b> — muestra fecha, turno y zona seleccionados. Las cantidades, subtotales y total corresponden únicamente a esa selección. Si incluyes ambos turnos, aparecen separados. El botón prepara el ticket para la POS58 de 58 mm; selecciona esa impresora y su papel en el diálogo. Se abre con la clave ya incluida.</li>
           <li><b>Etiquetas del servicio</b> — usan fecha, turno, zona y tamaño elegidos; sale una por comida seleccionada con su QR. La barra muestra el lote y su número de etiquetas. Si la selección no tiene pedidos, el documento lo indica. El tamaño predeterminado es <b>90 × 62 mm horizontal (ancho × alto)</b>, también para coberturas. En la Brother QL-800 selecciona rollo de <b>62 mm</b>, largo de <b>90 mm</b> y <b>orientación horizontal</b>; el resultado es 90 mm de ancho por 62 mm de alto. Usa escala 100 %, sin márgenes, y desactiva <b>Encabezados y pies de página</b> en el diálogo del navegador: son los que agregan fecha de impresión, título, URL y número de página. Zona y horario se imprimen grandes, con un QR ampliado a la derecha, con margen interior de <b>9 mm a ambos lados</b> para compensar el recorte observado en la Brother, sin línea inferior. El número de empleado y la fecha de servicio aparecen dentro de la etiqueta; no son los encabezados o pies externos del navegador. Si un nombre o platillo es largo, el texto se ajusta para conservarlo completo. Si se recortan letras o el QR, confirma primero papel <b>62 × 90 mm</b>, orientación horizontal y escala <b>100 %</b>; imprime una sola etiqueta para verificar la configuración. Si el diálogo muestra <b>29 × 90 mm</b>, corrige allí el tamaño del papel: cambiar el selector de la app no cambia el rollo configurado en el controlador.</li>
-          <li><b>Checklist de salida</b> — lista para papel carta del servicio regular clasificada primero por <b>opción del menú</b>, después por <b>número de empleado</b> (orden numérico) y después por <b>nombre</b>. Las primeras columnas son opción, número y nombre; al final aparecen horario y casilla de revisión. Cada platillo tiene un encabezado con su total y se conserva el texto del pedido original. Incluye únicamente pedidos de la fecha, turno y zona seleccionados. Cada combinación zona/turno comienza en una hoja separada y, dentro del lote, las opciones siguen el orden del menú (A, B, C y variables); si un lote requiere más hojas, se numeran y repiten fecha, zona y turno. Verifica las comidas, anota la hora real de salida y registra <b>una sola firma al final del lote</b>. Los totales indican comidas por hoja y por lote. El documento no registra automáticamente la salida ni la entrega en el sistema.</li>
+          <li><b>Checklist de salida</b> — lista para papel carta de comidas regulares y coberturas clasificada primero por <b>opción del menú</b>, después por <b>número de empleado</b> (orden numérico) y después por <b>nombre</b>. Las primeras columnas son opción, número y nombre; al final aparecen horario y casilla de revisión. Cada platillo tiene un encabezado con su total y se conserva el texto del pedido original. Incluye únicamente comidas de la fecha, turno, zona y servicio seleccionados. Las coberturas llevan su folio y las extraordinarias muestran su hora autorizada por fila. Cada combinación zona/turno comienza en una hoja separada y, dentro del lote, las opciones siguen el orden del menú (A, B, C y variables); si un lote requiere más hojas, se numeran y repiten fecha, zona y turno. Verifica las comidas, anota la hora real de salida y registra <b>una sola firma al final del lote</b>. Los totales indican comidas por hoja y por lote. El documento no registra automáticamente la salida ni la entrega en el sistema.</li>
           <li><b>QR de acceso para empleados</b> — no depende de fecha ni tamaño; abre el cartel grande y las tarjetas para mesa que llevan a la página de pedidos.</li>
         </ul>
       </li>
@@ -291,13 +292,13 @@
     </ol>
     <p>La tarea imprime únicamente el servicio de <b>mañana</b>. Si no hay pedidos, no imprime ni adelanta otro día. Mantén la PC encendida, conectada a corriente, con internet y la sesión del usuario iniciada (puede estar bloqueada). La pantalla puede apagarse; evita suspensión. Las impresoras deben estar encendidas y conectadas.</p>
     <p>Los PDF, el estado por documento y <b>impresion.log</b> quedan en <code>%LOCALAPPDATA%\GoLunchImpresion\documentos</code>. <b>Enviado a Windows</b> confirma que la cola aceptó el trabajo; no garantiza que haya salido papel. Si dice <b>enviando</b> o falla, revisa la cola y la impresora antes de repetir.</p>
-    <p><b>Preparar-prueba.cmd</b> genera PDF sin imprimir. <b>Imprimir-ahora.cmd</b> solicita fecha y confirmación, e imprime solo documentos aún no enviados. <b>Reimprimir.cmd</b> pide una confirmación adicional porque puede duplicar etiquetas. Si un apagado inesperado deja <b>impresion.lock</b>, comprueba primero que no haya una ejecución activa ni un trabajo pendiente antes de retirar ese bloqueo. Para detener la automatización, deshabilita la tarea en el Programador de tareas de Windows. La automatización cubre el servicio regular; las coberturas del mismo día conservan su impresión independiente.</p>
+    <p><b>Preparar-prueba.cmd</b> genera PDF sin imprimir. <b>Imprimir-ahora.cmd</b> solicita fecha y confirmación, e imprime solo documentos aún no enviados. <b>Reimprimir.cmd</b> pide una confirmación adicional porque puede duplicar etiquetas. Si un apagado inesperado deja <b>impresion.lock</b>, comprueba primero que no haya una ejecución activa ni un trabajo pendiente antes de retirar ese bloqueo. Para detener la automatización, deshabilita la tarea en el Programador de tareas de Windows. El paquete actualizado prepara el consolidado de regulares y coberturas que existan para la fecha elegida. Las nuevas coberturas del mismo día se pueden imprimir por folio desde Coberturas. Actualizar el paquete no activa una tarea nueva; la impresión manual sigue disponible.</p>
 
     <h3>🕒 Coberturas</h3>
     <p>Administra el servicio del mismo día para personal del primer turno que
       extiende su jornada. Aquí se publica el menú especial, se autorizan los
       supervisores que indique Glovis, se consulta el conteo y se imprimen la
-      comanda y las etiquetas separadas del servicio regular.</p>
+      comanda y las etiquetas de cada folio. Estas comidas también aparecen en los reportes e impresos generales. Si el consolidado ya fue impreso, usa el folio nuevo para imprimir únicamente el agregado.</p>
 
     <h3>Probar la pantalla del cliente</h3>
     <p>Desde Panel → Cocina → <b>Pruebas y soporte</b> abre <b>“Cliente virtual”</b>. El sistema
@@ -313,13 +314,14 @@
     </div>
 
     <h3>📈 Reportes</h3>
-    <p>Eliges un periodo y <b>"Ver reportes"</b> te muestra en pantalla: pedidos por día,
+    <p>Eliges un periodo y <b>"Ver reportes"</b> te muestra en pantalla: comidas por día,
     porciones por platillo, las calificaciones, el cumplimiento de entrega y —lo que sirve
     para operar— estos tres:</p>
+    <p>Los filtros de <b>turno, zona y servicio</b> se aplican tanto a la pantalla como a las tres descargas de Excel. Los totales se desglosan en <b>Regulares + Coberturas = Total</b>. Por ejemplo: 61 + 7 = 68 comidas. Las coberturas canceladas se excluyen y cada comida conserva su propio estado de entrega.</p>
     <ul>
       <li><b>Quién no recoge su pedido:</b> lista por empleado con cuántas veces pidió y cuántas no recogió, ordenada por reincidencia. Es la conversación con el supervisor.</li>
       <li><b>Merma:</b> comida que se preparó y nadie recogió, desglosada por turno y por zona. Te dice dónde se está tirando dinero.</li>
-      <li><b>Tiempos de ruta:</b> a qué hora se entregó la primera y la última comida de cada turno, cuánto duró la ruta, y el promedio del periodo.</li>
+      <li><b>Tiempos de ruta:</b> a qué hora se entregó la primera y la última marca de entrega de cada turno, zona y horario, cuánto duró la ruta, y el promedio del periodo.</li>
       <li><b>Qué platillo gustó y cuál no:</b> lo que respondieron los empleados en la encuesta, por platillo, ordenado de peor a mejor. Trae porciones, las tres respuestas, cuántas opiniones y un porcentaje de aprobación.</li>
     </ul>
     <div class="caja peligro">
@@ -335,11 +337,12 @@
       hora de entrega todavía no llega. Por eso un reporte que corras a media mañana no acusa
       de "no recogió" a todo el turno de la tarde: esos aparecen aparte, como pendientes.
     </div>
+    <p>Las calificaciones incluyen únicamente pedidos regulares, que son los que tienen encuesta. Las coberturas no se cuentan como respuestas pendientes. Una entrega sin datos suficientes para verificar su puntualidad se muestra aparte.</p>
     <p>Y tres descargas de Excel:</p>
     <ul>
-      <li><b>Excel de cocina y etiquetas</b> de una fecha.</li>
+      <li><b>Excel de cocina y etiquetas</b> de una fecha, con desglose por servicio, turno, zona y horario, más el detalle de cada comida.</li>
       <li><b>Reporte de operación</b> por rango de fechas: una hoja por tema (sin recoger, merma, tiempos de ruta y calificaciones por platillo) más una de resumen que explica de dónde salen los números.</li>
-      <li><b>Reporte de facturación</b> por rango de fechas, con costo unitario y detalle de auditoría — para el cobro al cliente corporativo.</li>
+      <li><b>Reporte de facturación</b> por rango de fechas: cantidades regulares y de cobertura, total de servicios, costo unitario, subtotal y detalle de auditoría. Por ahora se aplica el mismo precio unitario a ambos servicios. Incluye columnas de entregados y pendientes para conciliar las cantidades antes del cobro.</li>
     </ul>
 
     <h3>Cuando Meta apruebe el negocio (WhatsApp)</h3>
