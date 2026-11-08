@@ -289,13 +289,28 @@
   #cov-extra-form input, #cov-extra-form select, #cov-extra-form textarea { scroll-margin-top: 120px; }
   #cov-extra-form [aria-invalid="true"] { border-color: var(--rojo); }
   #cov-extra-form .extra-error { color: var(--rojo); font-size: .8rem; margin-top: 5px; }
-  .dashboard-desglose {
-    display: flex; align-items: baseline; justify-content: space-between;
-    gap: 8px 20px; flex-wrap: wrap; padding-bottom: 12px; margin-bottom: 16px;
-    border-bottom: 1px solid var(--gris-line);
+  .dashboard-bloque { margin-bottom: 24px; }
+  .dashboard-grupo-titulo { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; }
+  .dashboard-grupo-titulo h4 { font-size: 1rem; }
+  .dashboard-grupo-titulo p, .dashboard-nota { font-size: .8rem; color: var(--gris-text); }
+  .dashboard-metricas { display: grid; gap: 10px; }
+  .dashboard-comidas { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .dashboard-empleados { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .dashboard-metrica {
+    min-width: 0; padding: 14px 10px; border-radius: 9px;
+    background: var(--gris-bg); color: var(--tinta); text-align: center;
   }
-  .dashboard-desglose strong { font-size: 1.1rem; }
-  .dashboard-desglose span, .dashboard-servicio { font-size: .8rem; color: var(--gris-text); }
+  .dashboard-metrica strong { display: block; font-size: 1.75rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  .dashboard-metrica span { display: block; margin-top: 5px; font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
+  .dashboard-metrica.azul { background: var(--azul-light); color: var(--azul); }
+  .dashboard-metrica.total { background: var(--azul); color: var(--blanco); }
+  .dashboard-metrica.verde { background: #f0f7f0; color: var(--verde); }
+  .dashboard-metrica.ambar { background: #fff9e6; color: #7d5b12; }
+  .dashboard-empleados .dashboard-metrica strong { font-size: 1.5rem; }
+  .dashboard-nota { margin-top: 10px; }
+  .dashboard-tardias { margin-top: 10px; font-size: .85rem; color: var(--gris-text); }
+  .dashboard-tardias.con-retrasos { color: var(--rojo); }
+  .dashboard-servicio { font-size: .8rem; color: var(--gris-text); }
   .dashboard-servicio { display: block; overflow-wrap: anywhere; }
 
   /* ── Buttons ── */
@@ -572,6 +587,8 @@
   
   @media (max-width: 640px) {
     .grid2, .grid3 { grid-template-columns: 1fr; }
+    .dashboard-comidas, .dashboard-empleados { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .dashboard-comidas .total { grid-column: 1 / -1; }
     .header-title { display: none; }
     .wrap { padding: 16px; }
     .cocina-encabezado { align-items: flex-start; flex-direction: column; }
@@ -1558,26 +1575,28 @@
       const r = data.resumen, filas = data.filas || [];
       if (!filas.length) { box.innerHTML = '<div class="vacio">No hay empleados activos.</div>'; return; }
 
-      const tarjeta = (n, etiqueta, color, fondo) =>
-        '<div style="flex:1;min-width:118px;background:' + fondo + ';border-radius:9px;padding:12px;text-align:center">' +
-        '<div style="font-size:1.6rem;font-weight:800;color:' + color + '">' + n + '</div>' +
-        '<div style="font-size:.75rem;color:var(--gris-text);font-weight:600">' + etiqueta + '</div></div>';
+      const tarjeta = (n, etiqueta, variante = '') =>
+        '<div class="dashboard-metrica ' + variante + '"><strong>' + (n ?? '—') + '</strong><span>' + etiqueta + '</span></div>';
 
-      let h = '<div class="dashboard-desglose"><strong>' + (r.total_comidas ?? '—') + ' comidas registradas</strong>' +
-        '<span>Regulares: ' + (r.regulares ?? '—') + ' · Coberturas: ' + (r.coberturas ?? '—') + '</span></div>';
-      h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">';
-      h += tarjeta(r.activos,      'Empleados activos',   'var(--azul)',      'var(--azul-light)');
-      h += tarjeta(r.ordenaron,    'Activos con pedido',  'var(--verde)',     '#f0f7f0');
-      // El desglose que importa en el arranque: quien miró el menú y no pidió
-      // es un problema de cocina; quien nunca abrió la app es de difusión.
-      h += tarjeta(r.vieron_no_ordenaron ?? 0, 'Vieron, no pidieron', '#b8860b', '#fff9e6');
-      h += tarjeta(r.no_abrieron ?? r.no_ordenaron, 'No abrieron la app', 'var(--gris-text)', 'var(--gris-bg)');
-      h += tarjeta(r.entregados,   'Comidas entregadas',  'var(--verde)',     '#f0f7f0');
-      h += tarjeta(r.pendientes,   'Pendientes de entrega','#b8860b',         '#fff9e6');
-      h += tarjeta(r.tardias,      'Entregas tardías',    'var(--rojo)',      '#fdecec');
-      h += '</div>';
-      h += '<p style="font-size:.8rem;color:var(--gris-text);margin-bottom:14px">' +
-        'Los empleados activos se cuentan una sola vez. Entregadas, pendientes y tardías cuentan comidas regulares y coberturas, incluido su historial.</p>';
+      let h = '<section class="dashboard-bloque" aria-labelledby="dash-comidas-titulo">' +
+        '<div class="dashboard-grupo-titulo"><h4 id="dash-comidas-titulo">Comidas</h4><p>Regulares + coberturas = total</p></div>' +
+        '<div class="dashboard-metricas dashboard-comidas">';
+      h += tarjeta(r.regulares, 'Regulares');
+      h += tarjeta(r.coberturas, 'Coberturas', 'azul');
+      h += tarjeta(r.total_comidas, 'Total de comidas', 'total');
+      h += tarjeta(r.entregados, 'Entregadas', 'verde');
+      h += tarjeta(r.pendientes, 'Pendientes', 'ambar');
+      h += '</div><p class="dashboard-tardias' + (r.tardias > 0 ? ' con-retrasos' : '') + '"><strong>' +
+        r.tardias + ' entrega(s) tardía(s)</strong> · Incluidas en las entregadas.</p></section>';
+
+      h += '<section class="dashboard-bloque" aria-labelledby="dash-empleados-titulo">' +
+        '<div class="dashboard-grupo-titulo"><h4 id="dash-empleados-titulo">Empleados</h4></div>' +
+        '<div class="dashboard-metricas dashboard-empleados">';
+      h += tarjeta(r.activos, 'Activos', 'azul');
+      h += tarjeta(r.ordenaron, 'Con pedido', 'verde');
+      h += tarjeta(r.vieron_no_ordenaron ?? 0, 'Vieron, no pidieron', 'ambar');
+      h += tarjeta(r.no_abrieron ?? r.no_ordenaron, 'No abrieron la app');
+      h += '</div><p class="dashboard-nota">Se cuenta cada empleado activo una sola vez, aunque tenga pedido regular y cobertura.</p></section>';
 
       // Si la bitácora de accesos no se pudo leer, decirlo. Las dos cifras de
       // arriba dejan de significar algo y hay que advertirlo antes de que
