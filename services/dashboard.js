@@ -3,9 +3,9 @@ import { claveEmpleado } from './telefono.js';
 import { esEntregaTardia, TOLERANCIA_TARDIA_MIN, ZONA } from './menu.js';
 
 const numero = valor => String(valor ?? '').trim();
-const identidad = (telefono, nro, respaldo) => {
+const identidad = (telefono, nro) => {
   const tel = claveEmpleado(telefono);
-  return tel ? 'tel:' + tel : numero(nro) ? 'num:' + numero(nro) : respaldo;
+  return tel ? 'tel:' + tel : numero(nro) ? 'num:' + numero(nro) : null;
 };
 
 export function construirDashboard({fecha, empleados, pedidos, coberturas = [], accesos = [], accesosOk = true}) {
@@ -22,12 +22,11 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
   const claveActiva = emp => identidad(emp.telefono, emp.numero_empleado);
   const conPedido = new Set();
 
-  function filaPedido(p, tipo, indice) {
+  function filaPedido(p, tipo) {
     const especial = tipo === 'cobertura';
     const nro = especial ? p.empleado_numero_snapshot : p.empleados?.numero_empleado;
     const emp = porTel.get(claveEmpleado(p.empleado_telefono)) || porNumero.get(numero(nro));
-    const clave = emp ? claveActiva(emp) : identidad(p.empleado_telefono, nro, tipo + ':' + indice);
-    if (emp) conPedido.add(clave);
+    if (emp) conPedido.add(claveActiva(emp));
     const acc = accesosPorTel.get(claveEmpleado(emp?.telefono || p.empleado_telefono));
     const programada = especial ? p.entrega_programada_en || null : null;
     const entregada = p.entregado_en || null;
@@ -53,8 +52,8 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
 
   const especiales = coberturas.filter(p => p.estado_solicitud !== 'cancelada');
   const comidas = [
-    ...pedidos.map((p,i) => filaPedido(p,'regular',i)),
-    ...especiales.map((p,i) => filaPedido(p,'cobertura',i))
+    ...pedidos.map(p => filaPedido(p,'regular')),
+    ...especiales.map(p => filaPedido(p,'cobertura'))
   ];
   const sinPedido = empleados.filter(emp => !conPedido.has(claveActiva(emp))).map(emp => {
     const acc = accesosPorTel.get(claveEmpleado(emp.telefono));
