@@ -12,6 +12,7 @@ import { fechaServicio } from '../services/pedidos.js';
 import { hashClave, generarClave } from '../services/sesion.js';
 import { horarioCobertura, validarTurnoCobertura } from '../services/cobertura.js';
 import { estadoExtraordinaria, autorizarExtraordinaria } from '../services/cobertura-extraordinaria.js';
+import { construirDashboard } from '../services/dashboard.js';
 
 export const adminRouter = express.Router();
 
@@ -702,9 +703,10 @@ adminRouter.post('/enviar-menu', async (req, res) => {
 adminRouter.get('/dashboard/:fecha', async (req, res) => {
   try {
     const fecha = req.params.fecha;
-    const [empleados, pedidos] = await Promise.all([
+    const [empleados, pedidos, coberturas] = await Promise.all([
       db.listEmpleadosActivos(),
-      db.getPedidosPorFecha(fecha)
+      db.getPedidosPorFecha(fecha),
+      db.getCoberturasParaEntrega(fecha)
     ]);
     // Quién abrió la app ese día. Si la tabla todavía no existe en la base, el
     // dashboard sigue funcionando como antes en vez de caerse entero.
@@ -724,65 +726,7 @@ adminRouter.get('/dashboard/:fecha', async (req, res) => {
       accesosOk = false;
       console.error('[Panel] No se pudo leer accesos de', fecha, '—', err.message);
     }
-    const accesoPorTel = {};
-    accesos.forEach(a => { accesoPorTel[claveEmpleado(a.empleado_telefono)] = a; });
-
-    const pedidoPorTel = {};
-    pedidos.forEach(p => { pedidoPorTel[claveEmpleado(p.empleado_telefono)] = p; });
-
-    // Una fila por empleado activo. El estado sale de un solo hecho: el
-    // escaneo del QR al entregar (entregado_en). No hay estados intermedios.
-    const filas = empleados.map(emp => {
-      const p = pedidoPorTel[claveEmpleado(emp.telefono)];
-      const acc = accesoPorTel[claveEmpleado(emp.telefono)];
-      if (!p) {
-        // Dos cosas muy distintas que antes se veían igual: mirar el menú y no
-        // pedir es una decisión; no abrir la app siquiera es no haberse
-        // enterado. La primera se arregla en la cocina, la segunda con el QR.
-        return { nombre: emp.nombre, numero_empleado: emp.numero_empleado,
-                 platillo: null, zona: null, turno: null,
-                 entregado_en: null, motivo_tardia: null,
-                 visto_en: acc?.visto_en || null, veces: acc?.veces || 0,
-                 estado: acc ? 'vio_no_ordeno' : (accesosOk ? 'no_abrio' : 'sin_dato') };
-      }
-      const tardia = esEntregaTardia(fecha, p.turno, p.entregado_en, p.zona);
-      return {
-        nombre: emp.nombre,
-        numero_empleado: emp.numero_empleado,
-        platillo: p.opcion_texto || p.opcion_id,
-        zona: p.zona,
-        turno: p.turno,
-        entregado_en: p.entregado_en || null,
-        motivo_tardia: p.motivo_tardia || null,
-        visto_en: acc?.visto_en || null,
-        veces: acc?.veces || 0,
-        estado: !p.entregado_en ? 'pendiente' : (tardia ? 'tardia' : 'entregado')
-      };
-    });
-
-    const cuenta = e => filas.filter(f => f.estado === e).length;
-    res.json({
-      fecha,
-      resumen: {
-        activos:     filas.length,
-        // Se cuenta por lo que SÍ son, no por descarte. Antes era una lista de
-        // exclusión, y así cualquier estado nuevo se colaba como "ordenaron"
-        // sin que nadie lo notara — 'sin_dato' habría entrado de una.
-        ordenaron:   cuenta('pendiente') + cuenta('entregado') + cuenta('tardia'),
-        no_ordenaron: cuenta('no_ordeno') + cuenta('vio_no_ordeno') + cuenta('no_abrio') + cuenta('sin_dato'),
-        // El desglose que separa un problema de cocina de uno de difusión.
-        vieron_no_ordenaron: cuenta('vio_no_ordeno'),
-        no_abrieron:         cuenta('no_abrio'),
-        // Cuántos quedaron sin poder clasificar porque la bitácora falló, y la
-        // bandera para que el panel lo advierta en vez de dar cifras a medias.
-        sin_dato:    cuenta('sin_dato'),
-        accesos_ok:  accesosOk,
-        entregados:  cuenta('entregado') + cuenta('tardia'),
-        pendientes:  cuenta('pendiente'),
-        tardias:     cuenta('tardia')
-      },
-      filas
-    });
+    res.json(construirDashboard({fecha, empleados, pedidos, coberturas, accesos, accesosOk}));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

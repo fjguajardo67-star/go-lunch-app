@@ -289,6 +289,14 @@
   #cov-extra-form input, #cov-extra-form select, #cov-extra-form textarea { scroll-margin-top: 120px; }
   #cov-extra-form [aria-invalid="true"] { border-color: var(--rojo); }
   #cov-extra-form .extra-error { color: var(--rojo); font-size: .8rem; margin-top: 5px; }
+  .dashboard-desglose {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px 20px; flex-wrap: wrap; padding-bottom: 12px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--gris-line);
+  }
+  .dashboard-desglose strong { font-size: 1.1rem; }
+  .dashboard-desglose span, .dashboard-servicio { font-size: .8rem; color: var(--gris-text); }
+  .dashboard-servicio { display: block; overflow-wrap: anywhere; }
 
   /* ── Buttons ── */
   button.accion {
@@ -743,10 +751,10 @@
              nunca consultó esa tabla, así que el panel prometía un dato que no
              existía y esos dos estados no podían aparecer nunca. -->
         <p style="font-size:.85rem;color:var(--gris-text);margin-bottom:14px">
-          Estado de cada empleado para la fecha seleccionada: qué pidió y si ya lo recibió.
+          Pedidos regulares y coberturas de la fecha seleccionada. Cada comida conserva su estado de entrega; un empleado puede tener más de una fila.
         </p>
         <div class="row-fin">
-          <div><label>Fecha del menú</label><input type="date" id="db-fecha" style="max-width:180px"></div>
+          <div><label>Fecha de servicio</label><input type="date" id="db-fecha" style="max-width:180px"></div>
           <button class="accion" onclick="verDashboard()">Consultar</button>
         </div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:.8rem;color:var(--gris-text)">
@@ -1555,9 +1563,11 @@
         '<div style="font-size:1.6rem;font-weight:800;color:' + color + '">' + n + '</div>' +
         '<div style="font-size:.75rem;color:var(--gris-text);font-weight:600">' + etiqueta + '</div></div>';
 
-      let h = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">';
+      let h = '<div class="dashboard-desglose"><strong>' + (r.total_comidas ?? '—') + ' comidas registradas</strong>' +
+        '<span>Regulares: ' + (r.regulares ?? '—') + ' · Coberturas: ' + (r.coberturas ?? '—') + '</span></div>';
+      h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">';
       h += tarjeta(r.activos,      'Empleados activos',   'var(--azul)',      'var(--azul-light)');
-      h += tarjeta(r.ordenaron,    'Ordenaron',           'var(--verde)',     '#f0f7f0');
+      h += tarjeta(r.ordenaron,    'Activos con pedido',  'var(--verde)',     '#f0f7f0');
       // El desglose que importa en el arranque: quien miró el menú y no pidió
       // es un problema de cocina; quien nunca abrió la app es de difusión.
       h += tarjeta(r.vieron_no_ordenaron ?? 0, 'Vieron, no pidieron', '#b8860b', '#fff9e6');
@@ -1566,6 +1576,8 @@
       h += tarjeta(r.pendientes,   'Pendientes de entrega','#b8860b',         '#fff9e6');
       h += tarjeta(r.tardias,      'Entregas tardías',    'var(--rojo)',      '#fdecec');
       h += '</div>';
+      h += '<p style="font-size:.8rem;color:var(--gris-text);margin-bottom:14px">' +
+        'Los empleados activos se cuentan una sola vez. Entregadas, pendientes y tardías cuentan comidas regulares y coberturas, incluido su historial.</p>';
 
       // Si la bitácora de accesos no se pudo leer, decirlo. Las dos cifras de
       // arriba dejan de significar algo y hay que advertirlo antes de que
@@ -1595,17 +1607,22 @@
         no_ordeno:     ['— No ordenó',        'var(--gris-bg)']
       };
 
-      h += '<div style="overflow-x:auto"><table style="min-width:720px"><tr>' +
-           '<th>Empleado</th><th>Platillo</th><th>Zona</th><th>Turno</th>' +
+      h += '<div style="overflow-x:auto"><table style="min-width:850px"><tr>' +
+           '<th>Empleado</th><th>Servicio</th><th>Platillo</th><th>Zona</th><th>Turno y horario</th>' +
            '<th>Hora de entrega</th><th>Estado</th></tr>';
       filas.forEach(f => {
         const [txt, bg] = ESTADO[f.estado] || ['—', ''];
         const vacio = '<span style="color:#aaa">—</span>';
+        const servicio = f.tipo === 'cobertura' ? (f.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : f.platillo ? 'Regular' : '';
+        const horario = f.entrega_programada_en
+          ? (f.turno === 'turno_a' ? 'Turno A' : 'Turno B') + ' — ' + horaTxt(f.entrega_programada_en)
+          : f.turno ? turnoTxt(f.turno, f.zona, fecha) : '';
         h += '<tr style="background:' + bg + '">' +
-             '<td>' + escaparHtml(f.nombre) + '</td>' +
+             '<td>' + escaparHtml(f.nombre) + (f.numero_empleado ? '<span class="dashboard-servicio">#' + escaparHtml(f.numero_empleado) + '</span>' : '') + '</td>' +
+             '<td>' + (servicio ? escaparHtml(servicio) : vacio) + (f.folio ? '<span class="dashboard-servicio">' + escaparHtml(f.folio) + '</span>' : '') + '</td>' +
              '<td>' + (f.platillo ? escaparHtml(f.platillo) : vacio) + '</td>' +
              '<td style="font-size:.82rem">' + (f.zona ? zonaTxt(f.zona) : vacio) + '</td>' +
-             '<td style="font-size:.82rem">' + (f.turno ? turnoTxt(f.turno, f.zona, fecha) : vacio) + '</td>' +
+             '<td style="font-size:.82rem">' + (horario || vacio) + '</td>' +
              '<td style="font-size:.82rem;font-variant-numeric:tabular-nums">' + horaTxt(f.entregado_en) + '</td>' +
              '<td style="font-size:.82rem;white-space:nowrap">' + txt +
                (f.estado === 'tardia'
