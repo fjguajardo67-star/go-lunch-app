@@ -281,11 +281,14 @@
   #cov-extra-form fieldset { min-inline-size: 0; }
   #cov-extra-form label { text-transform: none; letter-spacing: 0; }
   #cov-extra-form input, #cov-extra-form select, #cov-extra-form textarea { min-width: 0; max-width: 100%; min-height: 44px; }
-  #cov-extra-form input[type=time], #cov-extra-form textarea {
+  #extra-hora, #cov-extra-form textarea {
     width: 100%; padding: 9px 12px; border: 1.5px solid var(--gris-line); border-radius: 8px;
     font: inherit; background: var(--gris-bg); color: var(--tinta);
   }
   #extra-aviso.info { display: block; background: var(--azul-light); color: var(--tinta); }
+  #cov-extra-form input, #cov-extra-form select, #cov-extra-form textarea { scroll-margin-top: 120px; }
+  #cov-extra-form [aria-invalid="true"] { border-color: var(--rojo); }
+  #cov-extra-form .extra-error { color: var(--rojo); font-size: .8rem; margin-top: 5px; }
 
   /* ── Buttons ── */
   button.accion {
@@ -919,15 +922,15 @@
         <details class="card cov-full" id="cov-extra" ontoggle="if(this.open)cargarExtraordinaria()">
           <summary style="font-weight:800;cursor:pointer;padding:8px 0">Registrar pedido extraordinario de hoy</summary>
           <p style="font-size:.85rem;line-height:1.5;margin:12px 0">Gerente o administrador autoriza cuando hay capacidad de preparación y ventana de entrega. Se crea un folio adicional con horario propio.</p>
-          <form id="cov-extra-form" onsubmit="guardarExtraordinaria(event)">
+          <form id="cov-extra-form" novalidate onsubmit="guardarExtraordinaria(event)" oninput="limpiarErrorExtraordinaria(event.target)" onchange="limpiarErrorExtraordinaria(event.target)">
             <div class="grid3">
               <div><label for="extra-fecha">Fecha de servicio</label><input type="date" id="extra-fecha" readonly required></div>
-              <div><label for="extra-turno">Turno</label><select id="extra-turno" required><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select></div>
-              <div><label for="extra-zona">Zona de entrega</label><select id="extra-zona" required><option value="">Selecciona zona</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
+              <div><label for="extra-turno">Turno</label><select id="extra-turno" required aria-describedby="extra-turno-error"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select><p id="extra-turno-error" class="extra-error" hidden></p></div>
+              <div><label for="extra-zona">Zona de entrega</label><select id="extra-zona" required aria-describedby="extra-zona-error"><option value="">Selecciona zona</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select><p id="extra-zona-error" class="extra-error" hidden></p></div>
             </div>
             <div class="grid2">
-              <div><label for="extra-hora">Hora de entrega autorizada</label><input type="time" id="extra-hora" required><p style="font-size:.78rem;color:var(--gris-text);margin-top:5px">Hora de Lázaro Cárdenas, posterior a la hora actual.</p></div>
-              <div><label for="extra-responsable">N.º de empleado responsable de recibir</label><input type="text" id="extra-responsable" list="extra-empleados" required autocomplete="off" placeholder="Número de empleado"></div>
+              <div><label for="extra-hora">Hora de entrega autorizada (24 horas)</label><input type="text" id="extra-hora" required maxlength="5" autocomplete="off" placeholder="17:30" aria-describedby="extra-hora-ayuda extra-hora-error"><p id="extra-hora-ayuda" style="font-size:.78rem;color:var(--gris-text);margin-top:5px">Escribe hora y minutos: 17:30 = 5:30 p. m. Horario de Lázaro Cárdenas; debe ser una hora futura de hoy.</p><p id="extra-hora-error" class="extra-error" hidden></p></div>
+              <div><label for="extra-responsable">N.º de empleado responsable de recibir</label><input type="text" id="extra-responsable" list="extra-empleados" required autocomplete="off" placeholder="Número de empleado" aria-describedby="extra-responsable-error"><p id="extra-responsable-error" class="extra-error" hidden></p></div>
             </div>
             <datalist id="extra-empleados"></datalist>
             <fieldset style="border:0;padding:0;margin:16px 0">
@@ -939,7 +942,7 @@
               </div>
               <div id="extra-items"></div>
             </fieldset>
-            <label for="extra-motivo">Motivo de la autorización</label><textarea id="extra-motivo" required minlength="5" maxlength="500" rows="2" style="width:100%;font:inherit;padding:10px" placeholder="Motivo por el que se autoriza este pedido"></textarea>
+            <label for="extra-motivo">Motivo de la autorización</label><textarea id="extra-motivo" required minlength="5" maxlength="500" rows="2" style="width:100%;font:inherit;padding:10px" placeholder="Motivo por el que se autoriza este pedido" aria-describedby="extra-motivo-error"></textarea><p id="extra-motivo-error" class="extra-error" hidden></p>
             <button class="accion verde" id="extra-guardar" type="submit" style="margin-top:12px" disabled>Autorizar y registrar pedido</button>
           </form>
           <div id="extra-aviso" class="aviso" role="status" aria-live="polite"></div>
@@ -3067,6 +3070,28 @@
     aviso.className = 'aviso ' + tipo; aviso.textContent = texto;
   }
 
+  function limpiarErrorExtraordinaria(campo) {
+    if (!campo?.id) return;
+    campo.removeAttribute('aria-invalid');
+    const aviso = document.getElementById(campo.id + '-error');
+    if (aviso) { aviso.hidden = true; aviso.textContent = ''; }
+  }
+
+  function errorCampoExtraordinaria(id, mensaje) {
+    const campo = document.getElementById(id), aviso = document.getElementById(id + '-error');
+    campo.setAttribute('aria-invalid', 'true');
+    aviso.textContent = mensaje; aviso.hidden = false;
+    avisoExtraordinaria(mensaje, 'err');
+    campo.focus({preventScroll:true}); campo.scrollIntoView({block:'center'});
+  }
+
+  function normalizarHoraExtraordinaria(texto) {
+    if (typeof texto !== 'string') return null;
+    const partes = /^(\d{1,2}):([0-5]\d)$/.exec(texto.trim());
+    if (!partes || Number(partes[1]) > 23) return null;
+    return partes[1].padStart(2,'0') + ':' + partes[2];
+  }
+
   async function cargarExtraordinaria() {
     if (EXTRA_CONFIG?.fecha === fechaComedor()) return;
     const boton = document.getElementById('extra-guardar'); boton.disabled = true;
@@ -3124,12 +3149,22 @@
     evento.preventDefault();
     const boton = document.getElementById('extra-guardar');
     if (boton.disabled) return;
-    if (!EXTRA_CONFIG || !EXTRA_FILAS.length) { avisoExtraordinaria('Agrega al menos un empleado y su platillo.', 'err'); return; }
+    for (const id of ['extra-turno','extra-zona','extra-hora','extra-responsable','extra-motivo']) limpiarErrorExtraordinaria(document.getElementById(id));
+    if (!EXTRA_CONFIG) { avisoExtraordinaria('Cierra y vuelve a abrir este formulario para consultar el menú especial de hoy.', 'err'); return; }
+    const turno = document.getElementById('extra-turno').value;
+    if (!['turno_a','turno_b'].includes(turno)) { errorCampoExtraordinaria('extra-turno','Selecciona el turno de servicio.'); return; }
+    const zona = document.getElementById('extra-zona').value;
+    if (!['zona_vdc','zona_refris'].includes(zona)) { errorCampoExtraordinaria('extra-zona','Selecciona ASLA o REFIS como zona de entrega.'); return; }
+    const hora = normalizarHoraExtraordinaria(document.getElementById('extra-hora').value);
+    if (!hora) { errorCampoExtraordinaria('extra-hora','Escribe una hora válida en formato de 24 horas: por ejemplo, 17:30 para las 5:30 p. m.'); return; }
     const responsable = document.getElementById('extra-responsable').value.trim();
-    if (!empleadoExtraordinaria(responsable)) { avisoExtraordinaria('El responsable debe ser un empleado activo de la plantilla.', 'err'); return; }
-    const entrada = {fecha:EXTRA_CONFIG.fecha, turno:document.getElementById('extra-turno').value,
-      zona:document.getElementById('extra-zona').value, hora_entrega:document.getElementById('extra-hora').value,
-      responsable_numero:responsable, motivo:document.getElementById('extra-motivo').value.trim(), items:EXTRA_FILAS.map(f=>({...f}))};
+    if (!empleadoExtraordinaria(responsable)) { errorCampoExtraordinaria('extra-responsable','El responsable debe ser un empleado activo de la plantilla. Selecciona su número.'); return; }
+    if (!EXTRA_FILAS.length) { avisoExtraordinaria('Agrega al menos un empleado y su platillo.', 'err'); return; }
+    const motivo = document.getElementById('extra-motivo').value.trim();
+    if (motivo.length < 5 || motivo.length > 500) { errorCampoExtraordinaria('extra-motivo','Indica un motivo de entre 5 y 500 caracteres.'); return; }
+    document.getElementById('extra-hora').value = hora;
+    const entrada = {fecha:EXTRA_CONFIG.fecha, turno, zona, hora_entrega:hora,
+      responsable_numero:responsable, motivo, items:EXTRA_FILAS.map(f=>({...f}))};
     const huella = JSON.stringify(entrada);
     if (EXTRA_INTENTO?.huella !== huella) EXTRA_INTENTO = {huella,id:crypto.randomUUID()};
     boton.disabled = true; boton.textContent = 'Registrando autorización…';

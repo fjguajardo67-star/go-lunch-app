@@ -9,6 +9,50 @@ import vm from 'node:vm';
 const fecha='2026-11-07';
 const entrada={fecha,turno:'turno_b',zona:'zona_refris',hora_entrega:'18:20',responsable_numero:'00003',motivo:'Hay ventana de entrega disponible',items:[{numero_empleado:'00002',opcion_id:'especial_1'}],idempotencia:'00000000-0000-4000-8000-000000000001'};
 
+function formularioExtraordinaria(cambios={}) {
+ const html=readFileSync(new URL('../public/admin.html',import.meta.url),'utf8');
+ const nombres=['avisoExtraordinaria','limpiarErrorExtraordinaria','errorCampoExtraordinaria','normalizarHoraExtraordinaria','guardarExtraordinaria'];
+ const funciones=nombres.map(nombre=>html.match(new RegExp('(?:async )?function '+nombre+'\\([\\s\\S]*?\\n  }'))[0]).join('\n');
+ const campos={};let foco=null,desplazado=null,ids=0;const enviados=[];
+ const valores={'extra-turno':'turno_b','extra-zona':'zona_refris','extra-hora':'17:30','extra-responsable':'00003','extra-motivo':'Hay ventana para preparar y entregar',...cambios};
+ for(const id of [...Object.keys(valores),'extra-guardar','extra-aviso',...Object.keys(valores).map(k=>k+'-error')]) {
+  campos[id]={id,value:valores[id]||'',disabled:false,hidden:true,textContent:'',atributos:{},
+   setAttribute(k,v){this.atributos[k]=v},removeAttribute(k){delete this.atributos[k]},
+   focus(){foco=id},scrollIntoView(){desplazado=id}};
+ }
+ const filas=[{numero_empleado:'00006',opcion_id:'especial_1'},{numero_empleado:'00007',opcion_id:'especial_2'}];
+ const c=vm.createContext({document:{getElementById:id=>campos[id]},EXTRA_CONFIG:{fecha},EXTRA_FILAS:filas,EXTRA_INTENTO:null,
+  empleadoExtraordinaria:n=>n==='00003'?{activo:true}:null,crypto:{randomUUID:()=>{ids++;return entrada.idempotencia}},
+  api:async(url,opciones)=>{enviados.push({url,body:JSON.parse(opciones.body)});throw new Error('Sin conexión de prueba')}});
+ vm.runInContext(funciones,c);
+ return {c,campos,filas,enviados,get foco(){return foco},get desplazado(){return desplazado},get ids(){return ids},
+  async enviar(){let prevenido=false;await c.guardarExtraordinaria({preventDefault(){prevenido=true}});assert.equal(prevenido,true)}};
+}
+
+test('la captura de hora usa 24 horas y rechaza valores incompletos o ambiguos',()=>{
+ const {c}=formularioExtraordinaria();
+ for(const [texto,hora] of [['17:30','17:30'],['7:05','07:05'],[' 17:30 ','17:30'],['00:00','00:00'],['23:59','23:59']])assert.equal(c.normalizarHoraExtraordinaria(texto),hora);
+ for(const texto of ['',null,undefined,'5:3','24:00','17:60','5:30pm','17.30','-1:30','17:30:10'])assert.equal(c.normalizarHoraExtraordinaria(texto),null,String(texto));
+});
+
+test('errores de captura señalan el campo, conservan empleados y no envían la autorización',async()=>{
+ for(const [id,valor] of [['extra-turno','otro'],['extra-zona',''],['extra-hora','5:3'],['extra-hora','24:00'],['extra-responsable','no-existe'],['extra-motivo','   '],['extra-motivo','x'.repeat(501)]]) {
+  const f=formularioExtraordinaria({[id]:valor});const antes=structuredClone(f.filas);
+  await f.enviar();assert.equal(f.enviados.length,0);assert.deepEqual(f.filas,antes);
+  assert.equal(f.foco,id);assert.equal(f.desplazado,id);assert.equal(f.campos[id].atributos['aria-invalid'],'true');
+  assert.equal(f.campos[id+'-error'].hidden,false);assert.ok(f.campos[id+'-error'].textContent.length>10);
+  f.c.limpiarErrorExtraordinaria(f.campos[id]);assert.equal(f.campos[id].atributos['aria-invalid'],undefined);assert.equal(f.campos[id+'-error'].hidden,true);
+ }
+});
+
+test('17:30 se envía como tal y un fallo de conexión conserva filas y clave de reintento',async()=>{
+ const f=formularioExtraordinaria();const antes=structuredClone(f.filas);
+ await f.enviar();await f.enviar();assert.equal(f.enviados.length,2);
+ for(const {url,body} of f.enviados){assert.equal(url,'/api/cobertura/extraordinarias');assert.equal(body.hora_entrega,'17:30');assert.equal(body.idempotencia,entrada.idempotencia);assert.equal(body.items.length,2)}
+ assert.deepEqual(f.filas,antes);assert.equal(f.campos['extra-guardar'].disabled,false);assert.equal(f.ids,1);
+ assert.match(f.campos['extra-aviso'].textContent,/Puedes reintentar/);
+});
+
 test('gerente autoriza un folio adicional; la clave de supervisor y la captura pública conservan el corte',async()=>{
  const variables=['SUPABASE_URL','SUPABASE_KEY','ADMIN_KEY','GERENTE_KEY','SUPERVISOR_SESSION_SECRET'];
  const originales=Object.fromEntries(variables.map(k=>[k,process.env[k]]));const reloj=Settings.now;

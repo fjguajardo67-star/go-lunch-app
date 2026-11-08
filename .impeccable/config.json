@@ -119,6 +119,15 @@
         ],
         "createdAt": "2026-11-07T23:23:14.103Z",
         "reason": "Agent: .lista-vieja conserva el borde rojo de 4px para advertir una lista de reparto de otro día; el comentario documenta un incidente real de escaneo contra la fecha anterior. La regla ya tenía esta excepción en entrega.html, pero el escaneo independiente del CSS requiere el mismo alcance por archivo."
+      },
+      {
+        "rule": "icon-tile-stack",
+        "value": "*",
+        "files": [
+          "public/admin.html"
+        ],
+        "createdAt": "2026-11-08T00:30:11.439Z",
+        "reason": "Agent: los 15 avisos señalan encabezados existentes en origin/main; .card-header usa display:flex, align-items:center y gap:10px para colocar icono y título lado a lado. El detector interpreta el orden del HTML como apilado vertical. Esta corrección no cambia esos encabezados."
       }
     ]
   }
