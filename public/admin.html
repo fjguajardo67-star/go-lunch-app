@@ -1061,15 +1061,16 @@
                   <option value="57x32">57 × 32 mm</option>
                   <option value="62x29">62 × 29 mm</option>
                   <option value="50x25">50 × 25 mm</option>
-                  <option value="90x62" selected>90 × 62 mm horizontal (predeterminado)</option>
+                  <option value="100x62" selected>100 × 62 mm horizontal (cierre izquierdo de 10 mm)</option>
+                  <option value="90x62">90 × 62 mm horizontal (anterior)</option>
                   <option value="62x40">62 × 40 mm</option>
                   <option value="100x50">100 × 50 mm</option>
                 </select>
 
               </div>
             </div>
-            <p style="font-size:.8rem;color:var(--gris-text);margin-top:6px">Brother QL-800: rollo de 62 mm y largo de 90 mm, orientación horizontal (resultado: 90 mm de ancho × 62 mm de alto). Escala 100 %, sin márgenes y desactivar “Encabezados y pies de página” en el navegador para quitar fecha de impresión, título, URL y número de página externos. La fecha de servicio y el número de empleado sí se imprimen dentro de la etiqueta, con margen interior de 9 mm a ambos lados.</p>
-            <p style="margin:10px 0;font-size:.85rem"><a href="/impresion-windows.zip" download>Descargar instalación Windows: impresión diaria 9:30 PM</a> · Brother 90 × 62 mm horizontal y comanda POS58 de 58 mm. Actívala después de probar ambas impresoras.</p>
+            <p style="font-size:.8rem;color:var(--gris-text);margin-top:6px">Brother QL-800: rollo de 62 mm y largo de 100 mm, orientación horizontal (resultado: 100 mm de ancho × 62 mm de alto). Escala 100 %, sin márgenes y desactivar “Encabezados y pies de página” en el navegador para quitar fecha de impresión, título, URL y número de página externos. El diseño de 90 mm conserva texto, QR y márgenes; los 10 mm adicionales quedan en blanco únicamente a la izquierda para cerrar el recipiente. Coloca el QR en la parte plana, sin doblarlo.</p>
+            <p style="margin:10px 0;font-size:.85rem"><a href="/impresion-windows.zip" download>Descargar instalación Windows: impresión diaria 9:30 PM</a> · Brother 100 × 62 mm horizontal y comanda POS58 de 58 mm. Actívala después de probar ambas impresoras.</p>
             <div class="cocina-impresos">
               <button class="accion cocina-accion" onclick="abrirImpreso('comanda')">
                 <span class="cocina-accion-contenido">
@@ -2872,7 +2873,7 @@
       : API_BASE + '/etiquetas-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
     if (tipo === 'comanda') url += '&ancho=58';
     if (tipo === 'etiquetas') {
-      const tamano = document.getElementById('im-tamano')?.value || '90x62';
+      const tamano = document.getElementById('im-tamano')?.value || '100x62';
       const [ancho, alto] = tamano.split('x');
       url += '&ancho=' + encodeURIComponent(ancho) + '&alto=' + encodeURIComponent(alto);
     }

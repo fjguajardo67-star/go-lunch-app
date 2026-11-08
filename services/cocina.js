@@ -2,7 +2,7 @@ import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCoci
 import { prepararChecklistReparto, validarFechaChecklist } from './checklist-reparto.js';
 import { contarServicios, horaComida } from './comidas.js';
 import { comidasDelPeriodo } from './consultas-comidas.js';
-import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
+import { ANCHO_ETIQUETA, ALTO_ETIQUETA, esFormatoReparto, extensionCierreEtiqueta, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina.js — Comanda de cocina: resumen por platillo y vista imprimible
 import { DateTime } from 'luxon';
 import { fechaServicio } from './pedidos.js';
@@ -167,7 +167,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat('dd/MM/yyyy HH:mm');
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const enHoja = modo === 'hoja';
-  const mixtas = pedidos.some(p => p.tipo === 'cobertura');
+  const conMarco = extensionCierreEtiqueta(ancho, alto) > 0 || pedidos.some(p => p.tipo === 'cobertura');
   const desglose = contarServicios(seleccionarPedidosCocina(pedidos, filtros));
   const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
 
@@ -187,9 +187,9 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
     const numero = p.empleados?.numero_empleado || '';
     const codigo = p.codigo_etiqueta || `${numero}|${fecha}`;
     const cobertura = p.tipo === 'cobertura';
-    const calibrar = cobertura && Number(ancho) === 90 && Number(alto) === 62;
+    const calibrar = cobertura && esFormatoReparto(ancho, alto);
     return `
-    ${mixtas ? `<div class="marco-etiqueta">` : ''}
+    ${conMarco ? `<div class="marco-etiqueta">` : ''}
     <div class="etiqueta"${calibrar ? ' style="transform:scale(0.85);transform-origin:center center"' : ''}>
       <div class="ruta">${esc(zonaCorta(p.zona))} &nbsp;·&nbsp; ${esc(horaComida(p, fecha))}</div>
       <div class="texto">
@@ -198,7 +198,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
       </div>
       ${qr ? `<div class="qr" data-codigo="${esc(codigo)}"></div>` : ''}
       <div class="identificacion"><span>Empleado #${esc(numero || '—')}</span><span>${esc(fechaCorta)}</span>${cobertura ? `<span class="recibe">Cobertura · Recibe: ${esc(p.responsable_nombre)} #${esc(p.responsable_numero)}</span>` : ''}</div>
-    </div>${mixtas ? '</div>' : ''}`;
+    </div>${conMarco ? '</div>' : ''}`;
   }).join('');
 
   const vacio = '<p style="font-family:sans-serif;padding:20px">Sin pedidos para esta fecha y selección.</p>';
@@ -284,19 +284,19 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   }
 
   ${estiloEtiquetaReparto(ancho, alto)}
-  ${mixtas ? `.marco-etiqueta{width:${ancho}mm;height:${alto}mm;flex:none;break-inside:avoid;page-break-inside:avoid}` : ''}
+  ${conMarco ? `.marco-etiqueta{width:${ancho}mm;height:${alto}mm;flex:none;break-inside:avoid;page-break-inside:avoid}` : ''}
   ${enHoja
     ? `/* Prueba en papel carta: se recortan para validar la medida */
        @page { size: letter; margin: 14mm; }
        @media print {
          .hoja.prueba { display: block; font-size: 0; }
-         .hoja.prueba .etiqueta { display: ${Number(ancho) === 90 && Number(alto) === 62 ? 'inline-grid' : 'inline-flex'}; border: .2mm dashed #999; vertical-align: top; margin: 0 4mm 4mm 0; break-inside: avoid; page-break-inside: avoid; }
+         .hoja.prueba .etiqueta { display: ${esFormatoReparto(ancho, alto) ? 'inline-grid' : 'inline-flex'}; border: .2mm dashed #999; vertical-align: top; margin: 0 4mm 4mm 0; break-inside: avoid; page-break-inside: avoid; }
          .hoja.prueba .etiqueta:nth-child(${columnas}n) { margin-right: 0; }
        }`
     : `/* Rollo continuo: una etiqueta por página, del tamaño exacto */
        @page { size: ${ancho}mm ${alto}mm; margin: 0; }
        @media print { .etiqueta { page-break-after: always; } .etiqueta:last-child { page-break-after: auto; } }`}
-  ${mixtas ? `@media print{.marco-etiqueta>.etiqueta{margin:0!important;page-break-after:auto;break-after:auto}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.rollo .marco-etiqueta{break-after:page;page-break-after:always}.hoja.rollo .marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}` : ''}
+  ${conMarco ? `@media print{.marco-etiqueta>.etiqueta{margin:0!important;page-break-after:auto;break-after:auto}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.rollo .marco-etiqueta{break-after:page;page-break-after:always}.hoja.rollo .marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}` : ''}
 </style>
 </head>
 <body>
@@ -313,7 +313,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
     ${enHoja
       ? 'Imprime esta hoja en papel normal y recórtala para comprobar que la medida cabe en el contenedor <b>antes</b> de comprar el rollo. Cambia el tamaño con <b>?ancho=</b> y <b>?alto=</b> en milímetros.'
       : 'Ajusta el tamaño con <b>?ancho=</b> y <b>?alto=</b> (mm) para que coincida con tu rollo. Para probar en papel carta primero, agrega <b>&amp;modo=hoja</b>.'}
-    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: papel de 62 mm, largo 90 mm y orientación horizontal. El contenido conserva un margen interior de 9 mm a ambos lados. Las etiquetas van ordenadas por turno y zona.
+    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: rollo de 62 mm, largo de 100 mm y orientación horizontal. El formato de 100 × 62 mm conserva el diseño de 90 mm y añade <b>10 mm en blanco solo a la izquierda</b> para cerrar el recipiente. Coloca el QR sobre una superficie plana, sin doblarlo. Las etiquetas van ordenadas por turno y zona.
   </div>
   <div class="hoja ${enHoja ? 'prueba' : 'rollo'}">
     ${orden.length ? cuerpo : vacio}

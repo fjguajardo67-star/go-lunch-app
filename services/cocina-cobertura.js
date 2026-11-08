@@ -1,4 +1,4 @@
-import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
+import { ANCHO_ETIQUETA, ALTO_ETIQUETA, esFormatoReparto, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina-cobertura.js — comanda y etiquetas del menú especial
 
 import { validarTurnoCobertura } from './cobertura.js';
@@ -88,7 +88,7 @@ export async function etiquetasCobertura(fecha, { ancho = ANCHO_ETIQUETA, alto =
 export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo, items }) {
   const enHoja = modo === 'hoja';
   // Calibración física de la Brother: conservar el papel y centrar el contenido al 85 %.
-  const escala = Number(ancho) === ANCHO_ETIQUETA && Number(alto) === ALTO_ETIQUETA ? .85 : 1;
+  const escala = esFormatoReparto(ancho, alto) ? .85 : 1;
   const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const orden = [...items].sort((a, b) =>
@@ -115,6 +115,6 @@ ${estiloEtiquetaReparto(ancho, alto)}
 .marco-etiqueta>.etiqueta{transform:scale(${escala});transform-origin:center center}
 ${enHoja ? `@page{size:letter portrait;margin:14mm}@media print{.hoja.prueba{display:block;font-size:0}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.prueba .etiqueta{border:.2mm dashed #999}}` : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.marco-etiqueta{break-after:page;page-break-after:always}.marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}`}
 </style></head><body><div class="barra"><b>Etiquetas · cobertura ${esc(fechaCorta)}</b><span>${orden.length} alimento(s)</span><button onclick="window.print()">Imprimir</button></div>
-<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: papel de 62 mm, largo 90 mm, orientación horizontal.${escala === .85 ? ' La reducción de cobertura al <b>85 %</b> ya está incluida y centrada; mantén la escala del navegador en <b>100 %</b>.' : ''} El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
+<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: rollo de 62 mm, largo de 100 mm, orientación horizontal. En 100 × 62 mm se añaden <b>10 mm en blanco solo a la izquierda</b> para cerrar el recipiente; coloca el QR en una superficie plana.${escala === .85 ? ' La reducción de cobertura al <b>85 %</b> ya está incluida y centrada dentro del bloque impreso de 90 mm; mantén la escala del navegador en <b>100 %</b>.' : ''} El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}));</script>${scriptAjustarTextoEtiqueta}</body></html>`;
 }
