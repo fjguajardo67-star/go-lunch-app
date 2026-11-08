@@ -5,9 +5,8 @@ import { comidasDelPeriodo } from './consultas-comidas.js';
 import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina.js — Comanda de cocina: resumen por platillo y vista imprimible
 import { DateTime } from 'luxon';
-import * as db from './supabase.js';
 import { fechaServicio } from './pedidos.js';
-import { manana, TURNOS, ZONAS, horaTexto, horaEntrega } from './menu.js';
+import { manana, TURNOS, ZONAS, horaTexto } from './menu.js';
 
 const ZONA_TZ = process.env.TZ || 'America/Mexico_City';
 

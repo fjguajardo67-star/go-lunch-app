@@ -5,7 +5,7 @@ import express from 'express';
 import { DateTime } from 'luxon';
 import * as db from '../services/supabase.js';
 import * as wa from '../services/whatsapp.js';
-import { construirListMessage, esEntregaTardia, MOTIVOS_TARDIA, limiteEntrega, hoy, ZONA as ZONA_COMEDOR } from '../services/menu.js';
+import { construirListMessage, ZONA as ZONA_COMEDOR } from '../services/menu.js';
 import { diezDigitos, claveEmpleado } from '../services/telefono.js';
 import { resumenCocina } from '../services/cocina.js';
 import { fechaServicio } from '../services/pedidos.js';

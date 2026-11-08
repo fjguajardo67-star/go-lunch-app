@@ -197,7 +197,7 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
       ruta: {
         por_dia: rutaPorDia,
         promedio_por_turno: Object.entries(acumTurno)
-          .map(([turno, a]) => ({ turno, dias: a.dias, minutos_promedio: Math.round(a.minutos / a.dias) }))
+          .map(([turno, a]) => ({ turno, dias: a.dias, tramos: a.dias, minutos_promedio: Math.round(a.minutos / a.dias) }))
           .sort((a, b) => a.turno.localeCompare(b.turno))
       }
     };
