@@ -91,6 +91,8 @@ El enlace a /cobertura.html está disponible tanto en la identificación como en
 
 En Coberturas, gerente o administrador puede registrar un lote adicional para hoy cuando haya ventana de preparación y entrega. El formulario pide personas y platillos del menú especial vigente, responsable, zona, turno, hora futura de entrega y motivo. Registra rol autorizador y hora del servidor, conserva folios entregados y usa una clave de reintento para evitar duplicaciones. La confirmación ofrece comanda y etiquetas del folio nuevo. El consolidado identifica horarios autorizados y reparto conserva esa hora también sin señal. El corte y la alarma de supervisores permanecen independientes.
 
+La hora se captura como texto de 24 horas, con ejemplo 17:30 = 5:30 p. m., para evitar segmentos AM/PM incompletos en Safari. La validación del formulario identifica el campo en español, lo enfoca y lo desplaza al centro de la vista. Los errores conservan las filas y el resto de los datos; el servidor mantiene la validación de hora futura del mismo día.
+
 ## Checklist de salida
 
 En Cocina → Impresión, el checklist comparte fecha, turno y zona con los demás impresos. Lista solo pedidos existentes del servicio regular y separa cada lote por zona/turno en papel carta. Las hojas de continuación repiten identificación y se numeran; una sola firma y hora real de salida se capturan a mano al final de cada lote.
