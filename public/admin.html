@@ -1587,7 +1587,7 @@
       h += tarjeta(r.entregados, 'Entregadas', 'verde');
       h += tarjeta(r.pendientes, 'Pendientes', 'ambar');
       h += '</div><p class="dashboard-tardias' + (r.tardias > 0 ? ' con-retrasos' : '') + '"><strong>' +
-        r.tardias + ' entrega(s) tardía(s)</strong> · Incluidas en las entregadas.</p></section>';
+        r.tardias + (r.tardias === 1 ? ' entrega tardía' : ' entregas tardías') + '</strong> · Incluidas en las entregadas.</p></section>';
 
       h += '<section class="dashboard-bloque" aria-labelledby="dash-empleados-titulo">' +
         '<div class="dashboard-grupo-titulo"><h4 id="dash-empleados-titulo">Empleados</h4></div>' +
