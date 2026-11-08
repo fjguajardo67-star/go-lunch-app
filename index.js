@@ -162,7 +162,7 @@ app.get('/comanda/:fecha', async (req, res) => {
     return res.status(400).send('Fecha inválida — usa el formato YYYY-MM-DD');
   }
   try {
-    const resumen = await resumenCocina(fecha, { turno: req.query.turno, zona: req.query.zona });
+    const resumen = await resumenCocina(fecha, req.query);
     res.type('html').send(htmlComanda(resumen, { ancho: req.query.ancho }));
   } catch (err) {
     console.error('[Comanda] Error:', err);
@@ -191,7 +191,7 @@ app.get('/etiquetas/:fecha', async (req, res) => {
 
   try {
     const datos = await etiquetas(fecha, {
-      turno: req.query.turno, zona: req.query.zona,
+      turno: req.query.turno, zona: req.query.zona, servicio: req.query.servicio,
       ancho: num(req.query.ancho, 90, 20, 210),
       alto:  num(req.query.alto,  62, 15, 297),
       modo:  req.query.modo === 'hoja' ? 'hoja' : 'rollo',

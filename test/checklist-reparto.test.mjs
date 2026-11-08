@@ -77,7 +77,7 @@ test('fecha y selección inválidas se rechazan',()=>{
 });
 test('endpoint exige clave, acepta gerente y filtra el lote antes de imprimir',async()=>{
  let consultas=0;
- const base=http.createServer((q,r)=>{consultas++;assert.match(q.url,/^\/rest\/v1\/pedidos\?/);r.setHeader('content-type','application/json');r.end(JSON.stringify([pedido(1),pedido(2,'turno_b','zona_refris')]))});
+ const base=http.createServer((q,r)=>{consultas++;r.setHeader('content-type','application/json');r.end(JSON.stringify(q.url.startsWith('/rest/v1/pedidos?')?[pedido(1),pedido(2,'turno_b','zona_refris')]:[]))});
  await new Promise(resolve=>base.listen(0,'127.0.0.1',resolve));
  process.env.SUPABASE_URL=`http://127.0.0.1:${base.address().port}`;process.env.SUPABASE_KEY='solo-prueba';
  process.env.ADMIN_KEY='admin-prueba';process.env.GERENTE_KEY='gerente-prueba';

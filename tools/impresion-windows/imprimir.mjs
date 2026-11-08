@@ -57,8 +57,8 @@ try {
       await writeFile(path.join(dia,`estado-anterior-${Date.now()}.json`),JSON.stringify(estado));
       estado={};
     }
-    const [pedidos,resumen]=await Promise.all([get(`/api/pedidos/${fecha}`),get(`/api/resumen-cocina/${fecha}`)]);
-    if(!Array.isArray(pedidos.pedidos) || !Array.isArray(resumen.resumen) || pedidos.count!==resumen.total) {
+    const [pedidos,resumen]=await Promise.all([get(`/api/comidas/${fecha}`),get(`/api/resumen-cocina/${fecha}`)]);
+    if(!Array.isArray(pedidos.comidas) || !Array.isArray(resumen.resumen) || pedidos.count!==resumen.total) {
       throw new Error('El conteo cambió entre consultas. No se imprime; vuelva a preparar.');
     }
     if(!pedidos.count) {

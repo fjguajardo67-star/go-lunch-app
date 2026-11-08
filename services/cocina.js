@@ -1,5 +1,7 @@
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina, resumirPedidosCocina } from './seleccion-cocina.js';
 import { prepararChecklistReparto, validarFechaChecklist } from './checklist-reparto.js';
+import { contarServicios, horaComida } from './comidas.js';
+import { comidasDelPeriodo } from './consultas-comidas.js';
 import { ANCHO_ETIQUETA, ALTO_ETIQUETA, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina.js — Comanda de cocina: resumen por platillo y vista imprimible
 import { DateTime } from 'luxon';
@@ -13,19 +15,19 @@ const ZONA_TZ = process.env.TZ || 'America/Mexico_City';
 // Devuelve: { fecha, total, resumen: [{ platillo, porciones, por_turno, por_zona }] }
 export async function resumenCocina(fecha, seleccion = {}) {
   const filtros = normalizarSeleccionCocina(seleccion);
-  return resumirPedidosCocina(fecha, await db.getPedidosPorFecha(fecha), filtros);
+  return resumirPedidosCocina(fecha, await comidasDelPeriodo(fecha), filtros);
 }
 
 export async function checklistReparto(fecha, seleccion = {}) {
   validarFechaChecklist(fecha);
   const filtros = normalizarSeleccionCocina(seleccion);
-  return prepararChecklistReparto(fecha, await db.getPedidosPorFecha(fecha), filtros);
+  return prepararChecklistReparto(fecha, await comidasDelPeriodo(fecha), filtros);
 }
 
 // ── HTML imprimible (impresora térmica o carta) ─────────────────
 // Sin colores, fuente grande, una sección por turno (la cocina prepara
 // cada turno por separado), con subtotal por turno y hora de generación.
-export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } = {}) {
+export function htmlComanda({ fecha, total, resumen, grupos, regulares = total, coberturas = 0, filtros = {} }, { ancho } = {}) {
   filtros = normalizarSeleccionCocina(filtros);
   const turnosElegidos = filtros.turno ? [filtros.turno] : Object.keys(TURNOS);
   const horarios = turnosElegidos.map(turno =>
@@ -47,7 +49,7 @@ export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } =
   const listaTurnos = [...turnos.keys()]
     .sort((a, b) => ordenTurnos.indexOf(a) - ordenTurnos.indexOf(b));
 
-  const secciones = listaTurnos.map(turno => {
+  const seccionesAnteriores = listaTurnos.map(turno => {
     const items = turnos.get(turno).sort((a, b) => b.porciones - a.porciones);
     const subtotal = items.reduce((s, i) => s + i.porciones, 0);
     const filas = items.map(i => `
@@ -63,6 +65,10 @@ export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } =
       <div class="subtotal"><span>Subtotal turno</span><span>${subtotal}</span></div>
       <hr>`;
   }).join('');
+  const secciones = grupos ? grupos.map(g => `
+    <div class="turno-titulo">${esc(TURNOS[g.turno] || 'Sin turno')} · ${esc(ZONAS[g.zona] || 'Sin zona')} · ${esc(g.horario)}</div>
+    ${g.resumen.map(p => `<div class="platillo"><div class="linea"><span class="nombre">${esc(p.platillo)}</span><span class="cantidad">${p.porciones}</span></div><div class="desglose">Regulares: ${p.regulares} · Coberturas: ${p.coberturas}</div></div>`).join('')}
+    <div class="subtotal"><span>Subtotal grupo</span><span>${g.total}</span></div><hr>`).join('') : seccionesAnteriores;
 
   const vacio = `<p class="vacio">Sin pedidos para esta fecha y selección.</p><hr>`;
 
@@ -96,6 +102,7 @@ export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } =
   .subtotal { display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; margin-top: 8px; }
   .total { display: flex; justify-content: space-between; font-size: 19px; font-weight: bold; }
   .pie { font-size: 12px; text-align: center; margin-top: 12px; }
+  .desglose { font-size: 11px; margin-top: 3px; }
   .vacio { font-size: 15px; text-align: center; margin: 16px 0; }
   .no-print { text-align: center; margin-top: 20px; }
   .no-print button {
@@ -133,6 +140,7 @@ export function htmlComanda({ fecha, total, resumen, filtros = {} }, { ancho } =
   <hr>
   ${resumen.length ? secciones : vacio}
   <div class="total"><span>TOTAL PORCIONES</span><span>${total}</span></div>
+  <div class="desglose">Regulares: ${regulares} + Coberturas: ${coberturas} = ${total}</div>
   <hr>
   <div class="pie">Generada: ${generado}</div>
   <div class="no-print"><button onclick="window.print()">🖨️ Imprimir</button></div>
@@ -150,9 +158,9 @@ function esc(s) {
 // Se pegan en el contenedor. El tamaño es configurable porque depende del
 // rollo que se compre; con modo 'hoja' se prueban en papel carta antes de
 // invertir en la impresora.
-export async function etiquetas(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', qr = true, turno, zona } = {}) {
-  const filtros = normalizarSeleccionCocina({ turno, zona });
-  const pedidos = seleccionarPedidosCocina(await db.getPedidosPorFecha(fecha), filtros);
+export async function etiquetas(fecha, { ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQUETA, modo = 'rollo', qr = true, turno, zona, servicio } = {}) {
+  const filtros = normalizarSeleccionCocina({ turno, zona, servicio });
+  const pedidos = seleccionarPedidosCocina(await comidasDelPeriodo(fecha), filtros);
   return { fecha, ancho, alto, modo, qr, pedidos, filtros };
 }
 
@@ -160,6 +168,8 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   const generado = DateTime.now().setZone(ZONA_TZ).toFormat('dd/MM/yyyy HH:mm');
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const enHoja = modo === 'hoja';
+  const mixtas = pedidos.some(p => p.tipo === 'cobertura');
+  const desglose = contarServicios(seleccionarPedidosCocina(pedidos, filtros));
   const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
 
   // Las etiquetas salen agrupadas por turno y zona: así se empacan y se
@@ -176,17 +186,20 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   // se podría escanear hoy y marcaría una entrega que no ocurrió.
   const cuerpo = orden.map(p => {
     const numero = p.empleados?.numero_empleado || '';
-    const codigo = `${numero}|${fecha}`;
+    const codigo = p.codigo_etiqueta || `${numero}|${fecha}`;
+    const cobertura = p.tipo === 'cobertura';
+    const calibrar = cobertura && Number(ancho) === 90 && Number(alto) === 62;
     return `
-    <div class="etiqueta">
-      <div class="ruta">${esc(zonaCorta(p.zona))} &nbsp;·&nbsp; ${esc(horaEntrega(p.turno, p.zona, fecha) || 'Sin hora')}</div>
+    ${mixtas ? `<div class="marco-etiqueta">` : ''}
+    <div class="etiqueta"${calibrar ? ' style="transform:scale(0.85);transform-origin:center center"' : ''}>
+      <div class="ruta">${esc(zonaCorta(p.zona))} &nbsp;·&nbsp; ${esc(horaComida(p, fecha))}</div>
       <div class="texto">
         <div class="nombre">${esc(p.empleados?.nombre || 'Sin nombre')}</div>
         <div class="platillo">${esc(p.opcion_texto || p.opcion_id)}</div>
       </div>
       ${qr ? `<div class="qr" data-codigo="${esc(codigo)}"></div>` : ''}
-      <div class="identificacion"><span>Empleado #${esc(numero || '—')}</span><span>${esc(fechaCorta)}</span></div>
-    </div>`;
+      <div class="identificacion"><span>Empleado #${esc(numero || '—')}</span><span>${esc(fechaCorta)}</span>${cobertura ? `<span class="recibe">Cobertura · Recibe: ${esc(p.responsable_nombre)} #${esc(p.responsable_numero)}</span>` : ''}</div>
+    </div>${mixtas ? '</div>' : ''}`;
   }).join('');
 
   const vacio = '<p style="font-family:sans-serif;padding:20px">Sin pedidos para esta fecha y selección.</p>';
@@ -272,6 +285,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   }
 
   ${estiloEtiquetaReparto(ancho, alto)}
+  ${mixtas ? `.marco-etiqueta{width:${ancho}mm;height:${alto}mm;flex:none;break-inside:avoid;page-break-inside:avoid}` : ''}
   ${enHoja
     ? `/* Prueba en papel carta: se recortan para validar la medida */
        @page { size: letter; margin: 14mm; }
@@ -283,6 +297,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
     : `/* Rollo continuo: una etiqueta por página, del tamaño exacto */
        @page { size: ${ancho}mm ${alto}mm; margin: 0; }
        @media print { .etiqueta { page-break-after: always; } .etiqueta:last-child { page-break-after: auto; } }`}
+  ${mixtas ? `@media print{.marco-etiqueta>.etiqueta{margin:0!important;page-break-after:auto;break-after:auto}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.rollo .marco-etiqueta{break-after:page;page-break-after:always}.hoja.rollo .marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}` : ''}
 </style>
 </head>
 <body>
@@ -290,6 +305,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
     <b>🏷️ Etiquetas · ${esc(fechaCorta)}</b>
     <span class="dato">${esc(textoSeleccionCocina(filtros))}</span>
     <span class="dato">${orden.length} comida(s)</span>
+    <span class="dato">Regulares: ${desglose.regulares} · Coberturas: ${desglose.coberturas}</span>
     <span class="dato">${ancho} × ${alto} mm</span>
     <span class="dato">${enHoja ? 'prueba en papel carta' : 'rollo continuo'}</span>
     <button onclick="window.print()">Imprimir</button>

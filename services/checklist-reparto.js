@@ -2,6 +2,7 @@
 import { DateTime } from 'luxon';
 import { ZONA, ZONAS, TURNOS, OPCIONES_VALIDAS, OPCION_LABELS, horaTexto } from './menu.js';
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina } from './seleccion-cocina.js';
+import { contarServicios, horarioComida } from './comidas.js';
 
 const UNIDADES_POR_HOJA = 15;
 const porTexto = new Intl.Collator('es', { sensitivity: 'base' });
@@ -24,7 +25,7 @@ function paginarFilas(filas) {
   let actual = [], unidades = 0, inicio = 0;
   for (const fila of filas) {
     // Reservar espacio para los textos largos y para el encabezado del platillo.
-    const pesoFila = Math.max(1, Math.ceil(fila.nombre.length / 80), Math.ceil(fila.numero.length / 12));
+    const pesoFila = Math.max(fila.folio ? 2 : 1, Math.ceil(fila.nombre.length / 80), Math.ceil(fila.numero.length / 12));
     const pesoEncabezado = Math.max(1, Math.ceil((fila.opcion.length + fila.platillo.length) / 85));
     const cambiaOpcion = actual.at(-1)?.opcion_clave !== fila.opcion_clave;
     if (actual.length && unidades + pesoFila + (cambiaOpcion ? pesoEncabezado : 0) > UNIDADES_POR_HOJA) {
@@ -62,9 +63,11 @@ export function prepararChecklistReparto(fecha, pedidos, seleccion = {}) {
       numero: String(pedido.empleados?.numero_empleado ?? ''),
       nombre: String(pedido.empleados?.nombre || 'Sin nombre'),
       opcion_id: String(pedido.opcion_id ?? ''),
-      opcion: Object.hasOwn(OPCION_LABELS, pedido.opcion_id) ? OPCION_LABELS[pedido.opcion_id] : (pedido.opcion_texto ? 'Otra opción' : 'Sin opción'),
+      opcion: pedido.tipo === 'cobertura' ? 'Cobertura' : Object.hasOwn(OPCION_LABELS, pedido.opcion_id) ? OPCION_LABELS[pedido.opcion_id] : (pedido.opcion_texto ? 'Otra opción' : 'Sin opción'),
       platillo: String(pedido.opcion_texto || 'Sin platillo registrado'),
-      opcion_clave: JSON.stringify([pedido.opcion_id ?? null, pedido.opcion_texto || 'Sin platillo registrado'])
+      opcion_clave: JSON.stringify([pedido.tipo || 'regular', pedido.opcion_id ?? null, pedido.opcion_texto || 'Sin platillo registrado']),
+      tipo: pedido.tipo || 'regular', folio: pedido.folio || null,
+      horario: horarioComida(pedido, fecha)
     });
   }
   const lotes = [...grupos.values()].sort((a, b) =>
@@ -76,15 +79,20 @@ export function prepararChecklistReparto(fecha, pedidos, seleccion = {}) {
     lote.por_opcion = {};
     for (const fila of lote.filas) lote.por_opcion[fila.opcion_clave] = (lote.por_opcion[fila.opcion_clave] || 0) + 1;
     lote.total = lote.filas.length;
+    lote.coberturas = lote.filas.filter(f => f.tipo === 'cobertura').length;
+    lote.regulares = lote.total - lote.coberturas;
     lote.turno_texto = TURNOS[lote.turno] || 'Sin turno asignado';
     lote.zona_texto = ZONAS[lote.zona] || 'Sin zona asignada';
     lote.horario = Object.hasOwn(TURNOS, lote.turno) && Object.hasOwn(ZONAS, lote.zona)
       ? horaTexto(lote.turno, lote.zona, fecha) : 'Por confirmar';
+    const horarios = [...new Set(lote.filas.map(f => f.horario))];
+    if (horarios.length === 1) lote.horario = horarios[0];
+    else if (horarios.length > 1) lote.horario = 'Ver horario por comida';
     const hojas = paginarFilas(lote.filas);
     hojas.forEach((pagina, i) => paginas.push({ lote, ...pagina,
       hoja: i + 1, hojas: hojas.length, ultima: i === hojas.length - 1 }));
   }
-  return { fecha, fecha_texto: dia.toFormat('dd/MM/yyyy'), filtros, total: elegidos.length, lotes, paginas };
+  return { fecha, fecha_texto: dia.toFormat('dd/MM/yyyy'), filtros, ...contarServicios(elegidos), lotes, paginas };
 }
 
 export function htmlChecklistReparto(datos) {
@@ -96,14 +104,14 @@ export function htmlChecklistReparto(datos) {
         <p class="marca">CICSA · GLOVIS</p><h1>Checklist de salida</h1>
         <div class="encabezado"><strong>${esc(lote.zona_texto)}</strong><strong>${esc(lote.turno_texto)}</strong></div>
         <div class="encabezado"><span>Servicio: <b>${esc(datos.fecha_texto)}</b></span><span>Entrega: <b>${esc(lote.horario)}</b></span></div>
-        <p class="referencia">Hoja ${pagina.hoja} de ${pagina.hojas} de este lote · Total del lote: ${lote.total} comida(s)</p>
+        <p class="referencia">Hoja ${pagina.hoja} de ${pagina.hojas} de este lote · Regulares: ${lote.regulares} + Coberturas: ${lote.coberturas} = ${lote.total} comidas</p>
       </header>
       <table>
         <colgroup><col class="col-opcion"><col class="col-numero"><col><col class="col-horario"><col class="col-revision"></colgroup>
         <thead><tr><th scope="col">Opción del menú</th><th scope="col">N.º empleado</th><th scope="col">Nombre del empleado</th><th scope="col">Entrega</th><th scope="col">Revisado</th></tr></thead>
         <tbody>${pagina.filas.map((fila, i) => `${i === 0 || pagina.filas[i - 1].opcion_clave !== fila.opcion_clave
           ? `<tr class="opcion-grupo"><th colspan="5" scope="rowgroup">${esc(fila.opcion)} · ${esc(fila.platillo)} <span>— Total de esta opción: ${lote.por_opcion[fila.opcion_clave]}</span></th></tr>` : ''}<tr>
-          <td>${esc(fila.opcion)}</td><td>${esc(fila.numero || 'Sin número')}</td><td class="nombre">${esc(fila.nombre)}</td><td>${esc(lote.horario)}</td>
+          <td>${esc(fila.opcion)}</td><td>${esc(fila.numero || 'Sin número')}</td><td class="nombre">${esc(fila.nombre)}${fila.folio ? `<small class="folio">${esc(fila.folio)}</small>` : ''}</td><td>${esc(fila.horario)}</td>
           <td class="revision"><span class="casilla"></span><small>${pagina.inicio + i + 1}</small></td>
         </tr>`).join('')}</tbody>
       </table>
@@ -131,6 +139,7 @@ table{border-collapse:collapse;table-layout:fixed;width:100%;font-size:10pt;line
 th,td{border:1px solid #000;padding:1mm 2mm;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
 th{font-size:9pt;height:8mm}td{height:8mm}.nombre{font-weight:600}
 .opcion-grupo{break-after:avoid;page-break-after:avoid}.opcion-grupo th{font-size:10pt;padding:2mm;height:auto}.opcion-grupo span{font-size:9pt;font-weight:400}
+.folio{display:block;font-size:8pt;font-weight:400;overflow-wrap:anywhere}
 .revision{text-align:center;white-space:nowrap}.casilla{display:inline-block;width:4mm;height:4mm;border:1px solid #000;vertical-align:middle}
 .revision small{font-size:8pt;margin-left:2mm}.cierre{margin-top:auto;padding-top:4mm;font-size:10pt}
 .conteo{margin:0 0 4mm}.firma-salida{break-inside:avoid}.firma-salida p{margin:0}.linea-firma{height:13mm;border-bottom:1px solid #000;width:90mm;margin-bottom:2mm}

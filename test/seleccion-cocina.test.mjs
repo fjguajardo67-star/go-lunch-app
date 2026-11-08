@@ -8,7 +8,7 @@ const pedidos=[
  ['turno_a','zona_vdc','Pollo'],['turno_a','zona_vdc','Pollo'],['turno_a','zona_vdc','Ensalada'],
  ['turno_a','zona_refris','Pollo'],['turno_b','zona_vdc','Pollo'],
  ['turno_b','zona_refris','Ensalada'],['turno_b','zona_refris','Ensalada']
-].map(([turno,zona,opcion_texto],i)=>({turno,zona,opcion_texto,empleados:{numero_empleado:String(i+1).padStart(5,'0'),nombre:'Persona de prueba '+i}}));
+].map(([turno,zona,opcion_texto],i)=>({fecha_menu:fecha,turno,zona,opcion_texto,empleados:{numero_empleado:String(i+1).padStart(5,'0'),nombre:'Persona de prueba '+i}}));
 
 test('las nueve selecciones cuentan porciones después de filtrar, con subtotales coherentes',()=>{
  for(const [turno,zona,total] of [[null,null,7],['turno_a',null,4],['turno_b',null,3],[null,'zona_vdc',4],[null,'zona_refris',3],['turno_a','zona_vdc',3],['turno_a','zona_refris',1],['turno_b','zona_vdc',1],['turno_b','zona_refris',2]]){
@@ -31,12 +31,12 @@ test('todos conserva registros sin asignación; una selección puntual no los me
  assert.deepEqual(resumirPedidosCocina(fecha,[],{zona:'zona_vdc'}).resumen,[]);
 });
 test('rechaza filtros desconocidos o repetidos, sin convertirlos en todos',()=>{
- assert.deepEqual(normalizarSeleccionCocina({turno:'todos',zona:'todas'}),{turno:null,zona:null});
+ assert.deepEqual(normalizarSeleccionCocina({turno:'todos',zona:'todas'}),{turno:null,zona:null,servicio:null});
  for(const f of [{turno:'turno_c'},{zona:'otra'},{turno:['turno_a','turno_b']},{zona:{nombre:'ASLA'}},{turno:'__proto__'}])assert.throws(()=>normalizarSeleccionCocina(f),e=>e.status===400);
 });
 test('servicios reales comparten selección y generan la misma cantidad de etiquetas y porciones',async()=>{
  let consultas=0;
- const server=http.createServer((req,res)=>{consultas++;res.setHeader('content-type','application/json');res.end(JSON.stringify(pedidos))});
+ const server=http.createServer((req,res)=>{consultas++;res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url.startsWith('/rest/v1/pedidos?')?pedidos:[]))});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  process.env.SUPABASE_URL=`http://127.0.0.1:${server.address().port}`;
  process.env.SUPABASE_KEY='solo-prueba';
