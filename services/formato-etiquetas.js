@@ -1,15 +1,27 @@
-// Formato horizontal de reparto: rollo de 62 mm, corte de 90 mm.
-export const ANCHO_ETIQUETA = 90;
+// Rollo de 62 mm, corte de 100 mm: 10 mm de cierre a la izquierda
+// y el mismo bloque impreso de 90 mm usado anteriormente.
+export const ANCHO_ETIQUETA = 100;
 export const ALTO_ETIQUETA = 62;
+export const ANCHO_CONTENIDO_ETIQUETA = 90;
+
+export function esFormatoReparto(ancho, alto) {
+  return [ANCHO_CONTENIDO_ETIQUETA, ANCHO_ETIQUETA].includes(Number(ancho)) && Number(alto) === ALTO_ETIQUETA;
+}
+
+export function extensionCierreEtiqueta(ancho, alto) {
+  return esFormatoReparto(ancho, alto) ? Number(ancho) - ANCHO_CONTENIDO_ETIQUETA : 0;
+}
 
 export function estiloEtiquetaReparto(ancho, alto) {
-  if (Number(ancho) !== ANCHO_ETIQUETA || Number(alto) !== ALTO_ETIQUETA) return `
+  if (!esFormatoReparto(ancho, alto)) return `
     .etiqueta { position: relative; padding-top: 5mm; padding-bottom: 4mm; }
     .etiqueta .identificacion { position: absolute; bottom: 1mm; left: 2.2mm; right: 2.2mm; display: flex; justify-content: space-between; font-size: 6pt; }
     .etiqueta > .ruta { position: absolute; top: 1.6mm; left: 2.2mm; right: 2.2mm; }
   `;
   return `
+  .marco-etiqueta { padding-left: ${extensionCierreEtiqueta(ancho, alto)}mm; background: #fff; }
   .etiqueta {
+    width: ${ANCHO_CONTENIDO_ETIQUETA}mm;
     position: relative; padding: 5mm 9mm 10mm; display: grid; grid-template-columns: minmax(0,1fr) 32mm;
     grid-template-rows: auto minmax(0,1fr); gap: 1.5mm 3mm;
     color: #000; background: #fff; break-inside: avoid;
