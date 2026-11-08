@@ -94,9 +94,12 @@ try {
       }),imagenes);
       await page.evaluate(async()=>{await Promise.all([...document.images].map(i=>i.decode()));await document.fonts.ready;});
       await page.locator('.etiqueta .texto').evaluateAll(textos=>textos.forEach(texto=>{
-        if(Math.abs(texto.closest('.etiqueta').getBoundingClientRect().width-90*96/25.4)>2)return;
+        const etiqueta=texto.closest('.etiqueta'),ancho=parseFloat(getComputedStyle(etiqueta).width);
+        if(Math.abs(ancho-90*96/25.4)>2)return;
+        const escala=etiqueta.getBoundingClientRect().width/ancho;
+        if(!escala)return;
         const campos=[...texto.children];
-        const altoNecesario=()=>campos.reduce((n,c)=>n+c.getBoundingClientRect().height,0)+parseFloat(getComputedStyle(texto).rowGap||0)*Math.max(0,campos.length-1);
+        const altoNecesario=()=>campos.reduce((n,c)=>n+c.getBoundingClientRect().height/escala,0)+parseFloat(getComputedStyle(texto).rowGap||0)*Math.max(0,campos.length-1);
         for(let paso=0;paso<16 && altoNecesario()>texto.clientHeight;paso++){
           let cambio=false;
           for(const c of campos){
