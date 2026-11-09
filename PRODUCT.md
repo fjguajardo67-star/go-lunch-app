@@ -8,7 +8,7 @@ web
 
 ## Users
 
-El usuario principal es el empleado de Hyundai Glovis que abre la aplicación desde el QR físico del comedor y necesita elegir rápidamente su comida para el siguiente día de servicio. También existen supervisores autorizados que solicitan coberturas del segundo turno, administración que publica menús y mantiene permisos, y cocina y reparto que consumen las solicitudes organizadas.
+El usuario principal es el empleado de Hyundai Glovis que abre la aplicación desde el QR físico del comedor y necesita elegir rápidamente su comida para el siguiente día de servicio. También existen supervisores autorizados que solicitan coberturas de los turnos A y B en varios folios con zona y horario propios, administración que publica menús y mantiene permisos, y cocina y reparto que consumen las solicitudes organizadas.
 
 ## Product Purpose
 
@@ -27,7 +27,7 @@ El pedido personal no requiere cuenta ni contraseña: localiza al empleado con s
 - La aplicación web es el canal principal mientras Meta/WhatsApp permanece sin verificar.
 - El panel, la página del empleado, cocina y reparto forman un solo flujo operativo.
 - Desde el 7 de noviembre de 2026 las zonas son ASLA (LZCA, fuera del puerto) y REFIS (LZCR, dentro del puerto). Turno A: 10:00 AM en ambos patios. Turno B: 6:00 PM en ASLA y 5:00 PM en REFIS.
-- Las coberturas se solicitan el mismo día hasta las 7:00 AM para turno A y 2:00 PM para turno B y horas extras. Al cierre, el panel de CICSA activa una alarma y presenta la comanda final para impresión; la producción sale a las 4:30 PM para B; A se entrega a las 10:00 AM. Ambos comparten el menú y conservan solicitudes separadas.
+- Los supervisores pueden registrar varios folios de cobertura para hoy, cada uno con turno A o B y horas extras, zona, responsable y hora de entrega propios. Crear, modificar y cancelar requiere al menos dos horas antes de la entrega; un cambio de horario también respeta el límite del horario anterior. El menú especial es compartido. Cocina recibe avisos por folio nuevo o modificado y puede imprimir cada pedido por separado o consultar el consolidado del turno.
 
 ## Capabilities and Constraints
 
@@ -40,6 +40,8 @@ El pedido personal no requiere cuenta ni contraseña: localiza al empleado con s
 - El frontend se sirve desde Railway y usa Supabase como base de datos.
 - El QR y las URLs existentes deben seguir funcionando después de los rediseños.
 - Un pedido regular y una cobertura del mismo empleado deben coexistir sin sobrescribirse.
+- Cada empleado admite una cobertura por turno y día entre todos los supervisores y zonas; puede tener otra en el otro turno.
+- Los folios conservan historial, identidad y control de versión. Un folio con entregas iniciadas no se modifica ni cancela.
 - La autorización de supervisor siempre parte de un empleado existente en la plantilla oficial.
 - La app del supervisor no muestra precios ni condiciones financieras.
 

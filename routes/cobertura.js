@@ -3,6 +3,7 @@
 import express from 'express';
 import * as db from '../services/supabase.js';
 import * as cobertura from '../services/cobertura.js';
+import { estadoLotesSupervisor, guardarLoteSupervisor, cancelarLoteSupervisor } from '../services/lotes-cobertura.js';
 import {
   verificarClave, emitirTokenSupervisor, leerTokenSupervisor,
   registrarIntento, limpiarIntentos, DURACION_SUPERVISOR_HORAS
@@ -71,6 +72,29 @@ coberturaRouter.use(async (req, res, next) => {
     console.error('[Cobertura] Error validando sesión:', err);
     res.status(500).json({ error: 'No se pudo validar la sesión.' });
   }
+});
+
+coberturaRouter.get('/lotes', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const estado = await estadoLotesSupervisor(req.supervisor.id);
+    res.json({ ...estado, supervisor: { numero_empleado: req.supervisor.empleados.numero_empleado, nombre: req.supervisor.empleados.nombre } });
+  } catch (err) { res.status(err.status || 500).json({ error: err.status ? err.message : 'No se pudieron actualizar tus pedidos. Intenta de nuevo con conexión.' }); }
+});
+
+coberturaRouter.post('/lotes', async (req, res) => {
+  try { res.json({ ok: true, solicitud: await guardarLoteSupervisor(req.supervisor.id, req.body || {}) }); }
+  catch (err) { res.status(err.status || 500).json({ error: err.message, detalle: err.detalle }); }
+});
+
+coberturaRouter.put('/lotes/:id', async (req, res) => {
+  try { res.json({ ok: true, solicitud: await guardarLoteSupervisor(req.supervisor.id, req.body || {}, req.params.id) }); }
+  catch (err) { res.status(err.status || 500).json({ error: err.message, detalle: err.detalle }); }
+});
+
+coberturaRouter.delete('/lotes/:id', async (req, res) => {
+  try { res.json({ ok: true, solicitud: await cancelarLoteSupervisor(req.supervisor.id, req.params.id, req.body?.version) }); }
+  catch (err) { res.status(err.status || 500).json({ error: err.message, detalle: err.detalle }); }
 });
 
 coberturaRouter.get('/estado', async (req, res) => {

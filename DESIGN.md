@@ -34,7 +34,7 @@ Los demás originales autorizados, incluido el trazo monocromático, viven en
 - Los cambios de apariencia deben conservar IDs, contratos de datos y la clase
   `.oculto` de las PWA existentes.
 
-## Cobertura del segundo turno
+## Pedidos de cobertura
 
 La solicitud del supervisor se presenta como una lista de personas y alimentos,
 no como una orden financiera. La pantalla muestra únicamente horario, menú,
@@ -45,10 +45,9 @@ autorizados, solicitudes/producción y autorizaciones vigentes. En reparto, las
 coberturas se distinguen visualmente, pero comparten el mismo patrón de escaneo
 de las entregas regulares.
 
-Cada turno tiene su propio conteo: A cierra 7:00 AM; B y horas extras, 2:00 PM (hora del servidor). El menú especial es compartido y la consulta, alarma, comanda y etiquetas distinguen el turno. Si hay solicitudes,
-el panel interrumpe la operación con una alerta sonora y visual, intenta abrir
-la impresión de la comanda y conserva una acción manual de respaldo. La alarma
-solo se apaga cuando el operador confirma que la comanda quedó impresa.
+Los supervisores conservan su número y clave; pueden crear varios folios para hoy con turno, zona, responsable y hora propios. Altas, modificaciones y cancelaciones requieren al menos dos horas antes de la entrega, comprobadas por el reloj del servidor y la función transaccional de PostgreSQL. Un cambio de horario también debe respetar el límite del horario anterior. Mis pedidos de hoy muestra folios confirmados, entregados y cancelados. Cada empleado admite una cobertura por turno y día entre todos los supervisores y zonas; puede tener otra en el otro turno y su pedido regular.
+
+El menú especial es compartido. El panel revisa cada 30 segundos y alerta por cada folio nuevo o modificado, mostrando turno, zona y hora; intenta imprimir solo ese folio y conserva la acción manual de respaldo. La confirmación de impresión se identifica por folio y revisión, de modo que un cambio con igual cantidad vuelve a avisar. La alarma solo se apaga cuando el operador confirma Comanda impresa. Los botones por folio conviven con los consolidados por turno.
 
 ## Crédito de desarrollo en la portada
 
@@ -91,11 +90,11 @@ La tarjeta Impresión comparte fecha, turno (Todos/A/B) y zona (Todas/ASLA/REFIS
 
 ## Acceso de supervisores desde portada
 
-El enlace a /cobertura.html está disponible tanto en la identificación como en el estado cerrado o sin menú del servicio regular. Los cortes regulares no ocultan la entrada de supervisores; la autorización y los cortes especiales se verifican dentro de su propio flujo.
+El enlace a /cobertura.html está disponible tanto en la identificación como en el estado cerrado o sin menú del servicio regular. El corte regular no oculta la entrada de supervisores; la autorización, el menú de hoy y la anticipación de dos horas se verifican dentro de su propio flujo. No se ofrecen pedidos cuando ya no cabe una entrega con ese margen dentro del mismo día.
 
 ## Autorización de pedidos extraordinarios
 
-En Coberturas, gerente o administrador puede registrar un lote adicional para hoy cuando haya ventana de preparación y entrega. El formulario pide personas y platillos del menú especial vigente, responsable, zona, turno, hora futura de entrega y motivo. Registra rol autorizador y hora del servidor, conserva folios entregados y usa una clave de reintento para evitar duplicaciones. La confirmación ofrece comanda y etiquetas del folio nuevo. El consolidado identifica horarios autorizados y reparto conserva esa hora también sin señal. El corte y la alarma de supervisores permanecen independientes.
+En Coberturas, gerente o administrador conserva el registro extraordinario de hoy cuando haya ventana de preparación y entrega. El formulario pide personas y platillos del menú especial vigente, responsable, zona, turno, hora futura de entrega y motivo. Registra rol autorizador y hora del servidor, conserva folios entregados y usa una clave de reintento para evitar duplicaciones. La confirmación ofrece comanda y etiquetas del folio nuevo. Este permiso administrativo es independiente de la anticipación obligatoria de dos horas del supervisor. El consolidado identifica horarios programados y reparto conserva esa hora también sin señal.
 
 La hora se captura como texto de 24 horas, con ejemplo 17:30 = 5:30 p. m., para evitar segmentos AM/PM incompletos en Safari. La validación del formulario identifica el campo en español, lo enfoca y lo desplaza al centro de la vista. Los errores conservan las filas y el resto de los datos; el servidor mantiene la validación de hora futura del mismo día.
 
@@ -116,6 +115,10 @@ Dentro de cada lote de turno y zona, el checklist agrupa por opción en el orden
 Cocina, comanda general, etiquetas, checklist y los Excel usan la misma consulta de comidas regulares y coberturas vigentes, incluidas extraordinarias. Cada comida tiene identidad y estado propios; una misma persona puede aparecer varias veces. Los reportes separan Regulares, Coberturas y Total, con filtros de fecha, turno, zona y servicio. Los impresos de folio y las alarmas de supervisores permanecen disponibles para imprimir solo nuevos agregados.
 
 Las extraordinarias usan la hora autorizada para preparación y puntualidad. Las calificaciones solo incluyen regulares, que son los que permiten encuesta. Facturación aplica temporalmente el mismo costo unitario a ambos servicios, decisión confirmada por Francisco el 7/nov/2026; muestra entregados y pendientes para conciliación. Un error de lectura de coberturas no se presenta como una lista completa. Los formatos de papel, QR y calibraciones físicas se conservan.
+
+## Integridad de los folios de supervisor
+
+Cada alta usa una clave de reintento para recuperar el mismo folio si se pierde la respuesta. Edición y cancelación se dirigen a un ID propio y comparan la versión leída; una sesión atrasada debe actualizar. Ningún folio con entregas iniciadas se modifica o cancela. Los empleados que permanecen en un folio editado conservan su QR; si cambia la preparación u horario, cocina sustituye los impresos previos por los actualizados. Las cancelaciones conservan el historial y liberan la asignación de cobertura. Las funciones anteriores quedan limitadas a folios legados y no sobrescriben lotes nuevos durante la transición.
 
 ## Reporte diario para el cliente
 

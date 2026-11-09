@@ -55,7 +55,7 @@ export function htmlComandaCobertura({ fecha, turno = 'turno_b', total, solicitu
     <div class="folio">
       <b>${esc(s.folio)}</b> · ${esc(ZONAS[s.zona] || s.zona)} · ${s.total_porciones} alimento(s)<br>
       <span>Solicita: ${esc(s.supervisor_nombre_snapshot)} · Recibe: ${esc(s.responsable_nombre_snapshot)} #${esc(s.responsable_numero_snapshot)}</span>
-      ${s.origen === 'extraordinaria' ? `<br><span>Extraordinaria · Autorizó: ${esc(s.autorizado_por)} · Entrega: ${esc(horaTextoCobertura(s, fecha))}<br>Motivo: ${esc(s.motivo_autorizacion)}</span>` : ''}
+      ${s.entrega_programada_en ? `<br><span>Entrega: ${esc(horaTextoCobertura(s, fecha))}${s.origen === 'extraordinaria' ? ` · Extraordinaria · Autorizó: ${esc(s.autorizado_por)}<br>Motivo: ${esc(s.motivo_autorizacion)}` : ''}</span>` : ''}
     </div>`).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Comanda de cobertura ${esc(fecha)}</title><style>
@@ -68,7 +68,7 @@ h2{text-align:center;font-size:16px;border-block:2px solid #000;padding:7px 0;ma
 @media print{body{max-width:none;padding:0}.no-print{display:none}.linea,.subtotal,.total,.folio{break-inside:avoid;page-break-inside:avoid}h1,h2{break-after:avoid;page-break-after:avoid}}
 ${termica ? `body{width:58mm;max-width:58mm;margin:0;padding:2mm}h1{font-size:13px;letter-spacing:0}h2{font-size:11px;overflow-wrap:anywhere}.linea{font-size:11px}.linea strong{font-size:15px}.subtotal,.total{font-size:12px}.folio,.folio span,p{font-size:9px;overflow-wrap:anywhere}.folio{line-height:1.4}@media print{@page{size:58mm 200mm;margin:2mm 0}body{max-width:58mm;padding:2mm}}` : ''}
 </style></head><body>
-<h1>${soloExtraordinarias ? 'COBERTURA EXTRAORDINARIA' : 'COBERTURA'} · ${turno === 'turno_a' ? 'TURNO A' : 'TURNO B Y HORAS EXTRAS'}</h1><p>CICSA · Glovis</p>${soloExtraordinarias ? '' : `<p>${esc(horaTexto(turno, null, fecha))}${turno === 'turno_b' ? ' · Salida máxima 4:30 PM' : ''}</p>`}<p>Fecha: <b>${esc(fecha)}</b></p><hr>
+<h1>${soloExtraordinarias ? 'COBERTURA EXTRAORDINARIA' : 'COBERTURA'} · ${turno === 'turno_a' ? 'TURNO A' : 'TURNO B Y HORAS EXTRAS'}</h1><p>CICSA · Glovis</p>${detalle.some(s => s.entrega_programada_en) ? '<p>Horario por folio y zona</p>' : `<p>${esc(horaTexto(turno, null, fecha))}${turno === 'turno_b' ? ' · Salida máxima 4:30 PM' : ''}</p>`}<p>Fecha: <b>${esc(fecha)}</b></p><hr>
 ${secciones || '<p>Sin solicitudes confirmadas.</p>'}
 <hr><div class="total"><span>TOTAL</span><span>${total}</span></div><p>${solicitudes} solicitud(es)</p>
 ${folios ? `<hr><h2>FOLIOS Y RECEPCIÓN</h2>${folios}` : ''}

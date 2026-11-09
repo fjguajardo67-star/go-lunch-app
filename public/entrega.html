@@ -1859,7 +1859,7 @@
         <div class="d">
           <b>${esc(p.nombre || '—')} ${p.tipo === 'cobertura' ? '<em class="cobertura-badge">Cobertura</em>' : ''}</b>
           <span>${esc(p.platillo || '')} · ${esc(TURNO_TXT[p.turno] || '')} · ${esc(ZONA_TXT[p.zona] || '')}</span>
-          ${p.entrega_programada_en ? `<span>Extraordinaria · Entrega autorizada: ${esc(horaLocal(p.entrega_programada_en))}</span>` : ''}
+          ${p.entrega_programada_en ? `<span>${p.origen === 'extraordinaria' ? 'Extraordinaria · Entrega autorizada' : 'Entrega programada'}: ${esc(horaLocal(p.entrega_programada_en))}</span>` : ''}
           ${p.tipo === 'cobertura'
             ? `<span class="cobertura-receptor">Recibe: ${esc(p.recibido_por || p.responsable_nombre || '—')}${p.receptor_discrepante ? ' · receptor distinto' : ''}</span>`
             : ''}
