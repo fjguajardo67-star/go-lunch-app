@@ -74,6 +74,8 @@ BEGIN
       RETURN NEXT v_s; RETURN;
     END IF;
     IF p_solicitud_id IS NULL THEN RAISE EXCEPTION 'idempotencia_cobertura_invalida'; END IF;
+    -- Serializa también contra el escaneo de las etiquetas del mismo folio.
+    PERFORM id FROM public.solicitudes_cobertura_items WHERE solicitud_id=v_s.id FOR UPDATE;
     IF v_s.estado<>'confirmada' OR EXISTS(SELECT 1 FROM public.solicitudes_cobertura_items WHERE solicitud_id=v_s.id AND entregado_en IS NOT NULL) THEN
       RAISE EXCEPTION 'solicitud_ya_entregada';
     END IF;
@@ -145,6 +147,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'solicitud_cobertura_no_encontrada'; END IF;
   IF v_s.estado='cancelada' THEN RETURN NEXT v_s; RETURN; END IF;
   IF v_s.fecha_servicio<>v_hoy THEN RAISE EXCEPTION 'fecha_cobertura_invalida'; END IF;
+  PERFORM id FROM public.solicitudes_cobertura_items WHERE solicitud_id=v_s.id FOR UPDATE;
   IF v_s.estado<>'confirmada' OR EXISTS(SELECT 1 FROM public.solicitudes_cobertura_items WHERE solicitud_id=v_s.id AND entregado_en IS NOT NULL) THEN RAISE EXCEPTION 'solicitud_ya_entregada'; END IF;
   IF v_s.actualizado_en IS DISTINCT FROM p_version THEN RAISE EXCEPTION 'version_cobertura_desactualizada'; END IF;
   v_entrega:=coalesce(v_s.entrega_programada_en,
