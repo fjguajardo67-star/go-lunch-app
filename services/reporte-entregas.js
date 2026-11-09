@@ -1,0 +1,120 @@
+// Reporte para el cliente: solo entregas registradas, una fila por comida.
+import { readFileSync } from 'node:fs';
+import { DateTime } from 'luxon';
+import { validarPeriodo, contarServicios, horarioComida } from './comidas.js';
+import { ZONA, ZONAS, TURNOS } from './menu.js';
+
+const logo = archivo => 'data:image/svg+xml;base64,' + readFileSync(new URL('../public/' + archivo, import.meta.url)).toString('base64');
+const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg');
+const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+const numeros = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+
+export function validarElaboro(valor = '') {
+  if (typeof valor !== 'string' || valor.length > 120 || /[\x00-\x1f\x7f]/.test(valor)) {
+    throw Object.assign(new Error('Escribe un nombre de hasta 120 caracteres en «Elaboró».'), { status: 400 });
+  }
+  return valor.trim();
+}
+
+// Presupuesto en mm, conservador para carta y Safari. Cada continuación repite
+// su encabezado. El resumen y el cierre tienen espacio propio fuera de la tabla.
+function paginar(grupos) {
+  const paginas = [{ partes: [], usado: 0 }];
+  const nueva = () => { const p = { partes: [], usado: 0 }; paginas.push(p); return p; };
+  const altoFila = fila => 3 + 3.8 * Math.max(1,
+    Math.ceil(fila.numero.length / 9), Math.ceil(fila.nombre.length / 23),
+    Math.ceil(fila.platillo.length / 22), Math.ceil(fila.servicio.length / 16) + (fila.folio ? Math.ceil(fila.folio.length / 17) : 0),
+    Math.ceil(fila.horario.length / 11));
+  for (const grupo of grupos) {
+    let inicio = 0, parte = 0;
+    while (inicio < grupo.filas.length) {
+      let pagina = paginas.at(-1), limite = paginas.length === 1 ? 142 : 182;
+      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 182; }
+      const filas = []; let alto = 22;
+      while (inicio < grupo.filas.length && (filas.length === 0 || pagina.usado + alto + altoFila(grupo.filas[inicio]) <= limite)) {
+        const fila = grupo.filas[inicio++]; alto += altoFila(fila); filas.push(fila);
+      }
+      pagina.partes.push({ grupo, filas, continuacion: parte++ > 0, ultima: inicio === grupo.filas.length });
+      pagina.usado += alto;
+    }
+  }
+  return paginas;
+}
+
+export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = DateTime.now() } = {}) {
+  validarPeriodo(fecha);
+  elaboro = validarElaboro(elaboro);
+  const delDia = comidas.filter(p => p.fecha_menu === fecha);
+  const entregadas = delDia.filter(p => p.entregado_en);
+  const registradas = contarServicios(delDia), entregado = contarServicios(entregadas);
+  const grupos = new Map();
+  for (const p of entregadas) {
+    const clave = JSON.stringify([p.turno ?? null, p.zona ?? null]);
+    if (!grupos.has(clave)) grupos.set(clave, {
+      turno: p.turno, zona: p.zona,
+      turno_texto: TURNOS[p.turno] || 'Sin turno asignado', zona_texto: ZONAS[p.zona] || 'Sin zona asignada', filas: []
+    });
+    const hora = DateTime.fromISO(p.entregado_en, { zone: ZONA });
+    grupos.get(clave).filas.push({
+      numero: String(p.empleados?.numero_empleado || 'Sin número'), nombre: p.empleados?.nombre || 'Sin nombre',
+      platillo: p.opcion_texto || p.opcion_id || 'Sin platillo registrado',
+      tipo: p.tipo || 'regular', servicio: p.tipo === 'cobertura' ? (p.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : 'Regular',
+      folio: p.folio || null, horario: horarioComida(p, fecha),
+      hora_registrada: hora.isValid ? hora.setZone(ZONA).toFormat('HH:mm') : 'Sin hora válida',
+      fecha_registrada: hora.isValid && hora.setZone(ZONA).toISODate() !== fecha ? hora.setZone(ZONA).toFormat('dd/MM/yyyy') : null
+    });
+  }
+  const orden = (valor, opciones) => Object.keys(opciones).includes(valor) ? Object.keys(opciones).indexOf(valor) : Object.keys(opciones).length;
+  const lista = [...grupos.values()].sort((a, b) => orden(a.turno, TURNOS) - orden(b.turno, TURNOS) ||
+    String(a.zona ?? '').localeCompare(String(b.zona ?? '')));
+  for (const grupo of lista) {
+    grupo.filas.sort((a, b) => numeros.compare(a.numero, b.numero) || numeros.compare(a.nombre, b.nombre) || numeros.compare(a.servicio, b.servicio));
+    Object.assign(grupo, contarServicios(grupo.filas));
+  }
+  return { fecha, fecha_texto: DateTime.fromISO(fecha).toFormat('dd/MM/yyyy'), elaboro,
+    generado: ahora.setZone(ZONA).toFormat('dd/MM/yyyy HH:mm'),
+    registradas, entregado, pendientes: delDia.length - entregadas.length, grupos: lista, paginas: paginar(lista) };
+}
+
+export function htmlReporteEntregas(datos) {
+  const resumen = `<section class="resumen" aria-label="Resumen de comidas solicitadas y entregadas">
+    ${[[datos.registradas.regulares, 'Regulares solicitadas'], [datos.registradas.coberturas, 'Coberturas solicitadas'],
+      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Pendientes']]
+      .map(([n, texto]) => `<div class="metrica"><strong>${n}</strong><span>${texto}</span></div>`).join('')}
+    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes = total solicitado. El detalle incluye únicamente entregas registradas.</p>`;
+  const paginas = datos.paginas.map((pagina, indice) => `<section class="hoja">
+    <header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div>
+      <h1>Reporte diario de comidas entregadas</h1><div class="fecha"><strong>Servicio: ${esc(datos.fecha_texto)}</strong><span>Generado: ${esc(datos.generado)}</span></div></header>
+    ${indice === 0 ? resumen : ''}
+    ${pagina.partes.map(({ grupo, filas, continuacion, ultima }) => `<section class="grupo">
+      <h2>${esc(grupo.turno_texto)} · ${esc(grupo.zona_texto)}${continuacion ? ' · Continuación' : ''}</h2>
+      <table><colgroup><col class="numero"><col class="nombre"><col class="platillo"><col class="servicio"><col class="hora"><col class="hora"></colgroup>
+        <thead><tr><th scope="col">N.º empleado</th><th scope="col">Nombre</th><th scope="col">Platillo</th><th scope="col">Servicio</th><th scope="col">Hora prevista</th><th scope="col">Entrega registrada</th></tr></thead>
+        <tbody>${filas.map(f => `<tr><td>${esc(f.numero)}</td><td>${esc(f.nombre)}</td><td>${esc(f.platillo)}</td><td>${esc(f.servicio)}${f.folio ? `<small>${esc(f.folio)}</small>` : ''}</td><td>${esc(f.horario)}</td><td>${esc(f.hora_registrada)}${f.fecha_registrada ? `<small>${esc(f.fecha_registrada)}</small>` : ''}</td></tr>`).join('')}</tbody>
+      </table><p class="subtotal">${ultima ? `Subtotal del grupo: <b>${grupo.total}</b> · Regulares: ${grupo.regulares} · Coberturas: ${grupo.coberturas}` : `En esta hoja: <b>${filas.length}</b> · El grupo continúa en la siguiente hoja.`}</p>
+    </section>`).join('')}
+    ${datos.entregado.total === 0 ? '<p class="vacio">No hay entregas registradas para esta fecha.</p>' : ''}
+    ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} comidas</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p>${datos.elaboro ? `<p>Elaboró: ${esc(datos.elaboro)}</p>` : ''}</div>` : ''}
+    <footer><span>Hora local del comedor · America/Mexico_City</span><span>Página ${indice + 1} de ${datos.paginas.length}</span></footer>
+  </section>`).join('');
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<title>CICSA_Glovis_Entregas_${esc(datos.fecha)}</title><style>
+*{box-sizing:border-box}body{margin:0;color:#14233e;background:#edf0f5;font-family:Arial,sans-serif}
+.barra{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 24px;background:#fff;border-bottom:1px solid #bcc5d3}
+.barra button{font:inherit;font-weight:700;background:#07357f;color:white;border:0;border-radius:6px;padding:12px 18px;cursor:pointer;min-height:44px}.barra button:hover{background:#102957}.barra button:focus-visible{outline:3px solid #1272cf;outline-offset:3px}
+.ayuda{margin:16px 24px;font-size:14px;line-height:1.5}.documento{max-width:216mm;margin:20px auto}.hoja{padding:14mm;background:white;margin-bottom:20px}
+.marcas{display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm}.marcas img{width:38mm;height:13mm;object-fit:contain}.marcas img:last-child{width:39mm}
+h1{font-size:17pt;line-height:1.15;margin:0 0 3mm}.fecha{display:flex;justify-content:space-between;gap:4mm;font-size:9pt;line-height:1.3;margin-bottom:4mm}
+.resumen{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2mm}.metrica{padding:3mm 1.5mm;border:1px solid #b7c0cf;text-align:center;break-inside:avoid}.metrica strong{display:block;font-size:21pt;line-height:1.1;font-variant-numeric:tabular-nums}.metrica span{display:block;font-size:8pt;line-height:1.2;margin-top:1.5mm}
+.nota-resumen{font-size:8pt;line-height:1.3;margin:2mm 0 4mm}.grupo{margin-bottom:3mm}h2{font-size:10pt;line-height:1.2;margin:0;padding:2mm 0}
+table{border-collapse:collapse;table-layout:fixed;width:100%;font-size:8.5pt;line-height:1.2}.numero{width:10%}.nombre{width:27%}.platillo{width:25%}.servicio{width:18%}.hora{width:10%}
+th,td{text-align:left;vertical-align:top;border:1px solid #aeb7c5;padding:1.4mm;overflow-wrap:anywhere}th{font-size:8pt}td small{display:block;font-size:7pt;line-height:1.2;margin-top:.5mm}.subtotal{font-size:8pt;margin:1.5mm 0 0;line-height:1.3}
+.cierre{border-top:1px solid #14233e;margin-top:4mm;padding-top:2mm;font-size:10pt;break-inside:avoid}.cierre p{font-size:8.5pt;line-height:1.3;margin:1.5mm 0 0}footer{display:flex;justify-content:space-between;gap:4mm;font-size:7.5pt;margin-top:4mm;line-height:1.2}.vacio{font-size:11pt;margin:8mm 0}
+@page{size:letter portrait;margin:14mm}
+@media screen and (max-width:650px){.documento{overflow-x:auto;margin:12px}.hoja{min-width:188mm}.barra,.ayuda{margin-left:0;margin-right:0}.barra{padding:12px}.ayuda{padding:0 12px}}
+@media print{body{color:#000;background:white}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja{padding:0;margin:0;break-after:page;page-break-after:always}.hoja:last-child{break-after:auto;page-break-after:auto}th,td,.metrica,.cierre{border-color:#000}thead{display:table-header-group}tr,.subtotal,footer{break-inside:avoid;page-break-inside:avoid}h2{break-after:avoid;page-break-after:avoid}}
+</style></head><body><div class="barra"><b>Reporte diario · ${esc(datos.fecha_texto)}</b><button type="button" onclick="window.print()">Imprimir / Guardar PDF</button></div>
+<p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Para enviar por correo, elige Guardar como PDF. Este reporte no requiere firma.</p>
+<main class="documento">${paginas}</main></body></html>`;
+}
