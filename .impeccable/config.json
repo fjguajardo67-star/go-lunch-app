@@ -19,7 +19,7 @@
           "public/cobertura.html"
         ],
         "createdAt": "2026-11-04T02:40:53.108Z",
-        "reason": "Agent: summary uses an offset shadow (0 14px 30px), not a decorative halo; preserve current design."
+        "reason": "Agent: el hallazgo corresponde al resumen operativo existente con sombra desplazada 0 14px 30px; se conserva la elevación del diseño corporativo durante la extensión de folios, sin agregar resplandores decorativos."
       },
       {
         "rule": "dark-glow",

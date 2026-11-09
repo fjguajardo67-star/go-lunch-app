@@ -895,11 +895,11 @@
       <div class="cov-hero">
         <div>
           <h2>Pedidos especiales por turno</h2>
-          <p>Menú especial compartido. Turno A: cierre 7:00 AM y entrega 10:00 AM. Turno B y horas extras: cierre 2:00 PM; al cierre de cada turno, este panel presenta su comanda final.</p>
+          <p>Menú especial compartido. Cada supervisor puede registrar varios folios con turno, zona y hora propios, al menos dos horas antes de la entrega. Los pedidos nuevos y sus cambios avisan a cocina para imprimir el folio actualizado.</p>
         </div>
         <div class="cov-reloj" aria-label="Horario de cobertura">
-          <b>A · 7:00 AM / B y extras · 2:00 PM</b>
-          <span>A: entrega 10:00 AM · B: REFIS 5:00 PM / ASLA 6:00 PM</span>
+          <b>Anticipación mínima: 2 horas</b>
+          <span>Turnos A y B · ASLA y REFIS · Horario por folio</span>
         </div>
       </div>
 
@@ -2920,11 +2920,12 @@
 
   function intentarImpresionAutomaticaCobertura() {
     if (!coberturaAlarma) return;
-    const intento = coberturaAlarma.fecha + '|' + coberturaAlarma.turno + '|' + coberturaAlarma.total_porciones;
+    const intento = coberturaAlarma.fecha + '|' + coberturaAlarma.turno + '|' + (coberturaAlarma.clave_ack || coberturaAlarma.total_porciones);
     if (coberturaImpresionIntentada === intento) return;
     coberturaImpresionIntentada = intento;
     const frame = document.getElementById('cov-print-frame');
-    if (frame) frame.src = urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno, {origen:'supervisor'}) + '&alarma=' + Date.now();
+    if (frame) frame.src = urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno,
+      coberturaAlarma.solicitud ? {solicitud:coberturaAlarma.solicitud} : {origen:'supervisor'}) + '&alarma=' + Date.now();
   }
 
   function activarAlarmaCobertura(datos, fecha) {
@@ -2936,9 +2937,14 @@
     coberturaAlarma = {
       fecha, turno: datos.turno,
       total_solicitudes: Number(datos.total_solicitudes || 0),
-      total_porciones: total
+      total_porciones: total,
+      solicitud: datos.solicitud || null,
+      clave_ack: datos.clave_ack || null
     };
-    document.getElementById('cov-alarma-texto').textContent = (datos.turno === 'turno_a' ? 'Turno A · entrega 10:00 AM.' : 'Turno B y horas extras · REFIS 5:00 PM y ASLA 6:00 PM.');
+    document.getElementById('cov-alarma-titulo').textContent = datos.solicitud ? 'Pedido de cobertura por imprimir' : 'La comanda final está lista';
+    document.getElementById('cov-alarma-texto').textContent = datos.solicitud
+      ? datos.folio + ' · ' + (datos.turno === 'turno_a' ? 'Turno A' : 'Turno B') + ' · ' + zonaTxt(datos.zona) + ' · Entrega ' + horaTxt(datos.entrega_programada_en) + ' · Imprime este folio actualizado.'
+      : (datos.turno === 'turno_a' ? 'Turno A · entrega 10:00 AM.' : 'Turno B y horas extras · REFIS 5:00 PM y ASLA 6:00 PM.');
     document.getElementById('cov-alarma-solicitudes').textContent = coberturaAlarma.total_solicitudes;
     document.getElementById('cov-alarma-porciones').textContent = coberturaAlarma.total_porciones;
     document.getElementById('cov-alarma-comanda').classList.remove('oculto');
@@ -2954,6 +2960,13 @@
     if (fecha !== fechaComedor()) return;
     if (datos.por_turno) {
       actualizarBadgeCobertura({total_porciones: datos.por_turno.reduce((n,s)=>n+s.total_porciones,0)});
+      const pendientes = (datos.avisos_lotes || []).map(s => ({ ...s, clave_ack:'lote:' + s.id + '|' + s.revision }))
+        .filter(s => ackCobertura(fecha,s.clave_ack) !== String(s.total_porciones));
+      if (coberturaAlarma?.solicitud && !pendientes.some(s => s.id === coberturaAlarma.solicitud && s.clave_ack === coberturaAlarma.clave_ack)) detenerAlarmaCobertura();
+      if (!coberturaAlarma && pendientes.length) {
+        const lote = pendientes[0]; activarAlarmaCobertura({ ...lote, solicitud:lote.id, total_solicitudes:1 },fecha);
+      }
+      if (coberturaAlarma?.solicitud) return;
       for (const servicio of datos.por_turno) evaluarCorteCobertura(servicio,fecha);
       return;
     }
@@ -2984,14 +2997,15 @@
 
   function imprimirComandaFinalCobertura() {
     if (!coberturaAlarma) return;
-    window.open(urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno, {origen:'supervisor'}), '_blank');
+    window.open(urlImpresoCobertura('comanda', coberturaAlarma.fecha, true, coberturaAlarma.turno,
+      coberturaAlarma.solicitud ? {solicitud:coberturaAlarma.solicitud} : {origen:'supervisor'}), '_blank');
   }
 
   function confirmarComandaCobertura() {
     if (!coberturaAlarma) return;
     try {
       localStorage.setItem(
-        COBERTURA_ACK_PREFIX + coberturaAlarma.fecha + '|' + coberturaAlarma.turno,
+        COBERTURA_ACK_PREFIX + coberturaAlarma.fecha + '|' + (coberturaAlarma.clave_ack || coberturaAlarma.turno),
         String(coberturaAlarma.total_porciones)
       );
     } catch { /* La confirmación dura al menos durante esta sesión. */ }
@@ -3319,12 +3333,12 @@
         return '<div class="cov-solicitud" style="' + (cancelada ? 'opacity:.55' : '') + '"><div class="cov-solicitud-cab"><div><b>' + escaparHtml(s.folio) + '</b><p>' +
           escaparHtml(zonaTxt(s.zona)) + ' · Recibe ' + escaparHtml(s.responsable_nombre_snapshot) + ' #' + escaparHtml(s.responsable_numero_snapshot) + '</p></div>' +
           '<span class="badge ' + (cancelada ? 'off' : 'on') + '">' + escaparHtml(s.estado) + ' · ' + s.total_porciones + '</span></div>' +
-          (s.origen === 'extraordinaria' ? '<p style="font-size:.8rem;margin:8px 0">Extraordinaria · Entrega ' + escaparHtml(new Date(s.entrega_programada_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) +
-            ' · Autorizó ' + escaparHtml(s.autorizado_por) +
-            (s.creado_en ? ' a las ' + escaparHtml(new Date(s.creado_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) : '') +
-            ' · ' + escaparHtml(s.motivo_autorizacion) + '</p>' : '') +
+          (s.entrega_programada_en ? '<p style="font-size:.8rem;margin:8px 0">' + (s.origen === 'extraordinaria' ? 'Extraordinaria' : 'Pedido de supervisor') + ' · Entrega ' + escaparHtml(new Date(s.entrega_programada_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) +
+            (s.origen === 'extraordinaria' ? ' · Autorizó ' + escaparHtml(s.autorizado_por) : '') +
+            (s.creado_en ? ' · Registrado a las ' + escaparHtml(new Date(s.creado_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) : '') +
+            (s.motivo_autorizacion ? ' · ' + escaparHtml(s.motivo_autorizacion) : '') + '</p>' : '') +
           '<div class="cov-items">' + items + '</div>' +
-          (s.origen === 'extraordinaria' && !cancelada ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+          (!cancelada ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
             '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'comanda\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Comanda de este folio</button>' +
             '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'etiquetas\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Etiquetas de este folio</button></div>' : '') + '</div>';
       }).join('');

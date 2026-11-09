@@ -31,6 +31,7 @@
   .summary{position:sticky;bottom:10px;background:var(--navy);color:#fff;border-radius:15px;padding:14px 15px;margin-top:16px;box-shadow:0 14px 30px rgba(6,27,68,.25);z-index:2}.summary-row{display:flex;justify-content:space-between;gap:12px;align-items:center}.summary b{font-size:.96rem}.summary span{font-size:.75rem;color:#b9cae8}.summary-row>div b,.summary-row>div span{display:block}.summary .btn{background:#fff;color:var(--navy);box-shadow:none;margin-top:12px}
   .receipt-mark{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;background:var(--green-bg);color:var(--green);margin-bottom:13px}.receipt-mark svg{width:28px;height:28px}.receipt h2{font-size:1.25rem}.receipt-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-top:16px}.receipt-grid div{background:#fff;padding:12px}.receipt-grid span,.receipt-grid b{display:block}.receipt-grid span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}.receipt-grid b{font-size:.82rem;margin-top:4px}.receipt-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   .empty{text-align:center;padding:28px 16px}.empty svg{width:48px;height:48px;color:#7d9ac9}.empty h2{margin-top:12px}.empty p{max-width:34ch;margin:8px auto 0;color:var(--muted);font-size:.84rem;line-height:1.5}.footer{text-align:center;padding:6px 16px 26px}.footer a{color:var(--blue);font-size:.78rem;font-weight:750;text-decoration:none}
+  .pedido{padding:16px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.pedido h3{font-size:.9rem;margin:0 0 6px}.pedido p{font-size:.82rem;line-height:1.5;margin:4px 0}.pedido small{display:block;font-size:.76rem;line-height:1.5;color:var(--muted)}.pedido details{margin-top:10px;font-size:.8rem}.pedido summary{cursor:pointer;padding:8px 0;min-height:40px}.pedido ul{padding-left:20px;line-height:1.6}.pedido-acciones{display:flex;gap:8px;flex-wrap:wrap}.pedido-acciones .btn{width:auto;min-height:44px;margin-top:10px;padding:8px 14px}.sesion-acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.sesion-acciones .btn{width:auto;flex:1;margin:0;padding:12px}.enlace-volver{margin-bottom:12px;min-height:44px}.hora-ayuda{font-size:.8rem;line-height:1.5;color:var(--muted);margin:6px 0}button:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
   @media(max-width:400px){.brand-copy{display:none}.logos{margin:auto}.lead h1{font-size:1.55rem}.timing b{font-size:.75rem}.timing span{font-size:.75rem}.receipt-actions{grid-template-columns:1fr}}
   @media(prefers-reduced-motion:no-preference){.panel{animation:in .3s cubic-bezier(.16,1,.3,1)}@keyframes in{from{transform:translateY(8px);opacity:.5}to{transform:none;opacity:1}}}
 </style>
@@ -40,7 +41,7 @@
 THESIS: Solicitar cobertura debe sentirse como armar una lista clara, no como llenar una orden administrativa.
 OWN-WORLD: Azul corporativo, placas blancas, líneas frías y controles amplios del Go Lunch existente.
 STORY: El supervisor entra, asigna una opción a cada empleado, confirma responsable y zona, y obtiene un folio.
-FIRST VIEWPORT: Marca compacta, propósito, horario inmutable y acceso; la acción principal queda al alcance del pulgar.
+FIRST VIEWPORT: Marca compacta, propósito y anticipación mínima de dos horas; al entrar se ven los folios de hoy y Nuevo pedido.
 FORM: Extensión móvil de operación del mundo existente; seed incumbent-extension.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->
@@ -59,7 +60,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <main>
     <section id="login">
       <div class="lead"><h1>Pedidos especiales para tu equipo.</h1><p>Acceso exclusivo para supervisores autorizados por Glovis.</p></div>
-      <div class="timing" aria-label="Horario del servicio"><div><b>7:00 AM</b><span>Cierre turno A</span></div><div><b>2:00 PM</b><span>Cierre B y extras</span></div><div><b>Mismo menú</b><span>Ambos turnos</span></div></div>
+      <div class="timing" aria-label="Reglas del servicio"><div><b>2 horas</b><span>Anticipación mínima</span></div><div><b>A y B</b><span>Horarios por pedido</span></div><div><b>ASLA / REFIS</b><span>Zona por pedido</span></div></div>
       <form class="panel" onsubmit="event.preventDefault();entrar()">
         <h2>Acceso de supervisor</h2><p>Usa el número de tu gafete y la clave que te entregó CICSA.</p>
         <label for="numero">Número de empleado</label>
@@ -73,21 +74,27 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
     <section id="contenido" class="oculto">
       <div class="session"><div><strong id="supervisor-nombre">—</strong><span id="supervisor-numero">—</span></div><button class="link" onclick="salir()">Cerrar sesión</button></div>
-      <div class="panel"><label for="turno-servicio">Turno de la solicitud</label><select id="turno-servicio" onchange="cambiarTurno()"><option value="turno_b">Turno B y horas extras · cierre 2:00 PM</option><option value="turno_a">Turno A · cierre 7:00 AM</option></select><p>El menú es el mismo. Cada turno tiene su propia solicitud.</p></div>
+      <div class="sesion-acciones"><button class="btn" id="btn-nuevo" type="button" onclick="abrirNuevo()">Nuevo pedido</button><button class="btn sec" type="button" onclick="cargar()">Actualizar mis pedidos</button></div>
+      <div id="pedidos-aviso" class="notice oculto" role="status" aria-live="polite"></div>
       <div id="estado-cerrado" class="panel empty oculto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        <h2 id="cerrado-titulo">Solicitudes cerradas</h2><p id="cerrado-texto">El conteo quedó listo para producción.</p>
+        <h2 id="cerrado-titulo">Sin horario disponible hoy</h2><p id="cerrado-texto">Cada pedido requiere al menos dos horas antes de la entrega.</p>
       </div>
 
+      <section id="historial" class="panel"><h2>Mis pedidos de hoy</h2><p id="historial-fecha">Cada folio conserva su turno, zona, horario y responsable.</p><div id="pedidos-lista"></div></section>
+
       <div id="editor" class="oculto">
-        <div class="lead"><h1>Arma la cobertura de hoy.</h1><p id="fecha-servicio">REFIS 5:00 PM · ASLA 6:00 PM.</p></div>
+        <button class="link enlace-volver" type="button" onclick="cerrarEditor()">Volver a mis pedidos</button>
+        <div class="lead"><h1 id="editor-titulo">Nuevo pedido de hoy.</h1><p id="fecha-servicio">Elige turno, zona y hora de entrega.</p></div>
         <section class="panel">
           <h2>Menú especial</h2><p>Selecciona una opción para cada empleado. No admite modificaciones de preparación.</p>
           <div id="menu-opciones" class="menu-strip"></div>
         </section>
         <section class="panel">
           <h2>Entrega del lote</h2><p>El responsable puede ser el propio supervisor u otro empleado activo.</p>
+          <label for="turno-servicio">Turno de la solicitud</label><select id="turno-servicio" onchange="actualizarHorario()"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select>
           <label for="zona">Zona</label><select id="zona" onchange="actualizarHorario()"><option value="">Seleccionar zona</option><option value="zona_vdc">ASLA (LZCA)</option><option value="zona_refris">REFIS (LZCR)</option></select>
+          <label for="hora-entrega-input">Hora de entrega (24 horas)</label><input id="hora-entrega-input" type="text" maxlength="5" placeholder="17:30" aria-describedby="hora-ayuda" oninput="actualizarHorario()"><p id="hora-ayuda" class="hora-ayuda">Ejemplo: 17:30 = 5:30 p. m. Debe ser hoy, con al menos dos horas de anticipación.</p>
           <label for="responsable">Número del responsable</label><input id="responsable" inputmode="numeric" onblur="buscarResponsable()"><div id="responsable-nombre" class="responsable-ok"></div>
         </section>
         <section class="panel">
@@ -96,143 +103,14 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <button class="add" type="button" onclick="agregarPersona()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Agregar empleado</button>
           <div id="solicitud-error" class="error oculto" role="alert"></div>
         </section>
-        <div class="summary"><div class="summary-row"><div><b id="total">0 alimentos</b><span id="cuenta-regresiva">Cierre según el turno</span></div><span id="hora-entrega">REFIS 5 PM · ASLA 6 PM</span></div><button id="btn-guardar" class="btn" onclick="guardarSolicitud()">Confirmar solicitud</button></div>
+        <div class="summary"><div class="summary-row"><div><b id="total">0 alimentos</b><span id="cuenta-regresiva">Anticipación mínima: 2 horas</span></div><span id="hora-entrega">Selecciona horario</span></div><button id="btn-guardar" class="btn" onclick="guardarSolicitud()">Confirmar pedido</button></div>
       </div>
-
-      <section id="recibo" class="panel receipt oculto">
-        <div class="receipt-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 12 4 4 8-9"/></svg></div>
-        <h2 id="recibo-turno">Solicitud confirmada</h2><p id="recibo-corte">El conteo ya está visible para CICSA. Cada solicitud puede modificarse hasta el cierre de su turno.</p>
-        <div class="receipt-grid"><div><span>Folio</span><b id="rec-folio">—</b></div><div><span>Alimentos</span><b id="rec-total">—</b></div><div><span>Zona</span><b id="rec-zona">—</b></div><div><span>Responsable</span><b id="rec-responsable">—</b></div></div>
-        <div id="rec-acciones" class="receipt-actions"><button class="btn sec" onclick="editarSolicitud()">Modificar</button><button class="btn sec danger" onclick="cancelarSolicitud()">Cancelar</button></div>
-      </section>
     </section>
   </main>
   <footer class="footer"><a href="/pedido.html">Volver al pedido personal</a></footer>
 </div>
 
 <script src="/operacion.js"></script>
-<script>
-  const API='';
-  const LS='golunch_cobertura_sesion';
-  const ZONAS=GoLunchOperacion.ZONAS;
-  const $=id=>document.getElementById(id);
-  let SESION=null,ESTADO=null,FILAS=[],RESPONSABLE=null;
-
-  try{SESION=JSON.parse(localStorage.getItem(LS)||'null')}catch{}
-  if(SESION?.token)cargar();
-
-  function auth(){return{'Authorization':'Bearer '+SESION.token,'Content-Type':'application/json'}}
-  function escapar(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-  function error(id,msg){const e=$(id);e.textContent=msg;e.classList.toggle('oculto',!msg)}
-
-  async function entrar(){
-    const btn=$('btn-login');btn.disabled=true;btn.textContent='Verificando…';error('login-error','');
-    try{
-      const r=await fetch(API+'/cobertura/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({numero_empleado:$('numero').value.trim(),clave:$('clave').value})});
-      const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo entrar.');
-      SESION={token:d.token,expires_at:d.expires_at,supervisor:d.supervisor};localStorage.setItem(LS,JSON.stringify(SESION));$('clave').value='';await cargar();
-    }catch(e){error('login-error',e.message)}finally{btn.disabled=false;btn.textContent='Entrar a cobertura'}
-  }
-
-  async function cambiarTurno(){
-    const anterior=ESTADO?.turno || 'turno_b';
-    if(!$('editor').classList.contains('oculto') && FILAS.some(f=>f.numero || f.opcion_id) && !confirm('¿Cambiar de turno? Los cambios sin confirmar se perderán.')){$('turno-servicio').value=anterior;return}
-    $('turno-servicio').disabled=true;
-    const ok=await cargar();
-    if(!ok)$('turno-servicio').value=anterior;
-    $('turno-servicio').disabled=false;
-  }
-
-  async function cargar(){
-    try{
-      const r=await fetch(API+'/cobertura/estado?turno='+$('turno-servicio').value,{headers:auth()});const d=await r.json();
-      if(r.status===401){salir(false);throw new Error(d.error||'Tu sesión terminó. Vuelve a entrar.')}if(!r.ok)throw new Error(d.error||'No se pudo cargar.');
-      ESTADO=d;$('login').classList.add('oculto');$('contenido').classList.remove('oculto');
-      $('supervisor-nombre').textContent=d.supervisor.nombre;$('supervisor-numero').textContent='#'+d.supervisor.numero_empleado+' · Supervisor autorizado';
-      prepararEstado();return true;
-    }catch(e){if(!$('login').classList.contains('oculto'))error('login-error',e.message);else alert(e.message);return false}
-  }
-
-  function prepararEstado(){
-    const s=ESTADO.solicitud;
-    if(s&&s.estado!=='cancelada')cargarSolicitud(s);else iniciarNueva();
-    actualizarHorario();
-    $("recibo-turno").textContent="Solicitud confirmada · "+(ESTADO.turno === "turno_a" ? "Turno A" : "Turno B y horas extras");
-    $("recibo-corte").textContent="El conteo ya está visible para CICSA. Modificaciones antes de las "+ESTADO.corte_texto+".";
-    if(!ESTADO.menu){mostrarCerrado('Menú especial pendiente','CICSA todavía no publica las opciones de cobertura para hoy.');return}
-    if(!ESTADO.abierto){mostrarCerrado('El conteo cerró a las '+ESTADO.corte_texto,'La solicitud queda visible para producción. Entrega: '+GoLunchOperacion.horaTexto(ESTADO?.turno || 'turno_b',s?.zona,ESTADO.fecha)+'.');if(s&&s.estado!=='cancelada')mostrarRecibo(s,false);return}
-    $('estado-cerrado').classList.add('oculto');
-    if(s&&s.estado!=='cancelada')mostrarRecibo(s,true);else mostrarEditor();
-    pintarMenu();pintarFilas();actualizarTotal();actualizarReloj();
-  }
-
-  function iniciarNueva(){
-    FILAS=[{numero:'',nombre:'',opcion_id:''}];RESPONSABLE={numero:ESTADO.supervisor.numero_empleado,nombre:ESTADO.supervisor.nombre};
-    $('responsable').value=RESPONSABLE.numero;$('responsable-nombre').textContent=RESPONSABLE.nombre;$('zona').value='';
-  }
-  function cargarSolicitud(s){
-    FILAS=(s.items||[]).map(i=>({numero:i.empleado_numero_snapshot,nombre:i.empleado_nombre_snapshot,opcion_id:i.opcion_id}));
-    RESPONSABLE={numero:s.responsable_numero_snapshot,nombre:s.responsable_nombre_snapshot};$('responsable').value=RESPONSABLE.numero;$('responsable-nombre').textContent=RESPONSABLE.nombre;$('zona').value=s.zona;
-  }
-  function actualizarHorario(){
-    const texto='Entrega '+GoLunchOperacion.horaTexto(ESTADO?.turno || 'turno_b',$('zona').value,ESTADO?.fecha);
-    $('fecha-servicio').textContent=texto;$('hora-entrega').textContent=texto;
-  }
-  function mostrarEditor(){$('editor').classList.remove('oculto');$('recibo').classList.add('oculto');actualizarHorario()}
-  function editarSolicitud(){mostrarEditor();pintarMenu();pintarFilas();actualizarTotal()}
-  function mostrarCerrado(titulo,texto){$('editor').classList.add('oculto');$('recibo').classList.add('oculto');$('estado-cerrado').classList.remove('oculto');$('cerrado-titulo').textContent=titulo;$('cerrado-texto').textContent=texto}
-  function mostrarRecibo(s,editable){
-    actualizarHorario();
-    $("recibo-turno").textContent="Solicitud confirmada · "+(ESTADO.turno === "turno_a" ? "Turno A" : "Turno B y horas extras");
-    $("recibo-corte").textContent="El conteo ya está visible para CICSA. Modificaciones antes de las "+ESTADO.corte_texto+".";
-    $('editor').classList.add('oculto');$('recibo').classList.remove('oculto');$('rec-folio').textContent=s.folio;$('rec-total').textContent=s.total_porciones;$('rec-zona').textContent=ZONAS[s.zona]||s.zona;$('rec-responsable').textContent=s.responsable_nombre_snapshot+' · #'+s.responsable_numero_snapshot;$('rec-acciones').classList.toggle('oculto',!editable)
-  }
-
-  function pintarMenu(){$('menu-opciones').innerHTML=ESTADO.menu.opciones.map((o,i)=>'<div class="menu-option"><i>'+(i+1)+'</i><b>'+escapar(o.texto)+'</b></div>').join('')}
-  function agregarPersona(){FILAS.push({numero:'',nombre:'',opcion_id:''});pintarFilas();actualizarTotal();setTimeout(()=>$('persona-num-'+(FILAS.length-1))?.focus(),0)}
-  function quitarPersona(i){if(FILAS.length===1){FILAS[0]={numero:'',nombre:'',opcion_id:''}}else FILAS.splice(i,1);pintarFilas();actualizarTotal()}
-  function pintarFilas(){
-    const opciones=ESTADO?.menu?.opciones||[];
-    $('personas').innerHTML=FILAS.map((f,i)=>'<div class="persona"><div class="persona-top"><input id="persona-num-'+i+'" value="'+escapar(f.numero)+'" inputmode="numeric" placeholder="Número de empleado" oninput="cambiarNumero('+i+',this.value)" onblur="buscarPersona('+i+')" aria-label="Número de empleado '+(i+1)+'"><button class="persona-remove" type="button" onclick="quitarPersona('+i+')" aria-label="Quitar empleado">×</button></div><div id="persona-nombre-'+i+'" class="persona-nombre '+(f.error?'error-text':'')+'">'+escapar(f.error||f.nombre||'')+'</div><label for="persona-op-'+i+'">Platillo</label><select id="persona-op-'+i+'" onchange="FILAS['+i+'].opcion_id=this.value;actualizarTotal()"><option value="">Seleccionar opción</option>'+opciones.map(o=>'<option value="'+o.id+'" '+(f.opcion_id===o.id?'selected':'')+'>'+escapar(o.texto)+'</option>').join('')+'</select></div>').join('')
-  }
-  function cambiarNumero(i,v){FILAS[i].numero=v.trim();FILAS[i].nombre='';FILAS[i].error=''}
-  async function buscarPersona(i){const f=FILAS[i];if(!f.numero)return;const el=$('persona-nombre-'+i);el.textContent='Buscando…';el.classList.remove('error-text');try{const r=await fetch(API+'/cobertura/empleado/'+encodeURIComponent(f.numero),{headers:auth()});const d=await r.json();if(!r.ok)throw new Error(d.error||'No encontrado');f.numero=d.empleado.numero_empleado;f.nombre=d.empleado.nombre;f.error='';el.textContent=f.nombre}catch(e){f.nombre='';f.error=e.message;el.textContent=e.message;el.classList.add('error-text')}}
-  async function buscarResponsable(){const n=$('responsable').value.trim();RESPONSABLE=null;const el=$('responsable-nombre');if(!n){el.textContent='';return}el.textContent='Buscando…';el.classList.remove('error-text');try{const r=await fetch(API+'/cobertura/empleado/'+encodeURIComponent(n),{headers:auth()});const d=await r.json();if(!r.ok)throw new Error(d.error||'No encontrado');RESPONSABLE={numero:d.empleado.numero_empleado,nombre:d.empleado.nombre};$('responsable').value=RESPONSABLE.numero;el.textContent=RESPONSABLE.nombre}catch(e){el.textContent=e.message;el.classList.add('error-text')}}
-  function actualizarTotal(){const n=FILAS.filter(f=>f.numero&&f.opcion_id).length;$('total').textContent=n+' alimento'+(n===1?'':'s')}
-  function actualizarReloj(){if(!ESTADO?.corte_iso)return;const min=Math.max(0,Math.ceil((new Date(ESTADO.corte_iso)-Date.now())/60000));$('cuenta-regresiva').textContent=min?'Cierra en '+min+' min':'Cerrado para producción'}
-  setInterval(actualizarReloj,30000);
-
-  async function guardarSolicitud(){
-    const btn=$('btn-guardar'), selector=$('turno-servicio');
-    if(btn.disabled || selector.disabled)return;
-    const turno=ESTADO.turno;
-    btn.disabled=true;selector.disabled=true;btn.textContent='Confirmando…';
-    error('solicitud-error','');
-    try{
-      await buscarResponsable();
-      for(let i=0;i<FILAS.length;i++)if(FILAS[i].numero&&!FILAS[i].nombre)await buscarPersona(i);
-      const items=FILAS.filter(f=>f.numero||f.opcion_id);
-      if(!RESPONSABLE)throw new Error('Verifica el número del responsable.');
-      if(!$('zona').value)throw new Error('Selecciona la zona de entrega.');
-      if(!items.length||items.some(f=>!f.numero||!f.nombre||!f.opcion_id))throw new Error('Completa y verifica cada empleado y su platillo.');
-      const r=await fetch(API+'/cobertura/solicitud',{method:'POST',headers:auth(),body:JSON.stringify({turno,responsable_numero:RESPONSABLE.numero,zona:$('zona').value,items:items.map(f=>({numero_empleado:f.numero,opcion_id:f.opcion_id}))})});
-      const d=await r.json();
-      if(!r.ok)throw new Error(d.detalle?d.error+' '+d.detalle:d.error||'No se pudo guardar.');
-      ESTADO.solicitud=d.solicitud;cargarSolicitud(d.solicitud);mostrarRecibo(d.solicitud,true);
-    }catch(e){error('solicitud-error',e.message)}
-    finally{btn.disabled=false;selector.disabled=false;btn.textContent='Confirmar solicitud'}
-  }
-  async function cancelarSolicitud(){
-    const selector=$('turno-servicio');
-    if(selector.disabled || !confirm('¿Cancelar la solicitud de este turno?'))return;
-    const turno=ESTADO.turno;selector.disabled=true;
-    try{
-      const r=await fetch(API+'/cobertura/solicitud?turno='+turno,{method:'DELETE',headers:auth()});
-      const d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo cancelar.');await cargar();
-    }catch(e){alert(e.message)}finally{selector.disabled=false}
-  }
-  function salir(recargar=true){SESION=null;localStorage.removeItem(LS);if(recargar)location.reload();else{$('contenido').classList.add('oculto');$('login').classList.remove('oculto')}}
-  if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
-</script>
+<script src="/cobertura-lotes.js"></script>
 </body>
 </html>
