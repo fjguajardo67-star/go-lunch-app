@@ -73,7 +73,7 @@
           "public/manual.html"
         ],
         "createdAt": "2026-11-05T23:35:34.879Z",
-        "reason": "Agent: manual uses literal operational boundaries, including no installation required, no duplicate employee on reimport, separate coverage printouts and camera testing without manual entry. These are factual task instructions, not promotional contrast aphorisms; preserve precise operational guidance."
+        "reason": "Agent: los párrafos modificados documentan límites operativos verificables: folios con entregas iniciadas no se modifican, reintentos recuperan el mismo folio y el reporte no cambia entregas ni requiere firma. Son instrucciones funcionales, no eslóganes o contrastes promocionales; conservar el contenido del manual."
       },
       {
         "rule": "overused-font",
