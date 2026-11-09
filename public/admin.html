@@ -793,6 +793,11 @@
           <div><label>Fecha de servicio</label><input type="date" id="db-fecha" style="max-width:180px"></div>
           <button class="accion" onclick="verDashboard()">Consultar</button>
         </div>
+        <div class="row-fin" style="margin-top:14px">
+          <div><label for="db-elaboro">Elaboró el reporte (opcional)</label><input type="text" id="db-elaboro" maxlength="120" placeholder="Nombre del responsable" style="max-width:320px"></div>
+          <button class="accion sec" id="db-reporte" type="button" onclick="imprimirReporteEntregas()">Reporte diario / PDF</button>
+        </div>
+        <p id="db-reporte-aviso" role="status" aria-live="polite"></p>
         <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:.8rem;color:var(--gris-text)">
           <span>✅ Entregado</span>
           <span>⏱️ Tardía</span>
@@ -1548,6 +1553,35 @@
   }
 
   // ── Pedidos ──
+  async function imprimirReporteEntregas() {
+    const fecha = document.getElementById('db-fecha').value;
+    const mensaje = document.getElementById('db-reporte-aviso');
+    const boton = document.getElementById('db-reporte');
+    mensaje.textContent = '';
+    if (!fecha) { mensaje.textContent = 'Selecciona la fecha de servicio del reporte.'; document.getElementById('db-fecha').focus(); return; }
+    // La clave viaja en el header, nunca en la dirección del PDF o del correo.
+    const ventana = window.open('', '_blank');
+    if (!ventana) { mensaje.textContent = 'Permite abrir ventanas de este sitio para ver el reporte.'; return; }
+    ventana.document.title = 'Preparando reporte';
+    ventana.document.body.textContent = 'Preparando el reporte diario de entregas…';
+    boton.disabled = true;
+    try {
+      const consulta = new URLSearchParams({ elaboro: document.getElementById('db-elaboro').value.trim() });
+      const res = await fetch(API_BASE + '/api/reporte-entregas/' + fecha + '?' + consulta, {
+        headers: { 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO }, cache: 'no-store'
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo generar el reporte.');
+      const html = await res.text();
+      if (ventana.closed) { mensaje.textContent = 'La ventana se cerró. Vuelve a abrir el reporte.'; return; }
+      ventana.document.open(); ventana.document.write(html); ventana.document.close();
+      ventana.opener = null;
+      mensaje.textContent = 'Reporte listo. En su ventana puedes imprimirlo o guardarlo como PDF para enviarlo por correo.';
+    } catch (error) {
+      if (!ventana.closed) ventana.close();
+      mensaje.textContent = error.message;
+    } finally { boton.disabled = false; }
+  }
+
   // ── Dashboard de control ──
   // ── Refresco automático ──────────────────────────────────────
   // El estatus de un pedido cambia cuando el repartidor escanea, y eso pasa

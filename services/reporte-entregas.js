@@ -95,7 +95,7 @@ export function htmlReporteEntregas(datos) {
       </table><p class="subtotal">${ultima ? `Subtotal del grupo: <b>${grupo.total}</b> · Regulares: ${grupo.regulares} · Coberturas: ${grupo.coberturas}` : `En esta hoja: <b>${filas.length}</b> · El grupo continúa en la siguiente hoja.`}</p>
     </section>`).join('')}
     ${datos.entregado.total === 0 ? '<p class="vacio">No hay entregas registradas para esta fecha.</p>' : ''}
-    ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} comidas</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p>${datos.elaboro ? `<p>Elaboró: ${esc(datos.elaboro)}</p>` : ''}</div>` : ''}
+    ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} ${datos.entregado.total === 1 ? 'comida' : 'comidas'}</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p>${datos.elaboro ? `<p>Elaboró: ${esc(datos.elaboro)}</p>` : ''}</div>` : ''}
     <footer><span>Hora local del comedor · America/Mexico_City</span><span>Página ${indice + 1} de ${datos.paginas.length}</span></footer>
   </section>`).join('');
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
@@ -115,6 +115,6 @@ th,td{text-align:left;vertical-align:top;border:1px solid #aeb7c5;padding:1.4mm;
 @media screen and (max-width:650px){.documento{overflow-x:auto;margin:12px}.hoja{min-width:188mm}.barra,.ayuda{margin-left:0;margin-right:0}.barra{padding:12px}.ayuda{padding:0 12px}}
 @media print{body{color:#000;background:white}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja{padding:0;margin:0;break-after:page;page-break-after:always}.hoja:last-child{break-after:auto;page-break-after:auto}th,td,.metrica,.cierre{border-color:#000}thead{display:table-header-group}tr,.subtotal,footer{break-inside:avoid;page-break-inside:avoid}h2{break-after:avoid;page-break-after:avoid}}
 </style></head><body><div class="barra"><b>Reporte diario · ${esc(datos.fecha_texto)}</b><button type="button" onclick="window.print()">Imprimir / Guardar PDF</button></div>
-<p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Para enviar por correo, elige Guardar como PDF. Este reporte no requiere firma.</p>
+<p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Para enviar por correo, elige Guardar como PDF. Este reporte no requiere firma. En celular, desliza la hoja horizontalmente para ver todas las columnas.</p>
 <main class="documento">${paginas}</main></body></html>`;
 }

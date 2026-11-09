@@ -38,7 +38,7 @@ test('el documento identifica fecha, hora local y responsable sin firma ni datos
   assert.match(html, /&lt;script&gt;persona\(\)&lt;\/script&gt;/); assert.match(html, /<td>00007<\/td>/);
   assert.match(html, /data:image\/svg\+xml;base64/); assert.match(html, /Página 1 de 1/);
   assert.doesNotMatch(html, /<script>|x-admin-key|\?key=|type="password"|Nombre y firma|linea-firma/);
-  assert.match(html, /Total diario entregado: 1 comidas/);
+  assert.match(html, /Total diario entregado: 1 comida/);
   const sinEntregar = htmlReporteEntregas(prepararReporteEntregas(d.fecha, [{ ...comida, entregado_en: null }]));
   assert.match(sinEntregar, /No hay entregas registradas/); assert.doesNotMatch(sinEntregar, /<td>00007/);
 });

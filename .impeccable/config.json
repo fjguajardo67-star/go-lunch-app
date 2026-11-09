@@ -128,6 +128,15 @@
         ],
         "createdAt": "2026-11-08T00:30:11.439Z",
         "reason": "Agent: los 15 avisos señalan encabezados existentes en origin/main; .card-header usa display:flex, align-items:center y gap:10px para colocar icono y título lado a lado. El detector interpreta el orden del HTML como apilado vertical. Esta corrección no cambia esos encabezados."
+      },
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "files": [
+          "services/reporte-entregas.js"
+        ],
+        "createdAt": "2026-11-09T18:52:55.398Z",
+        "reason": "Agent: Arial es intencional en este reporte institucional para papel carta y PDF; conserva la tipografía local de los impresos existentes, sin descargar fuentes ni alterar la paginación."
       }
     ]
   }
