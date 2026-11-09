@@ -786,6 +786,7 @@ export async function getSolicitudCobertura(supervisorId, fecha, turno = 'turno_
     .eq('supervisor_id', supervisorId)
     .eq('turno', turno)
     .eq('fecha_servicio', fecha)
+    .is('idempotencia', null)
     .limit(1);
   if (error) throw error;
   const solicitud = data?.[0] || null;
@@ -861,6 +862,41 @@ export async function getSolicitudesCoberturaRango(ini, fin, turno) {
     porSolicitud.get(item.solicitud_id).push(item);
   }
   return solicitudes.map(s => ({ ...s, items: porSolicitud.get(s.id) || [] }));
+}
+
+export async function listLotesSupervisor(supervisorId, fecha) {
+  const solicitudes = await leerPaginas(() => supabase.from('solicitudes_cobertura')
+    .select('*').eq('supervisor_id', supervisorId).eq('fecha_servicio', fecha).eq('origen', 'supervisor')
+    .order('creado_en').order('id'));
+  if (!solicitudes.length) return [];
+  const items = [];
+  for (let i = 0; i < solicitudes.length; i += 100) {
+    const ids = solicitudes.slice(i, i + 100).map(s => s.id);
+    items.push(...await leerPaginas(() => supabase.from('solicitudes_cobertura_items')
+      .select('id,solicitud_id,empleado_numero_snapshot,empleado_nombre_snapshot,opcion_id,opcion_texto,entregado_en')
+      .in('solicitud_id', ids).order('id')));
+  }
+  return solicitudes.map(s => ({ ...s, items: items.filter(i => i.solicitud_id === s.id) }));
+}
+
+export async function guardarLoteSupervisor(d) {
+  const { data, error } = await supabase.rpc('guardar_lote_cobertura_supervisor', {
+    p_supervisor_id: d.supervisor_id, p_fecha: d.fecha, p_turno: d.turno, p_zona: d.zona, p_folio: d.folio,
+    p_responsable_numero: d.responsable_numero, p_items: d.items, p_entrega_programada_en: d.entrega_programada_en,
+    p_idempotencia: d.idempotencia, p_solicitud_id: d.solicitud_id, p_version: d.version
+  });
+  if (error) throw error;
+  if (!data?.[0]) throw new Error('La base no devolvió el folio. Actualiza tus pedidos antes de reintentar.');
+  return data[0];
+}
+
+export async function cancelarLoteSupervisor(supervisorId, solicitudId, version) {
+  const { data, error } = await supabase.rpc('cancelar_lote_cobertura_supervisor', {
+    p_supervisor_id: supervisorId, p_solicitud_id: solicitudId, p_version: version
+  });
+  if (error) throw error;
+  if (!data?.[0]) throw new Error('No se pudo confirmar la cancelación. Actualiza tus pedidos.');
+  return data[0];
 }
 
 export async function getCoberturasParaEntrega(fecha) {

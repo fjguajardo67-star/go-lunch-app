@@ -327,7 +327,7 @@ adminRouter.get('/cobertura/solicitudes/:fecha', async (req, res) => {
     const horario = horarioCobertura(turno);
     const por_turno = ['turno_a', 'turno_b'].map(t => {
       const activas = todas.filter(s => s.turno === t && s.estado !== 'cancelada');
-      const normales = activas.filter(s => s.origen !== 'extraordinaria');
+      const normales = activas.filter(s => s.origen !== 'extraordinaria' && !s.entrega_programada_en);
       const h = horarioCobertura(t);
       return { turno: t, total_solicitudes: activas.length, total_porciones: activas.reduce((n,s) => n + s.total_porciones,0),
         solicitudes_corte: normales.length, porciones_corte: normales.reduce((n,s) => n + s.total_porciones,0),
@@ -335,6 +335,9 @@ adminRouter.get('/cobertura/solicitudes/:fecha', async (req, res) => {
     });
     res.json({
       solicitudes, turno, por_turno,
+      avisos_lotes: todas.filter(s => s.origen === 'supervisor' && s.entrega_programada_en && s.estado === 'confirmada')
+        .map(s => ({ id:s.id, folio:s.folio, turno:s.turno, zona:s.zona, entrega_programada_en:s.entrega_programada_en,
+          total_porciones:s.total_porciones, revision:s.actualizado_en || s.creado_en || s.idempotencia })),
       total_solicitudes: solicitudes.filter(s => s.estado !== 'cancelada').length,
       total_porciones: solicitudes.filter(s => s.estado !== 'cancelada')
         .reduce((s, x) => s + (x.total_porciones || 0), 0),
