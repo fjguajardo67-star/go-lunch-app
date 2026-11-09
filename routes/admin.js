@@ -12,11 +12,12 @@ import { fechaServicio } from '../services/pedidos.js';
 import { hashClave, generarClave } from '../services/sesion.js';
 import { horarioCobertura, validarTurnoCobertura } from '../services/cobertura.js';
 import { estadoExtraordinaria, autorizarExtraordinaria } from '../services/cobertura-extraordinaria.js';
-import { contarServicios } from '../services/comidas.js';
+import { contarServicios, validarPeriodo } from '../services/comidas.js';
 import { comidasDelPeriodo } from '../services/consultas-comidas.js';
 import { normalizarSeleccionCocina, seleccionarPedidosCocina } from '../services/seleccion-cocina.js';
 import { construirReporte } from '../services/reportes.js';
 import { construirDashboard } from '../services/dashboard.js';
+import { prepararReporteEntregas, htmlReporteEntregas, validarElaboro } from '../services/reporte-entregas.js';
 
 export const adminRouter = express.Router();
 
@@ -517,6 +518,19 @@ adminRouter.post('/enviar-menu', async (req, res) => {
 });
 
 // ── Dashboard de envíos: estado por empleado para una fecha ──────
+
+adminRouter.get('/reporte-entregas/:fecha', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    validarPeriodo(req.params.fecha);
+    const elaboro = validarElaboro(req.query.elaboro);
+    const comidas = await comidasDelPeriodo(req.params.fecha);
+    res.type('html').send(htmlReporteEntregas(prepararReporteEntregas(req.params.fecha, comidas, { elaboro })));
+  } catch (error) {
+    if (!error.status) console.error('[Reporte de entregas]', error.message);
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'No se pudo generar el reporte completo. Vuelve a intentar con conexión.' });
+  }
+});
 
 adminRouter.get('/dashboard/:fecha', async (req, res) => {
   try {
