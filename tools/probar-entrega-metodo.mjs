@@ -37,7 +37,7 @@ try {
   const tablas = ['pedidos', 'solicitudes_cobertura_items'];
   const anteriores = await Promise.all(tablas.map(tabla => pg.query('SELECT * FROM ' + tabla + ' ORDER BY id')));
   const rlsAnterior = (await pg.query("SELECT relname,relrowsecurity FROM pg_class WHERE oid IN ('pedidos'::regclass,'solicitudes_cobertura_items'::regclass) ORDER BY relname")).rows;
-  const migracion = await fs.readFile(new URL('../supabase/migrations/20261110213248_entrega_individual_metodo.sql', import.meta.url), 'utf8');
+  const migracion = await fs.readFile(new URL('../supabase/migrations/20261110215028_entrega_individual_metodo.sql', import.meta.url), 'utf8');
   await pg.exec('BEGIN;');
   await pg.exec(migracion);
   assert.equal((await pg.query('SHOW lock_timeout')).rows[0].lock_timeout, '3s');
