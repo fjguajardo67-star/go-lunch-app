@@ -1571,10 +1571,7 @@
     mensaje.textContent = '';
     if (!fecha) { mensaje.textContent = 'Selecciona la fecha de servicio del reporte.'; document.getElementById('db-fecha').focus(); return; }
     // La clave viaja en el header, nunca en la dirección del PDF o del correo.
-    const ventana = window.open('', '_blank');
-    if (!ventana) { mensaje.textContent = 'Permite abrir ventanas de este sitio para ver el reporte.'; return; }
-    ventana.document.title = 'Preparando reporte';
-    ventana.document.body.textContent = 'Preparando el reporte diario de entregas…';
+    mensaje.textContent = 'Preparando el reporte diario de entregas…';
     boton.disabled = true;
     try {
       const consulta = new URLSearchParams({ elaboro: document.getElementById('db-elaboro').value.trim() });
@@ -1583,12 +1580,16 @@
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo generar el reporte.');
       const html = await res.text();
-      if (ventana.closed) { mensaje.textContent = 'La ventana se cerró. Vuelve a abrir el reporte.'; return; }
-      ventana.document.open(); ventana.document.write(html); ventana.document.close();
-      ventana.opener = null;
-      mensaje.textContent = 'Reporte listo. En su ventana puedes imprimirlo o guardarlo como PDF para enviarlo por correo.';
+      if (fecha !== document.getElementById('db-fecha').value) {
+        mensaje.textContent = 'La fecha cambió. Abre de nuevo el reporte para la fecha seleccionada.'; return;
+      }
+      // La vista permanece en esta pestaña: la PWA móvil conserva sesión,
+      // fecha y dashboard y siempre ofrece «Volver al panel» fuera de la hoja.
+      boton.disabled = false;
+      boton.focus({ preventScroll:true });
+      ImpresionPanel.abrir(html);
+      mensaje.textContent = 'Reporte listo. Usa «Imprimir / Guardar PDF» y después «Volver al panel» para continuar en el dashboard.';
     } catch (error) {
-      if (!ventana.closed) ventana.close();
       mensaje.textContent = error.message;
     } finally { boton.disabled = false; }
   }

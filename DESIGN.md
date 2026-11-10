@@ -128,6 +128,8 @@ Extensión del mundo corporativo operativo existente: Dashboard comparte la fech
 
 Es una fotografía de los registros disponibles al generarlo: sincronizar primero los escáneres de reparto y regenerar si faltaban entregas. «Imprimir / Guardar PDF» abre el diálogo nativo: carta vertical, escala 100 % y encabezados/pies del navegador desactivados. El operador guarda el PDF y lo adjunta al correo.
 
+La vista diaria reutiliza `ImpresionPanel.abrir`, igual que los menús y las listas. Se muestra dentro de la pestaña actual y conserva la sesión, la fecha y el desplazamiento del dashboard. «Volver al panel» permanece fuera del iframe de la hoja, disponible mientras se desplaza el reporte y excluido de la impresión. Se restaura el foco al botón que abrió la vista. Una respuesta cuya fecha ya no coincide con el selector se descarta antes de abrirla; los errores dejan al operador en el dashboard con un aviso.
+
 La consulta `/api/reporte-entregas/:fecha` devuelve HTML con `no-store`, bajo autorización de admin o gerente; la clave viaja en `x-admin-key` y no se incorpora a la URL ni al documento imprimible/PDF. Reutiliza la consulta de comidas vigente y da prioridad a las incidencias sin cargo sobre cualquier marca previa de entrega.
 
 ## Incidencias sin cargo
