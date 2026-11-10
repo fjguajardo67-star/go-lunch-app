@@ -73,7 +73,7 @@
           "public/manual.html"
         ],
         "createdAt": "2026-11-05T23:35:34.879Z",
-        "reason": "Agent: los párrafos modificados documentan límites operativos verificables: folios con entregas iniciadas no se modifican, reintentos recuperan el mismo folio y el reporte no cambia entregas ni requiere firma. Son instrucciones funcionales, no eslóganes o contrastes promocionales; conservar el contenido del manual."
+        "reason": "Agent: el manual conserva instrucciones operativas verificables sobre reintentos, folios iniciados, firma del PDF y entregas pendientes; la repetición de límites no es un eslogan promocional. Se mantiene la excepción existente solo para este archivo."
       },
       {
         "rule": "overused-font",

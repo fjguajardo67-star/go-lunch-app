@@ -1979,7 +1979,7 @@ main {
   border-radius: 6px;
   background: var(--azul-light);
   color: var(--azul-mid);
-  font-size: .65rem;
+  font-size: .75rem;
   font-style: normal;
   font-weight: 900;
   letter-spacing: .055em;
@@ -2343,7 +2343,7 @@ main {
 
   #sesion-nombre::before,
   .zona-activa-copy small {
-    font-size: .66rem;
+    font-size: .75rem;
     letter-spacing: .055em;
   }
 
@@ -2390,7 +2390,7 @@ main {
     margin-top: -2px;
     padding: 0;
     gap: 7px;
-    font-size: .66rem;
+    font-size: .75rem;
     order: 4;
   }
 
@@ -2554,7 +2554,7 @@ main {
 /* Reparto guiado: una visita, un servicio y una acción principal. */
 .app-header { position: relative; }
 .app-header .sesion-repartidor { min-height: 44px; padding-block: 3px; }
-.header-actions .conexion { font-size: .65rem; white-space: normal; max-width: 112px; text-align: center; }
+.header-actions .conexion { font-size: .75rem; white-space: normal; max-width: 112px; text-align: center; }
 .servicio-ruta { padding: 18px; border: 1px solid var(--azul-line); box-shadow: none; }
 .servicio-ruta h1 { color: var(--tinta); font-size: 1.45rem; line-height: 1.2; letter-spacing: -.02em; }
 .servicio-horario { margin-top: 8px; font-size: 1.05rem; font-weight: 750; color: var(--tinta); }
@@ -2587,4 +2587,8 @@ main {
   .header-theme { min-width: 44px; width: 44px; height: 44px; }
   .header-actions { gap: 5px; }
   .servicio-ruta { padding: 14px; }
+}
+
+@media (max-width: 430px) {
+  .app-header > .app-heading { min-width: 80px; }
 }
