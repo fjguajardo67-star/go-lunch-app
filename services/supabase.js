@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { variantesTelefono, formatoCanonico } from './telefono.js';
 import { guardarEmpleado } from './empleados.js';
 import { validarGrupo } from './reparto-grupos.js';
+import { noSurtida } from './incidencias.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -320,6 +321,15 @@ export async function getPedidosPorFecha(fecha) {
     .order('id'));
 }
 
+export async function registrarNoSurtido(d, rol) {
+  const { data, error } = await supabase.rpc('registrar_comida_no_surtida', {
+    p_tipo: d.tipo, p_id: d.id, p_motivo: d.motivo, p_rol: rol, p_entregado_esperado: d.entregado_esperado
+  });
+  if (error) throw error;
+  if (!data?.no_surtido_en) throw new Error('La base no confirmó la incidencia.');
+  return data;
+}
+
 // Marca entregas entrando por número de empleado, que es lo que trae el QR
 // de la etiqueta. `entregadoEn` es la hora del escaneo, no la de sincronización.
 // ── Accesos (quién consultó el menú) ────────────────────────────
@@ -563,7 +573,7 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
   let consulta = supabase.from('pedidos').update(cambios)
     .eq('fecha_menu', fecha)
     .eq('empleado_telefono', emp.telefono)
-    .is('entregado_en', null);
+    .is('entregado_en', null).is('no_surtido_en', null);
   if (grupoPrevio) consulta = consulta.eq('zona', grupoPrevio.zona).eq('turno', grupoPrevio.turno);
   const { data, error } = await consulta.select('*, empleados(nombre, numero_empleado)');
   if (error) throw error;
@@ -579,6 +589,7 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
     .limit(1);
   if (errBusca) throw errBusca;
   if (!existente || !existente.length) return { ok: false, motivo: 'sin_pedido' };
+  if (noSurtida(existente[0])) return { ok: false, motivo: 'no_surtido' };
   if (!existente[0].entregado_en) return { ok: false, motivo: 'grupo_actualizado' };
 
   // Ya estaba entregado. Se responde ok a propósito: la entrega SÍ ocurrió, y
@@ -601,6 +612,7 @@ export async function calificarPedido(fecha, telefono, rating) {
     .eq('fecha_menu', fecha)
     .eq('empleado_telefono', telefono)
     .not('entregado_en', 'is', null)
+    .is('no_surtido_en', null)
     .is('rating', null)
     .select('id');
   if (error) throw error;
@@ -616,6 +628,7 @@ export async function pedidoPorCalificar(telefono, desdeFecha) {
     .eq('empleado_telefono', telefono)
     .gte('fecha_menu', desdeFecha)
     .not('entregado_en', 'is', null)
+    .is('no_surtido_en', null)
     .is('rating', null)
     .order('fecha_menu', { ascending: false })
     .limit(1);
@@ -873,7 +886,7 @@ export async function listLotesSupervisor(supervisorId, fecha) {
   for (let i = 0; i < solicitudes.length; i += 100) {
     const ids = solicitudes.slice(i, i + 100).map(s => s.id);
     items.push(...await leerPaginas(() => supabase.from('solicitudes_cobertura_items')
-      .select('id,solicitud_id,empleado_numero_snapshot,empleado_nombre_snapshot,opcion_id,opcion_texto,entregado_en')
+      .select('id,solicitud_id,empleado_numero_snapshot,empleado_nombre_snapshot,opcion_id,opcion_texto,entregado_en,no_surtido_en')
       .in('solicitud_id', ids).order('id')));
   }
   return solicitudes.map(s => ({ ...s, items: items.filter(i => i.solicitud_id === s.id) }));
@@ -924,6 +937,7 @@ export async function marcarCoberturaEntregada(fecha, codigoEntrega, entregadoEn
   if (e1) throw e1;
   const item = encontrados?.[0];
   if (!item) return { ok: false, motivo: 'sin_pedido_especial' };
+  if (noSurtida(item)) return { ok: false, motivo: 'no_surtido' };
 
   const { data: solicitudes, error: e2 } = await supabase
     .from('solicitudes_cobertura')
@@ -960,13 +974,14 @@ export async function marcarCoberturaEntregada(fecha, codigoEntrega, entregadoEn
     .from('solicitudes_cobertura_items')
     .update(cambios)
     .eq('id', item.id)
-    .is('entregado_en', null)
+    .is('entregado_en', null).is('no_surtido_en', null)
     .select()
     .limit(1);
   if (e3) throw e3;
   const final = actualizado?.[0];
   if (!final) {
     const { data: ya } = await supabase.from('solicitudes_cobertura_items').select('*').eq('id', item.id).limit(1);
+    if (noSurtida(ya?.[0] || item)) return { ok: false, motivo: 'no_surtido' };
     return { ok: true, ya_entregado: true, item: ya?.[0] || item, solicitud };
   }
 

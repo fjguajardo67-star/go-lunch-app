@@ -242,8 +242,8 @@ entregaRouter.get('/:fecha', async (req, res) => {
       console.error('[Entrega] No se pudieron cargar coberturas:', err.message);
       return res.status(503).json({ error: 'No se pudieron cargar las coberturas. Conserva la última lista y vuelve a descargar antes de cerrar la entrega.' });
     }
-    const regularesZona = regulares.filter(p => (!zona || p.zona === zona) && (!turno || p.turno === turno));
-    const coberturasZona = coberturas.filter(p => (!zona || p.zona === zona) && (!turno || p.turno === turno));
+    const regularesZona = regulares.filter(p => !p.no_surtido_en && (!zona || p.zona === zona) && (!turno || p.turno === turno));
+    const coberturasZona = coberturas.filter(p => !p.no_surtido_en && (!zona || p.zona === zona) && (!turno || p.turno === turno));
 
     const pedidos = [
       ...regularesZona.map(p => ({
@@ -457,6 +457,10 @@ entregaRouter.post('/', async (req, res) => {
         const anterior = tipo === 'cobertura'
           ? registrosLegados.coberturas.find(p => String(p.codigo_entrega) === codigoEntrega)
           : registrosLegados.regulares.find(p => String(p.empleados?.numero_empleado) === String(numero));
+        if (anterior?.no_surtido_en) {
+          resultados.push({ tipo, codigo_entrega:codigoEntrega, numero_empleado:numero, ok:false, motivo:'no_surtido' });
+          continue;
+        }
         if (anterior?.entregado_en && puedeConZona(req,anterior.zona) &&
           (!zonaDeclarada || anterior.zona === zonaDeclarada) && (!req.body.turno || anterior.turno === req.body.turno)) {
           resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: true, ya_entregado: true });
@@ -569,7 +573,8 @@ entregaRouter.post('/', async (req, res) => {
           hora_estimada: reloj.estimada || false
         });
       } catch (err) {
-        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'error_servidor', detalle: err.message });
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false,
+          motivo: String(err.message).includes('comida_no_surtida') ? 'no_surtido' : 'error_servidor', detalle: err.message });
       }
     }
 

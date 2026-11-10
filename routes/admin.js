@@ -18,6 +18,7 @@ import { normalizarSeleccionCocina, seleccionarPedidosCocina } from '../services
 import { construirReporte } from '../services/reportes.js';
 import { construirDashboard } from '../services/dashboard.js';
 import { prepararReporteEntregas, htmlReporteEntregas, validarElaboro } from '../services/reporte-entregas.js';
+import { validarIncidencia, errorIncidencia } from '../services/incidencias.js';
 
 export const adminRouter = express.Router();
 
@@ -403,6 +404,18 @@ adminRouter.get('/menus-proximos', async (req, res) => {
 });
 
 // ── Pedidos ─────────────────────────────────────────────────────
+
+adminRouter.post('/incidencias/:tipo/:id', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const datos = validarIncidencia(req.params.tipo, req.params.id, req.body);
+    const comida = await db.registrarNoSurtido(datos, req.rolPanel);
+    res.json({ ok: true, comida });
+  } catch (err) {
+    const error = errorIncidencia(err);
+    res.status(error.status).json({ error: error.mensaje });
+  }
+});
 
 adminRouter.get('/pedidos/:fecha', async (req, res) => {
   try {
