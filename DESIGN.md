@@ -28,7 +28,8 @@ Los demás originales autorizados, incluido el trazo monocromático, viven en
   mediante scroll sin comprimir controles ni listas.
 - Las zonas, turnos y horarios se muestran con nombres operativos, no con claves
   internas de base de datos.
-- Los estados críticos se dicen con texto además de color: en línea, pendiente,
+- Los estados críticos se dicen con texto además de color: lista actualizada,
+  lista guardada, falta lista de hoy, pendiente,
   entregado, cerrado, no verificado y fuera de zona.
 - Los controles táctiles tienen al menos 44 px de alto y foco visible.
 - Los cambios de apariencia deben conservar IDs, contratos de datos y la clase
@@ -82,7 +83,13 @@ Las coberturas conservan su calibración física al 85 %, centrada dentro del bl
 
 ## Grupo activo de reparto
 
-La app de entrega exige elegir Turno A o B junto a la zona; conserva esa elección únicamente para la misma fecha y zona. Llegada, listas y acciones se limitan a ese grupo. El cierre reúne únicamente regulares pendientes de dicho grupo, identifica zona/turno/cantidad en su confirmación y excluye siempre coberturas. El servidor verifica la asignación almacenada y la escritura vuelve a comparar zona y turno. Cada elemento de la cola mantiene su grupo; se sincronizan lotes separados y un registro antiguo sin contexto sigue pendiente de revisión, salvo que ya estuviera confirmado en servidor. No se modifican marcas históricas al publicar esta corrección.
+La extensión de reparto guiado corresponde a v62 y conserva el mundo operativo, temas, logos y controles existentes; esta documentación no certifica despliegue. Hay un punto fijo ASLA y otro REFIS, capturados una vez por administración desde un móvil físicamente en cada sitio. GPS propone el punto y el horario sugiere el servicio de la agenda del día; las coberturas conservan folio y horario propios. Sin GPS o ante una sugerencia incorrecta, «Cambiar punto o servicio» permite selección manual entre las zonas autorizadas.
+
+**Regla de servicio estable.** Punto, horario y cantidad pendiente preceden a «Comenzar entrega», que registra llegada y abre cámara o prepara el lector. Una vez iniciado, reloj y GPS no cambian el servicio activo. El cambio de punto o servicio requiere una acción explícita; «Finalizar reparto» cierra el escaneo sin marcar pendientes. No se ofrece «Entregar» en la lista ni cierre masivo al supervisor.
+
+**Regla de una comida por confirmación.** Cámara y lector identifican cada paquete por QR. La captura por número de empleado se conserva como excepción de etiqueta dañada: muestra nombre, platillo, zona y horario, permite elegir entre varias coincidencias y confirma una comida específica. El método cámara/lector/manual queda auditado. Para paquetes regulares recibidos por supervisor se indica su nombre una vez y se escanea cada etiqueta; cobertura mantiene responsable por folio. La confirmación conserva el contexto individual de fecha, zona y turno. El servidor verifica la asignación almacenada y vuelve a comparar zona y turno al escribir; cada elemento de la cola conserva su grupo y los registros antiguos sin contexto permanecen para revisión, salvo confirmación previa del servidor.
+
+**Regla de lista disponible.** La descarga de hoy reúne todas las zonas autorizadas, horarios, puntos y datos GPS disponibles para continuar sin señal. Los estados textuales «Lista actualizada», «Lista guardada» y «Falta lista de hoy» describen la disponibilidad de la jornada; una indicación de conexión del navegador por sí sola no garantiza actualización. Una lista de hoy guardada permite nuevas marcas sin conexión; una de ayer no. La cola conserva cada entrega aunque cambie el servicio o el día y nunca se borra para resolver errores. Cámara, GPS y sincronización requieren la app abierta y visible. Se conservan estilos y formatos carta de los impresos y el manual.
 
 ## Selección de impresos de cocina
 
