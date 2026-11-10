@@ -536,7 +536,9 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
     }
   }
 
-  const cambios = { entregado_en: entregadoEn };
+  // Viaja en la misma escritura condicional que la hora: un reintento nunca
+  // reemplaza el método original. Las colas individuales antiguas dejan null.
+  const cambios = { entregado_en: entregadoEn, metodo_entrega: extra.metodo_entrega ?? null };
   // Solo se escribe si viene: una re-sincronización sin motivo no debe
   // borrar el que el chofer ya había elegido.
   if (motivoTardia) cambios.motivo_tardia = motivoTardia;
@@ -550,8 +552,7 @@ export async function marcarEntregado(fecha, numeroEmpleado, entregadoEn, motivo
     if (extra.precision_m != null) cambios.entrega_precision_m = extra.precision_m;
   }
 
-  // A quién se le dio. Por omisión al empleado, que es el caso normal; el
-  // repartidor marca 'supervisor' al cerrar la ruta con lo que nadie recogió.
+  // A quién se le dio en esta confirmación individual.
   if (extra.entregado_a) cambios.entregado_a = extra.entregado_a;
   if (extra.recibido_por) cambios.recibido_por = extra.recibido_por;
 
@@ -958,6 +959,7 @@ export async function marcarCoberturaEntregada(fecha, codigoEntrega, entregadoEn
 
   const cambios = {
     entregado_en: entregadoEn,
+    metodo_entrega: extra.metodo_entrega ?? null,
     entrega_recibido_en: new Date().toISOString(),
     entrega_lat: extra.lat ?? null,
     entrega_lon: extra.lon ?? null,
@@ -980,9 +982,11 @@ export async function marcarCoberturaEntregada(fecha, codigoEntrega, entregadoEn
   if (e3) throw e3;
   const final = actualizado?.[0];
   if (!final) {
-    const { data: ya } = await supabase.from('solicitudes_cobertura_items').select('*').eq('id', item.id).limit(1);
+    const { data: ya, error: errBusca } = await supabase.from('solicitudes_cobertura_items').select('*').eq('id', item.id).limit(1);
+    if (errBusca) throw errBusca;
     if (noSurtida(ya?.[0] || item)) return { ok: false, motivo: 'no_surtido' };
-    return { ok: true, ya_entregado: true, item: ya?.[0] || item, solicitud };
+    if (!ya?.[0]?.entregado_en) return { ok: false, motivo: 'grupo_actualizado' };
+    return { ok: true, ya_entregado: true, item: ya[0], solicitud };
   }
 
   const { count: pendientes, error: e4 } = await supabase

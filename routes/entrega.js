@@ -7,6 +7,7 @@ import { rolPanel } from '../services/acceso-panel.js';
 // La ADMIN_KEY también se acepta, para que el panel siga funcionando.
 
 import express from 'express';
+import { DateTime } from 'luxon';
 import * as db from '../services/supabase.js';
 import {
   verificarClave, emitirToken, leerToken,
@@ -15,7 +16,7 @@ import {
 import {
   MOTIVOS_TARDIA, MOTIVOS_TARDIA_VALIDOS,
   horarioZona, TOLERANCIA_TARDIA_MIN,
-  ZONAS_VALIDAS, TURNOS_VALIDOS, hoy
+  ZONAS_VALIDAS, TURNOS_VALIDOS, ZONA, hoy
 } from '../services/menu.js';
 import { validarReceptorEscaneado } from '../services/cobertura.js';
 import { turnoValido } from '../services/reparto-grupos.js';
@@ -86,6 +87,7 @@ const PRECISION_PUNTO_MAXIMA_M = 25;
 // recogió: el proveedor ya la cocinó y la llevó, y devolverla es merma suya,
 // así que se deja en el sitio y queda constancia de quién la recibió.
 const ENTREGADO_A_VALIDOS = ['empleado', 'supervisor'];
+const METODOS_ENTREGA_VALIDOS = ['camara', 'lector', 'manual'];
 
 // ── Login del repartidor ──────────────────────────────────────
 // Va ANTES del middleware de autorización: es la puerta, no puede exigir estar
@@ -219,8 +221,7 @@ function puedeConZona(req, zona) {
 
 // La página de reparto descarga esto al salir y luego trabaja sin señal.
 // Con ?zona= devuelve solo esa ruta, para que dos repartidores trabajen a la
-// vez sin verse las listas. Sin zona devuelve todo, como siempre: la versión
-// anterior de la app sigue funcionando.
+// vez sin verse las listas. Sin zona descarga todas las zonas de la sesión.
 entregaRouter.get('/:fecha', async (req, res) => {
   try {
     const zona = req.query.zona || null;
@@ -235,15 +236,18 @@ entregaRouter.get('/:fecha', async (req, res) => {
 
     const fecha = fechaPedida(req.params.fecha);
     const regulares = await db.getPedidosPorFecha(fecha);
-    // Una lista parcial podría usarse para cerrar una ruta incompleta.
-    // El teléfono conserva su última descarga y permite reintentar.
+    // El teléfono conserva su última descarga si no se puede cargar todo.
     let coberturas;
     try { coberturas = await db.getCoberturasParaEntrega(fecha); } catch (err) {
       console.error('[Entrega] No se pudieron cargar coberturas:', err.message);
-      return res.status(503).json({ error: 'No se pudieron cargar las coberturas. Conserva la última lista y vuelve a descargar antes de cerrar la entrega.' });
+      return res.status(503).json({ error: 'No se pudieron cargar las coberturas. Conserva la última lista y vuelve a descargar antes de continuar la entrega.' });
     }
-    const regularesZona = regulares.filter(p => !p.no_surtido_en && (!zona || p.zona === zona) && (!turno || p.turno === turno));
-    const coberturasZona = coberturas.filter(p => !p.no_surtido_en && (!zona || p.zona === zona) && (!turno || p.turno === turno));
+    const permitidas = zonasPermitidas(req);
+    const zonaAutorizada = p => permitidas === null || permitidas.includes(p.zona);
+    const regularesAutorizados = regulares.filter(zonaAutorizada);
+    const coberturasAutorizadas = coberturas.filter(zonaAutorizada);
+    const regularesZona = regularesAutorizados.filter(p => !p.no_surtido_en && (!zona || p.zona === zona) && (!turno || p.turno === turno));
+    const coberturasZona = coberturasAutorizadas.filter(p => !p.no_surtido_en && (!zona || p.zona === zona) && (!turno || p.turno === turno));
 
     const pedidos = [
       ...regularesZona.map(p => ({
@@ -255,6 +259,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
         zona: p.zona,
         turno: p.turno,
         entregado_en: p.entregado_en || null,
+        metodo_entrega: p.metodo_entrega ?? null,
         motivo_tardia: p.motivo_tardia || null,
         entregado_a: p.entregado_a || null,
         recibido_por: p.recibido_por || null
@@ -270,6 +275,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
         origen: item.origen || 'supervisor',
         entrega_programada_en: item.entrega_programada_en || null,
         entregado_en: item.entregado_en || null,
+        metodo_entrega: item.metodo_entrega ?? null,
         motivo_tardia: item.motivo_tardia || null,
         entregado_a: 'responsable',
         recibido_por: item.receptor_nombre || item.responsable_nombre,
@@ -290,27 +296,28 @@ entregaRouter.get('/:fecha', async (req, res) => {
     try { llegadas = await db.getLlegadasPorFecha(fecha, zona); } catch {}
     try { puntos = await db.getPuntosEntrega(); } catch {}
 
-    // Índice de TODAS las zonas del día, no solo la activa: es lo que permite
+    // Índice de las zonas autorizadas del día, no solo la activa: permite
     // que el equipo distinga "este número no existe" de "este pedido es de la
     // otra ruta" estando sin señal. Solo número y zona — ningún dato personal.
     const indice_zonas = {};
-    for (const p of regulares) {
+    for (const p of regularesAutorizados) {
       const n = p.empleados?.numero_empleado;
       if (n) indice_zonas[n] = p.zona || null;
     }
-    for (const item of coberturas) {
+    for (const item of coberturasAutorizadas) {
       indice_zonas['EX|' + item.codigo_entrega] = item.zona || null;
     }
 
     res.json({
       fecha,
+      server_time: DateTime.now().setZone(ZONA).toISO(),
       zona,
       turno,
       total: pedidos.length,
       entregados: pedidos.filter(p => p.entregado_en).length,
       indice_zonas,
-      llegadas,
-      puntos: zona ? puntos.filter(p => p.zona === zona) : puntos,
+      llegadas: llegadas.filter(p => zonaAutorizada(p) && (!zona || p.zona === zona) && (!turno || p.turno === turno)),
+      puntos: puntos.filter(p => zonaAutorizada(p) && (!zona || p.zona === zona)),
       // La app las necesita para decidir si una entrega salió tardía y pedir
       // el motivo estando SIN SEÑAL, sin volver a preguntarle al servidor.
       turno_hora: horarioZona(zona, fecha),
@@ -333,6 +340,9 @@ entregaRouter.get('/:fecha', async (req, res) => {
 entregaRouter.post('/llegada', async (req, res) => {
   try {
     const { fecha, zona, turno, punto, llegada_en, lat, lon, precision_m } = req.body || {};
+    if (req.repartidor && req.body?.repartidor_id != null && Number(req.body.repartidor_id) !== Number(req.repartidor.id)) {
+      return res.status(403).json({ error: 'Esta llegada pertenece a otro repartidor', motivo: 'otro_repartidor' });
+    }
     if (!fecha || !zona || !turno) {
       return res.status(400).json({ error: 'Se requieren fecha, zona y turno' });
     }
@@ -447,7 +457,35 @@ entregaRouter.post('/', async (req, res) => {
       }
       const turnoItem = e.turno;
       const zonaDeclarada = e.zona || zona;
-      if (!turnoValido(turnoItem) || !ZONAS_VALIDAS.includes(zonaDeclarada)) {
+
+      // También se comprueba antes de reconocer una cola antigua confirmada.
+      if (req.repartidor && e.repartidor_id != null && Number(e.repartidor_id) !== Number(req.repartidor.id)) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'otro_repartidor' });
+        continue;
+      }
+      if (zonaDeclarada && !puedeConZona(req, zonaDeclarada)) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'zona_no_autorizada' });
+        continue;
+      }
+      if (req.body.turno && turnoItem && req.body.turno !== turnoItem) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'turno_incorrecto' });
+        continue;
+      }
+      if (zona && zona !== zonaDeclarada) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'zona_incorrecta', zona_esperada: zona });
+        continue;
+      }
+      const metodoValido = METODOS_ENTREGA_VALIDOS.includes(e.metodo_entrega);
+      if (e.metodo_entrega != null && !metodoValido) {
+        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false,
+          motivo: 'metodo_entrega_invalido', error: 'El método debe ser camara, lector o manual. Conserva este registro para revisión.' });
+        continue;
+      }
+      const grupoIncompleto = !turnoValido(turnoItem) || !ZONAS_VALIDAS.includes(zonaDeclarada);
+      const requiereRevision = e.accion === 'cierre_ruta' || req.body.accion === 'cierre_ruta' ||
+        e.origen === 'lista' || req.body.origen === 'lista' ||
+        (e.entregado_a === 'supervisor' && (e.accion !== 'entrega' || !metodoValido));
+      if (grupoIncompleto || requiereRevision) {
         // Un reintento antiguo ya confirmado puede liberarse sin volver a escribir.
         // Los registros antiguos aún pendientes conservan la cola para revisión.
         if (!registrosLegados) {
@@ -457,44 +495,24 @@ entregaRouter.post('/', async (req, res) => {
         const anterior = tipo === 'cobertura'
           ? registrosLegados.coberturas.find(p => String(p.codigo_entrega) === codigoEntrega)
           : registrosLegados.regulares.find(p => String(p.empleados?.numero_empleado) === String(numero));
-        if (anterior?.no_surtido_en) {
+        const zonaAnteriorAutorizada = anterior && puedeConZona(req, anterior.zona) &&
+          (zonasPermitidas(req) === null || zonasPermitidas(req).includes(anterior.zona));
+        const grupoCoincide = (!zonaDeclarada || anterior?.zona === zonaDeclarada) &&
+          (!turnoItem || anterior?.turno === turnoItem) && (!req.body.turno || anterior?.turno === req.body.turno);
+        if (zonaAnteriorAutorizada && grupoCoincide && anterior.no_surtido_en) {
           resultados.push({ tipo, codigo_entrega:codigoEntrega, numero_empleado:numero, ok:false, motivo:'no_surtido' });
           continue;
         }
-        if (anterior?.entregado_en && puedeConZona(req,anterior.zona) &&
-          (!zonaDeclarada || anterior.zona === zonaDeclarada) && (!req.body.turno || anterior.turno === req.body.turno)) {
-          resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: true, ya_entregado: true });
+        if (zonaAnteriorAutorizada && grupoCoincide && anterior.entregado_en) {
+          resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: true, ya_entregado: true,
+            entregado_en: anterior.entregado_en, metodo_entrega: anterior.metodo_entrega ?? null });
           continue;
         }
         resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false,
-          motivo: 'grupo_requerido', error: 'Actualiza la app y selecciona zona y turno. Este registro se conserva para revisión.' });
-        continue;
-      }
-      if (req.body.turno && req.body.turno !== turnoItem) {
-        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'turno_incorrecto' });
-        continue;
-      }
-      if (zona && zona !== zonaDeclarada) {
-        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'zona_incorrecta', zona_esperada: zona });
-        continue;
-      }
-      if (tipo === 'cobertura' && (e.accion === 'cierre_ruta' || e.entregado_a === 'supervisor')) {
-        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'cobertura_requiere_escaneo' });
-        continue;
-      }
-
-      // Una cola formada por un repartidor no se sincroniza como si fuera de
-      // otro. Cambiar de usuario ya está bloqueado con cola pendiente, así que
-      // esto es la red de seguridad: ante la duda NO se atribuye mal, se
-      // rechaza y el elemento se queda para que lo suba quien lo escaneó.
-      if (req.repartidor && e?.repartidor_id != null && Number(e.repartidor_id) !== Number(req.repartidor.id)) {
-        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'otro_repartidor' });
-        continue;
-      }
-      // La zona del elemento también se comprueba contra la sesión: un lote sin
-      // zona podría traer elementos de una ruta ajena.
-      if (e?.zona && !puedeConZona(req, e.zona)) {
-        resultados.push({ tipo, codigo_entrega: codigoEntrega, numero_empleado: numero, ok: false, motivo: 'zona_no_autorizada' });
+          motivo: requiereRevision ? 'entrega_requiere_revision' : 'grupo_requerido',
+          error: requiereRevision
+            ? 'La entrega desde lista o cierre de ruta no se registra. Este registro se conserva para revisión.'
+            : 'Actualiza la app y selecciona zona y turno. Este registro se conserva para revisión.' });
         continue;
       }
       // Un motivo inventado no se guarda: solo los del catálogo
@@ -514,6 +532,7 @@ entregaRouter.post('/', async (req, res) => {
         }
         const datosComunes = {
           turno_esperado: turnoItem,
+          metodo_entrega: e.metodo_entrega ?? null,
           lat: util ? e?.lat : null,
           lon: util ? e?.lon : null,
           precision_m: e?.precision_m,
@@ -566,6 +585,7 @@ entregaRouter.post('/', async (req, res) => {
           motivo: r.motivo || null,
           nombre: r.pedido?.empleados?.nombre || r.item?.empleado_nombre_snapshot || null,
           entregado_en: r.pedido?.entregado_en || r.item?.entregado_en || null,
+          metodo_entrega: r.pedido?.metodo_entrega ?? r.item?.metodo_entrega ?? null,
           // Avisa que la hora guardada NO es la del escaneo sino la del
           // servidor, porque la del equipo no era creíble. La entrega vale
           // igual; lo que no vale es presentar esa hora como exacta ante el

@@ -15,6 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="Entrega">
 <script src="/operacion.js"></script>
 <script src="/reparto-grupos.js"></script>
+<script src="/reparto-guiado.js"></script>
 <script>
   // Evita un destello claro al abrir la PWA cuando el equipo usa tema oscuro.
   try {
@@ -54,7 +55,7 @@
   header .t b { font-size: 1rem; display: block; }
   header .t span { font-size: .72rem; color: rgba(255,255,255,.75); }
   .conexion {
-    font-size: .68rem; font-weight: 800; padding: 5px 9px; border-radius: 20px;
+    font-size: .75rem; font-weight: 800; padding: 5px 9px; border-radius: 20px;
     white-space: nowrap; letter-spacing: .03em;
   }
   .conexion.on  { background: #1e7a22; color: #fff; }
@@ -69,7 +70,7 @@
     flex: 1; text-align: center; padding: 9px 4px; border-radius: 10px;
   }
   .marcador .n { font-size: 1.5rem; font-weight: 800; line-height: 1; }
-  .marcador .e { font-size: .66rem; font-weight: 700; color: var(--gris-text); margin-top: 3px; }
+  .marcador .e { font-size: .75rem; font-weight: 700; color: var(--gris-text); margin-top: 3px; }
   .m-entregado { background: var(--verde-light); } .m-entregado .n { color: var(--verde); }
   .m-falta     { background: var(--gris-bg); }     .m-falta .n     { color: var(--tinta); }
   .m-cola      { background: var(--dorado-light); }.m-cola .n      { color: var(--dorado); }
@@ -305,18 +306,6 @@
       <span id="sesion-nombre">—</span>
       <button id="btn-cerrar-sesion" class="btn-texto" type="button" onclick="cambiarUsuario()">Cambiar usuario</button>
     </div>
-    <div class="zona-activa" id="zona-activa">
-      <svg class="zona-activa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-      <span class="zona-activa-copy"><small>Zona activa</small><b id="zona-activa-txt">—</b></span>
-      <button id="btn-cambiar-zona" class="btn-texto" type="button" onclick="abrirSelectorZona()">Cambiar zona</button>
-    </div>
-    <div class="turno-activo">
-      <label for="turno-reparto">Turno de reparto</label>
-      <select id="turno-reparto" onchange="seleccionarTurno(this.value)">
-        <option value="">Selecciona turno</option>
-        <option value="turno_a">Turno A</option><option value="turno_b">Turno B</option>
-      </select>
-    </div>
     <!-- Versión que este aparato está corriendo de verdad. Un teléfono con el
          service worker viejo se ve idéntico a uno al día, y así estuvo uno
          trabajando con la fecha equivocada sin que nadie lo notara. -->
@@ -329,7 +318,8 @@
   <!-- Aviso de lista vieja. Va arriba de todo y en rojo a propósito: el
        repartidor no puede distinguir la lista de hoy de la de ayer, y
        escanear contra la equivocada le quema la mañana. -->
-  <div class="lista-vieja oculto" id="lista-vieja"></div>
+  <div class="lista-vieja oculto" id="lista-vieja" role="status"></div>
+  <button class="btn sec descargar-reparto" id="btn-descargar" type="button" onclick="sincronizar()">Descargar reparto de hoy</button>
 
   <div class="marcador">
     <div class="m-entregado"><div class="n" id="n-entregado">0</div><div class="e">Entregadas</div></div>
@@ -343,21 +333,20 @@
          ESTRUCTURA PARA ESTILIZAR: #barra-llegada el contenedor,
          #btn-llegada la acción, #llegada-estado el resumen una vez registrada,
          #aviso-ubicacion la advertencia cuando no hay GPS o falta permiso. -->
-    <section class="barra-llegada" id="barra-llegada" aria-labelledby="llegada-titulo">
-      <div class="llegada-encabezado">
-        <span class="llegada-marca" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/><path d="M12 3v2"/></svg>
-        </span>
-        <div>
-          <h2 id="llegada-titulo">Llegada al punto</h2>
-          <p>Registra la hora antes de iniciar las entregas.</p>
-        </div>
-      </div>
-      <button class="btn btn-llegada" id="btn-llegada" type="button" onclick="registrarLlegada()">
-        Llegué al punto de entrega
-      </button>
+    <section class="barra-llegada servicio-ruta" id="barra-llegada" aria-labelledby="servicio-punto">
+      <h1 id="servicio-punto">Preparando reparto</h1>
+      <p class="servicio-horario" id="servicio-horario">Descargando la lista de hoy…</p>
+      <p id="servicio-ayuda" role="status" aria-live="polite"></p>
+      <div id="servicio-opciones" class="servicio-opciones"></div>
+      <button class="btn btn-llegada" id="btn-llegada" type="button" onclick="comenzarEntrega()">Comenzar entrega</button>
       <div class="llegada-estado oculto" id="llegada-estado" role="status" aria-live="polite"></div>
       <div class="aviso-ubicacion oculto" id="aviso-ubicacion" role="status" aria-live="polite"></div>
+      <details class="ajustes-reparto" id="ajustes-reparto">
+        <summary>Cambiar punto o servicio</summary>
+        <p>Úsalo si no se detectó tu ubicación o necesitas otro horario.</p>
+        <div id="puntos-manuales" class="servicio-opciones"></div>
+        <div id="servicios-manuales" class="servicio-opciones"></div>
+      </details>
     </section>
 
     <div class="scanner-heading">
@@ -402,7 +391,7 @@
 
     <button class="manual-trigger" id="btn-manual" type="button" aria-expanded="false" aria-controls="manual-panel" onclick="alternarManual()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M7 9v6M10 9v6M14 9v6M17 9v6"/></svg>
-      <span>Ingresar número manualmente</span>
+      <span>Etiqueta dañada · ingresar número</span>
       <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
     </button>
 
@@ -411,16 +400,18 @@
         <input id="manual" aria-label="Número de empleado" placeholder="Número de empleado" autocomplete="off"
                onkeydown="if(event.key==='Enter')entregarManual()"
                onblur="setTimeout(devolverFocoLector, 150)">
-        <button class="btn" type="button" onclick="entregarManual()">Registrar</button>
+        <button class="btn" type="button" onclick="buscarManual()">Buscar empleado</button>
       </div>
     </div>
 
+    <details class="ajustes-reparto"><summary>Configuración y prueba del escáner</summary>
     <label class="modo-lector">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg>
       <span class="reader-copy"><b id="lector-titulo">Activar lector Bluetooth</b><small id="lector-detalle">Para pistola o tablet con escáner integrado.</small></span>
       <input type="checkbox" id="chk-lector" aria-label="Activar lector Bluetooth" onchange="alternarModoLector(this.checked)">
     </label>
-
+      <button class="btn sec" type="button" onclick="alternarCamara(true)">Probar cámara sin registrar</button>
+    </details>
     <div id="avisoSync"></div>
 
     <section class="ultima-entrega oculto" id="ultima-entrega" aria-label="Última entrega">
@@ -431,28 +422,28 @@
       </div>
     </section>
 
-    <details class="pedidos-panel" open>
+    <details class="pedidos-panel">
       <summary>Pendientes <span id="badge-pendientes">0</span></summary>
       <div class="lista-contenido" id="lista-pendientes"></div>
-      <!-- Cierre de ruta: lo que nadie recogió se deja con el supervisor y
-           deja de contar como no entregado. ESTRUCTURA PARA ESTILIZAR:
-           #cerrar-ruta el contenedor, #btn-cerrar-ruta la acción. -->
-      <div class="cerrar-ruta oculto" id="cerrar-ruta">
-        <div class="cerrar-ruta-copy" id="cerrar-ruta-ayuda">
-          <strong>¿Terminaste el reparto?</strong>
-          <span>Registra las comidas no recogidas y quién las recibió.</span>
-        </div>
-        <button class="btn sec" id="btn-cerrar-ruta" type="button" aria-describedby="cerrar-ruta-ayuda" onclick="cerrarRuta()">
-          Entregar pendientes al supervisor
-        </button>
-      </div>
     </details>
+    <div class="acciones-reparto">
+      <button class="btn sec" id="btn-supervisor" type="button" onclick="prepararSupervisor()">Escanear paquetes para supervisor</button>
+      <button class="btn sec" id="btn-finalizar" type="button" onclick="finalizarReparto()">Finalizar reparto</button>
+    </div>
     <details class="pedidos-panel">
       <summary>Entregadas <span id="badge-entregadas">0</span></summary>
       <div class="lista-contenido" id="lista-hechas"></div>
     </details>
   </main>
 </div>
+
+<dialog id="manual-confirmacion" class="confirmacion-manual" aria-labelledby="manual-titulo">
+  <h2 id="manual-titulo">Confirma la comida de la etiqueta</h2>
+  <p>Captura manual por etiqueta dañada. Se registrará únicamente la comida que confirmes.</p>
+  <div id="manual-resultados"></div>
+  <p id="manual-error" role="alert"></p>
+  <button class="btn sec" type="button" onclick="cancelarManual()">Cancelar</button>
+</dialog>
 
 <!-- Motivo de entrega tardía -->
 <div class="motivo-fondo" id="motivo-fondo">
@@ -522,7 +513,9 @@
     sesion: 'cicsa_entrega_sesion',
     // Receptor confirmado por folio de cobertura. Se recuerda durante el día
     // para no preguntarlo en cada uno de los recipientes del mismo lote.
-    receptores: 'cicsa_entrega_receptores_cobertura'
+    receptores: 'cicsa_entrega_receptores_cobertura',
+    jornada: 'cicsa_entrega_jornada_v2',
+    servicio: 'cicsa_entrega_servicio_v2'
   };
   // Una caché por zona: cambiar de ASLA a REFIS no debe mezclar listas ni
   // contadores, y volver a la anterior no debe obligar a descargar de nuevo.
@@ -532,6 +525,13 @@
   let FECHA = '';
   let ZONA = '';
   let TURNO = '';
+  let TODOS_PEDIDOS = [], SERVICIO_ID = '', SERVICIO_INICIADO = false;
+  let ZONA_MANUAL = false, SERVICIO_MANUAL = false, SINCRONIZANDO = false;
+  let ULTIMA_DESCARGA = null, RELOJ = null, ORIGEN_PENDIENTE = 'camara';
+  let MANUAL_NUMERO = '', SUPERVISOR_ACTUAL = '', ERROR_DESCARGA = true;
+  let EPOCA_SESION=0, SYNC_ABORTADOR=null;
+  let pedidoEnMotivo=null;
+
   // El índice numero→zona de TODO el día. Es lo que permite decir "este pedido
   // es de la otra ruta" en vez de "no existe" cuando no hay señal.
   let INDICE_ZONAS = {};
@@ -545,6 +545,7 @@
   let TURNO_HORA = { turno_a: '10:00', turno_b: '17:00' };
   let TOLERANCIA_MIN = 15;
   let MOTIVOS = {};
+  let ABRIENDO_CAMARA = false;
   let escaneando = false, stream = null, ultimoCodigo = '', ultimoTs = 0;
   // Declaradas aquí y no junto a sus funciones: el arranque corre antes de que
   // el script termine de parsear, y un `let` más abajo las dejaría en zona
@@ -596,7 +597,8 @@
           lat: p.coords.latitude, lon: p.coords.longitude,
           precision_m: Math.round(p.coords.accuracy), ts: Date.now()
         };
-        pintarUbicacion();
+        proponerContexto();
+        pintar();
       },
       err => {
         // 1 = PERMISSION_DENIED. Sin permiso NINGUNA entrega lleva coordenada,
@@ -741,7 +743,21 @@
   // repartidor. Se pide la clave otra vez, pero LA COLA NO SE TOCA: esas
   // entregas ya ocurrieron y se suben en cuanto alguien vuelva a entrar.
   // Borrarlas para "limpiar" sería perder comida realmente entregada.
+  function reiniciarContextoOperativo() {
+    EPOCA_SESION++;
+    if (SYNC_ABORTADOR) SYNC_ABORTADOR.abort();
+    detenerVigilancia();
+    SERVICIO_INICIADO=false; SERVICIO_ID=''; TURNO=''; SUPERVISOR_ACTUAL='';
+    ZONA_MANUAL=false; SERVICIO_MANUAL=false;
+    if (escaneando) detenerCamara();
+    cancelarManual(); cancelarReceptor();
+    pedidoEnMotivo=null; $('motivo-fondo').classList.remove('ver');
+    ZONA=''; FECHA=''; PEDIDOS=[]; TODOS_PEDIDOS=[]; PUNTOS=[];
+    RELOJ=null; ULTIMA_DESCARGA=null; LLEGADAS_DIA=[]; ERROR_DESCARGA=true;
+  }
+
   function sesionRechazada(d) {
+    reiniciarContextoOperativo();
     const motivos = {
       token_vencido:      'Tu sesión venció. Vuelve a escribir tu clave.',
       sesion_invalidada:  'El administrador cerró tu sesión. Pídele tu clave nueva.',
@@ -765,12 +781,14 @@
   // sin subir, porque esa cola es de quien la escaneó y el servidor la
   // rechazaría si la subiera otro. Nunca se borra la cola para resolverlo.
   function cambiarUsuario() {
-    if (COLA.length) {
+    if (COLA.length || LLEGADAS.length) {
       return mostrarAviso('avisoSync',
-        'Hay ' + COLA.length + ' entrega(s) sin subir. Son de esta sesión: conéctate y espera a que ' +
+        'Hay ' + (COLA.length + LLEGADAS.length) + ' registro(s) sin subir. Son de esta sesión: conéctate y espera a que ' +
         '"Por subir" quede en 0 antes de cambiar de usuario.', 'err');
     }
     if (!confirm('¿Cerrar la sesión de ' + (SESION?.repartidor?.nombre || 'este usuario') + '?')) return;
+    reiniciarContextoOperativo();
+    localStorage.removeItem(LS.servicio);
     SESION = null;
     localStorage.removeItem(LS.sesion);
     localStorage.removeItem(LS.clave);
@@ -821,79 +839,99 @@
     $('zona-picker').classList.add('oculto');
   }
 
-  async function elegirZona(z) {
-    if (!ZONAS_VALIDAS.includes(z)) return;
-    // El servidor lo vuelve a comprobar; esto evita que el repartidor descubra
-    // el rechazo hasta después de descargar media lista.
-    if (!zonasAutorizadas().includes(z)) {
-      $('zona-picker-aviso').textContent = 'No tienes autorizada esa zona. Pídele al administrador que te la asigne.';
-      $('zona-picker-aviso').className = 'aviso err';
-      return;
-    }
-    if (COLA.length) return abrirSelectorZona();   // el candado, por si acaso
-    if (z === ZONA) return cerrarSelectorZona();
-
-    ZONA = z;
-    TURNO = '';
-    localStorage.setItem(LS.zona, z);
-    EPOCA_ZONA++;                 // invalida cualquier descarga en vuelo
-    // Se limpia la pantalla, NO la caché de la otra zona: volver a ella no
-    // debe obligar a descargar de nuevo estando sin señal.
-    PEDIDOS = [];
-    FECHA = '';
-    await arrancarApp();
+  function cambiarContexto(z, manual = false) {
+    if (!zonasAutorizadas().includes(z)) return;
+    if (RECEPTOR_PENDIENTE) cancelarReceptor();
+    cancelarManual();
+    if (escaneando) detenerCamara();
+    ZONA = z; ZONA_MANUAL = manual; TURNO = ''; SERVICIO_ID = '';
+    SERVICIO_INICIADO = false; SERVICIO_MANUAL = false; SUPERVISOR_ACTUAL = '';
+    localStorage.setItem(LS.zona,z);
+    PEDIDOS = TODOS_PEDIDOS.filter(p => p.zona === z);
+    restaurarServicio();
+    proponerContexto();
+    pintar();
   }
 
-  // Lee la caché de la zona activa. Si no existe pero sí la de la versión
-  // anterior —que guardaba todas las zonas juntas— se siembra filtrando por
-  // zona, para que al actualizar la app el equipo no se quede sin lista.
-  function cargarCacheDeZona() {
-    let cache = leerLS(claveDatos(ZONA), null);
-    if (!cache) {
-      const legado = leerLS(LS.datos, null);
-      if (legado && Array.isArray(legado.pedidos)) {
-        cache = { ...legado, pedidos: legado.pedidos.filter(p => p.zona === ZONA) };
+  async function elegirZona(z) {
+    if (!zonasAutorizadas().includes(z)) return;
+    if (SERVICIO_INICIADO && z !== ZONA && !confirm('¿Cambiar de punto? Los paquetes pendientes conservarán su estado.')) return;
+    cambiarContexto(z,true);
+    $('zona-picker').classList.add('oculto');
+  }
+
+  function ahoraComedor() {
+    return new Date(RELOJ ? Date.parse(RELOJ.servidor) + Date.now() - RELOJ.aparato : Date.now());
+  }
+  function diaComedor() {
+    return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Mexico_City',year:'numeric',month:'2-digit',day:'2-digit'}).format(ahoraComedor());
+  }
+  function listaDeHoy() { return !!FECHA && FECHA === diaComedor(); }
+  function agenda() { return GoLunchGuiado.servicios(PEDIDOS,ZONA,FECHA); }
+  function servicioActual() { return agenda().find(s => s.id === SERVICIO_ID) || null; }
+  function comidasEnPantalla() { return servicioActual()?.pedidos || []; }
+  function codificarClave(valor) { return encodeURIComponent(valor).replace(/'/g,'%27'); }
+  function recordarServicio() {
+    guardar(LS.servicio,{fecha:FECHA,zona:ZONA,id:SERVICIO_ID,iniciado:SERVICIO_INICIADO,
+      usuario:SESION?.repartidor?.id ?? 'legado',supervisor:SUPERVISOR_ACTUAL});
+  }
+  function restaurarServicio() {
+    const x = leerLS(LS.servicio,null);
+    SERVICIO_ID=''; SERVICIO_INICIADO=false; TURNO=''; SUPERVISOR_ACTUAL='';
+    if (x?.fecha === FECHA && x.zona === ZONA && x.usuario === (SESION?.repartidor?.id ?? 'legado') && agenda().some(s => s.id === x.id)) {
+      SERVICIO_ID=x.id; SERVICIO_INICIADO=x.iniciado === true; SUPERVISOR_ACTUAL=x.supervisor || '';
+      TURNO=servicioActual().turno;
+    }
+  }
+  function proponerContexto() {
+    if (SERVICIO_INICIADO || !listaDeHoy()) return;
+    if (!ZONA_MANUAL) {
+      const punto=GoLunchGuiado.detectarPunto(posicionUtil(),PUNTOS,zonasAutorizadas());
+      if (punto.zona && punto.zona !== ZONA) {
+        ZONA=punto.zona; localStorage.setItem(LS.zona,ZONA);
+        PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA);
+        SERVICIO_ID=''; SERVICIO_MANUAL=false; restaurarServicio();
       }
     }
-    const idx = leerLS(LS.indice, null);
-    INDICE_ZONAS = (idx && idx.mapa) || {};
-    if (!cache) return;
-    FECHA = cache.fecha; PEDIDOS = cache.pedidos || [];
-    if (cache.turno_hora) TURNO_HORA = cache.turno_hora;
-    if (cache.tolerancia_min != null) TOLERANCIA_MIN = cache.tolerancia_min;
-    if (cache.motivos) MOTIVOS = cache.motivos;
-    restaurarTurno();
+    if (!ZONA) return;
+    const servicios=agenda();
+    if (!SERVICIO_MANUAL && !SERVICIO_INICIADO) {
+      SERVICIO_ID=GoLunchGuiado.sugerirServicio(servicios,ahoraComedor().toISOString(),FECHA) || '';
+    }
+    TURNO=servicioActual()?.turno || '';
   }
-
-  // Decide si se puede operar o si primero hay que preguntar la zona.
+  function seleccionarServicio(id) {
+    if (!agenda().some(s => s.id === id)) return;
+    if (SERVICIO_INICIADO && !confirm('Cambiar de servicio finalizará la sesión de escaneo actual. Las comidas pendientes conservarán su estado.')) return;
+    if (escaneando) detenerCamara();
+    cancelarManual(); if (RECEPTOR_PENDIENTE) cancelarReceptor();
+    SERVICIO_ID=id; SERVICIO_INICIADO=false; SERVICIO_MANUAL=true; SUPERVISOR_ACTUAL='';
+    TURNO=servicioActual().turno; recordarServicio(); pintar();
+  }
+  function cargarCacheDeZona() {
+    const jornada=leerLS(LS.jornada,null);
+    if (jornada?.usuario === (SESION?.repartidor?.id ?? 'legado') && Array.isArray(jornada.pedidos)) {
+      FECHA=jornada.fecha; TODOS_PEDIDOS=jornada.pedidos.filter(p => zonasAutorizadas().includes(p.zona));
+      PUNTOS=jornada.puntos || []; LLEGADAS_DIA=jornada.llegadas || []; RELOJ=jornada.reloj || null;
+      ULTIMA_DESCARGA=jornada.descargada || null;
+      PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA); restaurarServicio(); return;
+    }
+    const datos=zonasAutorizadas().map(z => leerLS(claveDatos(z),null)).filter(Boolean);
+    const fecha=datos.map(x => x.fecha).sort().at(-1);
+    if (fecha) {
+      FECHA=fecha; TODOS_PEDIDOS=datos.filter(x => x.fecha === fecha).flatMap(x => x.pedidos || []);
+      PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA); restaurarServicio();
+    }
+  }
   async function iniciar() {
+    reiniciarContextoOperativo();
     $('gate').classList.add('oculto');
-    COLA = leerLS(LS.cola, []);
-    RECEPTORES = leerLS(LS.receptores, { fecha: '', mapa: {} });
-    if (!RECEPTORES || typeof RECEPTORES !== 'object' || !RECEPTORES.mapa) {
-      RECEPTORES = { fecha: '', mapa: {} };
-    }
-    ZONA = localStorage.getItem(LS.zona) || '';
-
-    // Con una sola zona autorizada no hay nada que preguntar: se toma sola.
-    const permitidas = zonasAutorizadas();
-    if (!permitidas.includes(ZONA) && permitidas.length === 1) {
-      ZONA = permitidas[0];
-      localStorage.setItem(LS.zona, ZONA);
-    }
-    // Si la zona guardada dejó de estar autorizada (el admin se la quitó), se
-    // descarta y se vuelve a preguntar en vez de fallar contra el servidor.
-    if (ZONA && !permitidas.includes(ZONA)) ZONA = '';
-
-    // Sin zona no se puede operar: se pregunta antes de mostrar el escáner.
-    if (!ZONAS_VALIDAS.includes(ZONA)) {
-      ZONA = '';
-      pintarOpcionesZona();
-      $('zona-opciones').classList.remove('oculto');
-      $('zona-cancelar').classList.add('oculto');
-      $('zona-picker').classList.remove('oculto');
-      return;
-    }
+    COLA=leerLS(LS.cola,[]);
+    RECEPTORES=leerLS(LS.receptores,{fecha:'',mapa:{}});
+    if (!RECEPTORES?.mapa) RECEPTORES={fecha:'',mapa:{}};
+    ZONA=''; // GPS resuelve el punto de cada visita; una zona de ayer no se asume actual.
+    const previo=leerLS(LS.servicio,null);
+    if (previo?.iniciado && previo.usuario === (SESION?.repartidor?.id ?? 'legado') && previo.fecha === diaComedor() && zonasAutorizadas().includes(previo.zona)) ZONA=previo.zona;
     await arrancarApp();
   }
 
@@ -906,6 +944,7 @@
 
     // Primero lo guardado: la app abre y sirve aunque no haya señal
     cargarCacheDeZona();
+    proponerContexto();
     pintar();
 
     if (!APP_ARRANCADA) {
@@ -916,59 +955,71 @@
       // Al ocultarse se suelta, para no gastar batería en el trayecto.
       iniciarVigilancia();
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) detenerVigilancia(); else iniciarVigilancia();
+        if (document.hidden) { detenerVigilancia(); if (escaneando) detenerCamara(); }
+        else { iniciarVigilancia(); sincronizar(); }
       });
       // El modo lector se recuerda: se configura una vez por equipo
       $('chk-lector').checked = leerLS(LS.lector, false);
       alternarModoLector($('chk-lector').checked);
 
-      window.addEventListener('online',  estadoConexion);
+      window.addEventListener('online', () => { estadoConexion(); sincronizar(); });
       window.addEventListener('offline', estadoConexion);
       estadoConexion();
       setInterval(sincronizar, 60000);
     }
 
+    iniciarVigilancia();
     await sincronizar();          // sube lo pendiente y baja lo del día
   }
 
   function estadoConexion() {
-    const el = $('conexion');
-    const on = navigator.onLine;
-    el.className = 'conexion ' + (on ? 'on' : 'off');
-    el.textContent = on ? 'EN LÍNEA' : 'SIN SEÑAL';
-    $('offline-note').classList.toggle('oculto', on);
-    $('app').classList.toggle('sin-conexion', !on);
+    const el=$('conexion');
+    const lista=listaDeHoy();
+    const texto=!lista ? 'FALTA LISTA DE HOY' : ERROR_DESCARGA || !navigator.onLine ? 'LISTA GUARDADA' : 'LISTA ACTUALIZADA';
+    el.className='conexion ' + (lista && !ERROR_DESCARGA && navigator.onLine ? 'on' : 'off');
+    el.textContent=texto;
+    $('btn-descargar').classList.toggle('oculto',lista && !ERROR_DESCARGA);
+    $('btn-descargar').disabled=SINCRONIZANDO;
+    $('btn-descargar').textContent=SINCRONIZANDO ? 'Actualizando…' : lista ? 'Actualizar reparto' : 'Descargar reparto de hoy';
+    $('offline-note').classList.toggle('oculto', !lista || (!ERROR_DESCARGA && navigator.onLine));
+    $('app').classList.toggle('sin-conexion',ERROR_DESCARGA || !navigator.onLine);
   }
 
-  // ── Llegada al punto ──────────────────────────────────────
-  // El operador selecciona el turno; los pendientes nunca cambian esa selección.
-  function turnoEnCurso() {
-    return TURNO;
-  }
-
-  function restaurarTurno() {
-    const guardado = leerLS(LS.turno, null);
-    TURNO = guardado?.fecha === FECHA && guardado?.zona === ZONA && GoLunchReparto.turnoValido(guardado.turno)
-      ? guardado.turno : '';
-  }
-
-  function seleccionarTurno(turno) {
-    if (!FECHA || !ZONA) return;
-    if (RECEPTOR_PENDIENTE) cancelarReceptor();
-    if (escaneando) detenerCamara();
-    if (!GoLunchReparto.turnoValido(turno)) {
-      TURNO = ''; localStorage.removeItem(LS.turno); pintar(); return;
-    }
-    TURNO = turno; guardar(LS.turno, {fecha:FECHA,zona:ZONA,turno}); pintar();
-  }
-
+  function turnoEnCurso() { return TURNO; }
   function validarGrupoEnPantalla(pedido) {
-    const grupo = GoLunchReparto.validarGrupo(pedido,ZONA,TURNO);
-    if (grupo.ok) return true;
-    const mensaje = grupo.motivo === 'turno_incorrecto'
-      ? 'Este pedido pertenece a ' + (TURNO_TXT[pedido.turno] || 'otro turno') + '. Cambia el turno de reparto para registrarlo.'
-      : grupo.motivo === 'zona_incorrecta' ? 'El pedido corresponde a otra zona.' : 'Selecciona la zona y el turno que estás repartiendo.';
-    flash('mal','Revisa zona y turno',mensaje); return false;
+    if (!listaDeHoy() || !SERVICIO_INICIADO) {
+      flash('mal','Comienza el reparto','Descarga la lista de hoy, revisa el punto y pulsa Comenzar entrega.'); return false;
+    }
+    if (!GoLunchReparto.validarGrupo(pedido,ZONA,TURNO).ok || !GoLunchGuiado.esDelServicio(pedido,servicioActual())) {
+      flash('mal','Etiqueta de otro servicio','Verifica el punto y horario de esta etiqueta. Cambia de servicio antes de registrarla.'); return false;
+    }
+    return true;
+  }
+  async function comenzarEntrega() {
+    const servicio=servicioActual();
+    if (!listaDeHoy() || !servicio || !servicio.pendientes) return;
+    if (!SERVICIO_INICIADO) {
+      SERVICIO_INICIADO=true; recordarServicio();
+      if (!llegadaRegistrada(TURNO)) await registrarLlegada();
+      pintar();
+    }
+    if (!MODO_LECTOR && !escaneando) await alternarCamara();
+    else enfocarLector();
+  }
+  function finalizarReparto() {
+    if (!SERVICIO_INICIADO) return;
+    const pendientes=comidasEnPantalla().filter(p => !p.entregado_en).length;
+    if (!confirm('Finalizar este reparto. Quedan ' + pendientes + ' comida(s) pendientes; conservarán ese estado hasta que se identifique y registre cada paquete.')) return;
+    if (escaneando) detenerCamara();
+    cancelarManual(); if (RECEPTOR_PENDIENTE) cancelarReceptor();
+    SERVICIO_INICIADO=false; SERVICIO_MANUAL=true; SUPERVISOR_ACTUAL=''; recordarServicio(); pintar();
+  }
+  function prepararSupervisor() {
+    if (!SERVICIO_INICIADO) return;
+    const quien=prompt('¿Qué supervisor recibe estos paquetes? Escanea cada etiqueta después de indicar su nombre.',SUPERVISOR_ACTUAL);
+    if (quien === null) return;
+    SUPERVISOR_ACTUAL=quien.trim().slice(0,120); recordarServicio(); pintar();
+    if (SUPERVISOR_ACTUAL && !escaneando && !MODO_LECTOR) alternarCamara();
   }
 
   function llegadaRegistrada(turno) {
@@ -1014,7 +1065,8 @@
 
     const item = {
       fecha: FECHA, zona: ZONA, turno,
-      llegada_en: new Date().toISOString(),
+      llegada_en: ahoraComedor().toISOString(),
+      repartidor_id: SESION?.repartidor?.id ?? null,
       lat: pos ? pos.lat : null,
       lon: pos ? pos.lon : null,
       precision_m: pos ? pos.precision_m : null
@@ -1023,65 +1075,17 @@
     guardar(LS.llegadas, LLEGADAS);
 
     flash(aviso ? 'dup' : 'ok', 'Llegada registrada · ' + horaLocal(item.llegada_en),
-      aviso || ((ZONA_TXT[ZONA] || '') + ' · ' + (TURNO_TXT[turno] || '')));
-    pintar();
-    if (navigator.onLine) sincronizar();
-  }
-
-  // ── Cierre de ruta ────────────────────────────────────────
-  // Lo que el empleado no recogió NO es comida no entregada: el proveedor la
-  // cocinó y la llevó, y devolverla es merma suya. Se deja con el supervisor y
-  // queda constancia de quién la recibió. Sin esto, el propio sistema
-  // registraba esas comidas como faltantes — evidencia en contra.
-  function cerrarRuta() {
-    // Una cobertura nunca se cierra en masa: sus etiquetas deben escanearse y
-    // quedar ligadas al responsable declarado o al gafete del receptor real.
-    const grupo = GoLunchReparto.pedidosDelGrupo(PEDIDOS, ZONA, TURNO);
-    const especiales = grupo.filter(p => p.tipo === 'cobertura' && !p.entregado_en);
-    const pend = GoLunchReparto.pendientesDelCierre(PEDIDOS, ZONA, TURNO);
-    if (!pend.length) return mostrarAviso('avisoSync', 'No queda nada pendiente por cerrar.', 'info');
-
-    const previo = localStorage.getItem(LS.supervisor) || '';
-    const quien = prompt(
-      (ZONA_TXT[ZONA] || ZONA) + ' · ' + TURNO_TXT[TURNO] + '\n' +
-      'Vas a registrar ' + pend.length + ' comida(s) regulares como entregadas al supervisor.\n\n' +
-      '¿Quién las recibió?', previo);
-    if (quien === null) return;
-    const nombre = quien.trim();
-    if (!nombre) return mostrarAviso('avisoSync', 'Hace falta el nombre de quien recibió.', 'err');
-    localStorage.setItem(LS.supervisor, nombre);
-
-    const pos = posicionUtil();
-    const ahora = new Date().toISOString();
-    for (const p of pend) {
-      p.entregado_en = ahora;
-      p.entregado_a = 'supervisor';
-      p.recibido_por = nombre;
-      COLA.push({
-        tipo: 'regular', codigo_entrega: p.numero_empleado,
-        numero_empleado: p.numero_empleado, entregado_en: ahora,
-        fecha: FECHA, zona: ZONA, turno: TURNO, accion: 'cierre_ruta',
-        entregado_a: 'supervisor', recibido_por: nombre,
-        repartidor_id: SESION?.repartidor?.id ?? null,
-        lat: pos ? pos.lat : null, lon: pos ? pos.lon : null,
-        precision_m: pos ? pos.precision_m : null
-      });
-    }
-    guardar(LS.cola, COLA);
-    guardarCacheZona();
-    flash('ok', pend.length + ' entregadas al supervisor', 'Recibió: ' + nombre);
-    if (especiales.length) {
-      mostrarAviso('avisoSync', especiales.length + ' cobertura(s) siguen pendientes: escanea cada etiqueta para registrar al receptor.', 'info');
-    }
+      aviso || ((ZONA_TXT[ZONA] || '') + ' · ' + (TURNO_TXT[turno] || '')), 'Inicio de reparto');
     pintar();
     if (navigator.onLine) sincronizar();
   }
 
   function guardarCacheZona() {
-    guardar(claveDatos(ZONA), {
-      fecha: FECHA, pedidos: PEDIDOS, zona: ZONA,
-      turno_hora: TURNO_HORA, tolerancia_min: TOLERANCIA_MIN, motivos: MOTIVOS
-    });
+    guardar(claveDatos(ZONA),{fecha:FECHA,pedidos:PEDIDOS,zona:ZONA,turno_hora:TURNO_HORA,tolerancia_min:TOLERANCIA_MIN,motivos:MOTIVOS});
+    const modificados=new Map(PEDIDOS.map(p => [clavePedido(p),p]));
+    TODOS_PEDIDOS=TODOS_PEDIDOS.map(p => p.zona === ZONA ? modificados.get(clavePedido(p)) || p : p);
+    guardar(LS.jornada,{usuario:SESION?.repartidor?.id ?? 'legado',fecha:FECHA,pedidos:TODOS_PEDIDOS,
+      puntos:PUNTOS,llegadas:LLEGADAS_DIA,reloj:RELOJ,descargada:ULTIMA_DESCARGA});
   }
 
   // Advertencia de ubicación. Va a la vista y no a la consola: si el permiso
@@ -1106,21 +1110,27 @@
   }
 
   function pintarLlegada() {
-    const turno = turnoEnCurso();
-    const l = llegadaRegistrada(turno);
-    const btn = $('btn-llegada'), est = $('llegada-estado');
-    if (!btn || !est) return;
-    btn.disabled = !TURNO;
-    btn.classList.toggle('oculto', !!l);
-    est.classList.toggle('oculto', !l);
-    if (l) {
-      const hora = horaLocal(l.llegada_en);
-      const sinSubir = LLEGADAS.some(x => x.turno === turno && x.zona === ZONA);
-      est.textContent = 'Llegada registrada a las ' + hora + ' · ' +
-        (TURNO_TXT[turno] || turno) + (sinSubir ? ' · por subir' : '');
-    } else {
-      btn.textContent = 'Llegué al punto de entrega · ' + (TURNO_TXT[turno] || '');
-    }
+    const servicio=servicioActual();
+    const btn=$('btn-llegada'), est=$('llegada-estado');
+    $('servicio-punto').textContent=ZONA_TXT[ZONA] || '¿Dónde vas a entregar?';
+    $('servicio-horario').textContent=servicio ? servicio.titulo + ' · ' + servicio.hora + ' · ' + servicio.pendientes + ' pendiente(s)' : 'Selecciona el servicio de hoy';
+    $('servicio-ayuda').textContent=!listaDeHoy() ? 'Descarga la lista de hoy con señal antes de comenzar.' :
+      SERVICIO_INICIADO ? (SUPERVISOR_ACTUAL ? 'Escaneando para supervisor: ' + SUPERVISOR_ACTUAL : 'Escanea cada paquete. Punto y servicio permanecen fijos.') :
+      !ZONA ? 'Buscando tu punto por GPS. También puedes elegirlo abajo.' : ZONA_MANUAL ? 'Punto elegido manualmente. Revisa el horario antes de comenzar.' : 'Punto detectado. Revisa el horario antes de comenzar.';
+    btn.disabled=!listaDeHoy() || !servicio || !servicio.pendientes;
+    btn.textContent=SERVICIO_INICIADO ? 'Continuar escaneando' : 'Comenzar entrega';
+    btn.classList.toggle('oculto',SERVICIO_INICIADO && escaneando);
+    const llegada=llegadaRegistrada(TURNO);
+    est.classList.toggle('oculto',!SERVICIO_INICIADO || !llegada);
+    if (llegada) est.textContent='Primera llegada del turno: ' + horaLocal(llegada.llegada_en) + (LLEGADAS.some(l => l.fecha === FECHA && l.zona === ZONA && l.turno === TURNO) ? ' · por subir' : '');
+    $('barra-llegada').classList.toggle('iniciado',SERVICIO_INICIADO);
+    const botonServicio=s => `<button class="btn sec" type="button" onclick="seleccionarServicio(decodeURIComponent('${codificarClave(s.id)}'))">${esc(s.titulo)} · ${esc(s.hora)} · ${s.pendientes} pendiente(s)</button>`;
+    $('servicio-opciones').innerHTML=!ZONA ? zonasAutorizadas().map(z => `<button class="btn sec" type="button" onclick="elegirZona('${z}')">${esc(ZONA_TXT[z])}</button>`).join('') : !servicio ? agenda().map(botonServicio).join('') : '';
+    $('puntos-manuales').innerHTML=zonasAutorizadas().map(z => `<button class="btn sec" type="button" onclick="elegirZona('${z}')">${esc(ZONA_TXT[z])}</button>`).join('');
+    $('servicios-manuales').innerHTML=agenda().map(botonServicio).join('');
+    $('btn-supervisor').classList.toggle('oculto',!SERVICIO_INICIADO || servicio?.id.startsWith('cobertura|'));
+    $('btn-supervisor').textContent=SUPERVISOR_ACTUAL ? 'Cambiar receptor: ' + SUPERVISOR_ACTUAL : 'Escanear paquetes para supervisor';
+    $('btn-finalizar').classList.toggle('oculto',!SERVICIO_INICIADO);
   }
 
   function zonaDeElemento(e) {
@@ -1136,7 +1146,14 @@
 
   // ── Sincronización ────────────────────────────────────────
   async function sincronizar() {
-    if (!navigator.onLine) return;
+    if (SINCRONIZANDO) return;
+    SINCRONIZANDO=true; estadoConexion();
+    const control=new AbortController(); SYNC_ABORTADOR=control;
+    const limite=setTimeout(() => control.abort(),20000);
+    try { await sincronizarJornada(); } finally { clearTimeout(limite); if (SYNC_ABORTADOR === control) SYNC_ABORTADOR=null; SINCRONIZANDO=false; estadoConexion(); }
+  }
+  async function sincronizarJornada() {
+    const epoca=typeof EPOCA_SESION === 'number' ? EPOCA_SESION : 0;
 
     // 0) Las llegadas primero. Van antes que los escaneos a propósito: si la
     //    subida se corta a media sincronización, lo que se salva es la hora de
@@ -1155,6 +1172,7 @@
           // llegada por un error pasajero costaría el 30% de esa entrega.
           if (r.ok) continue;
           if (r.status === 400) continue;
+          if (r.status === 403) mostrarAviso('avisoSync','Una llegada anterior requiere la sesión del mismo repartidor. El registro se conserva para revisión.','err');
           quedan.push(l);
         } catch { quedan.push(l); }
       }
@@ -1258,45 +1276,24 @@
       // Se apunta la zona y la época con que empezó esta descarga: si el
       // repartidor cambia de zona mientras la petición viaja, lo que llegue
       // pertenece a la zona anterior y NO debe pintarse encima de la nueva.
-      const zonaPeticion = ZONA;
-      const epocaPeticion = EPOCA_ZONA;
-      const vigente = () => zonaPeticion === ZONA && epocaPeticion === EPOCA_ZONA;
-
-      // Siempre 'hoy'. Quien la resuelve es el servidor y la devuelve en
-      // d.fecha; por eso el "si el día avanzó" se evalúa más abajo, contra la
-      // fecha que regresó y no contra la que se pidió.
-      const fechaObjetivo = FECHA_REPARTO;
-      if (!vigente()) return;
-
-      const url = API_BASE + '/api/entrega/' + fechaObjetivo +
-        (zonaPeticion ? '?zona=' + encodeURIComponent(zonaPeticion) : '');
-      const r = await fetch(url, { headers: cabecerasAuth() });
+      const r=await fetch(API_BASE + '/api/entrega/hoy',{headers:cabecerasAuth(),cache:'no-store',signal:typeof SYNC_ABORTADOR === 'undefined' ? undefined : SYNC_ABORTADOR?.signal});
+      if (typeof EPOCA_SESION === 'number' && epoca !== EPOCA_SESION) return;
       if (r.status === 401) return sesionRechazada(await r.json().catch(() => ({})));
-      // Un fallo aquí NO puede pasar callado. Antes decía `return` a secas y la
-      // pantalla se quedaba con la fecha y la lista del día anterior, con la
-      // misma cara de dato bueno. El 22/ago el repartidor estuvo intentando
-      // escanear contra la lista del 21 sin ninguna señal de que estaba viendo
-      // ayer. La lista vieja se conserva —sirve de respaldo sin señal— pero
-      // desde ahora se dice en pantalla.
-      if (!r.ok) { marcarListaVieja('no se pudo actualizar (error ' + r.status + ')'); return; }
-      const d = await r.json();
-      if (!vigente()) return;       // llegó tarde: la zona ya es otra
-      listaAlDia();
-      // Si el día avanzó, lo de ayer ya no aplica: se limpia antes de pintar.
-      // Va aquí y no antes de pedir porque a la URL se le manda 'hoy' y la
-      // fecha real solo se conoce al responder el servidor.
-      if (FECHA && d.fecha && d.fecha !== FECHA) { PEDIDOS = []; }
-      FECHA = d.fecha;
-      restaurarTurno();
-      // Lo del servidor manda, EXCEPTO para lo que sigue en la cola local:
-      // esas entregas ya ocurrieron aunque el servidor todavía no las tenga.
-      const enCola = new Map(COLA.filter(e => GoLunchReparto.turnoValido(e.turno) &&
-        !(e.tipo === 'cobertura' && (e.accion === 'cierre_ruta' || e.entregado_a === 'supervisor'))).map(e => [clavePedido(e), e]));
-      PEDIDOS = d.pedidos.map(p =>
-        !p.entregado_en && enCola.has(clavePedido(p)) &&
-          GoLunchReparto.validarGrupo(p,enCola.get(clavePedido(p)).zona,enCola.get(clavePedido(p)).turno).ok
-          ? { ...p, entregado_en: enCola.get(clavePedido(p)).entregado_en }
-          : p);
+      if (!r.ok) { ERROR_DESCARGA=true; marcarListaVieja('no se pudo actualizar (error ' + r.status + ')'); estadoConexion(); return; }
+      const d=await r.json();
+      if (typeof EPOCA_SESION === 'number' && epoca !== EPOCA_SESION) return;
+      if (!d.fecha || !Array.isArray(d.pedidos)) throw new Error('Lista inválida');
+      const cambio=FECHA && FECHA !== d.fecha;
+      if (cambio) { SERVICIO_INICIADO=false; SERVICIO_MANUAL=false; SERVICIO_ID=''; SUPERVISOR_ACTUAL=''; if (escaneando) detenerCamara(); }
+      FECHA=d.fecha;
+      if (d.server_time && Number.isFinite(Date.parse(d.server_time))) RELOJ={servidor:d.server_time,aparato:Date.now()};
+      const enCola=new Map(COLA.filter(e => e.fecha === FECHA && e.accion !== 'cierre_ruta' && e.origen !== 'lista' && GoLunchReparto.turnoValido(e.turno)).map(e => [clavePedido(e),e]));
+      TODOS_PEDIDOS=d.pedidos.filter(p => zonasAutorizadas().includes(p.zona) && !p.no_surtido_en).map(p => {
+        const e=enCola.get(clavePedido(p));
+        return !p.entregado_en && e && GoLunchReparto.validarGrupo(p,e.zona,e.turno).ok ? {...p,entregado_en:e.entregado_en,metodo_entrega:e.metodo_entrega} : p;
+      });
+      PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA);
+      ULTIMA_DESCARGA=new Date().toISOString(); ERROR_DESCARGA=false;
       if (d.turno_hora) TURNO_HORA = d.turno_hora;
       if (d.tolerancia_min != null) TOLERANCIA_MIN = d.tolerancia_min;
       if (d.motivos_tardia) MOTIVOS = d.motivos_tardia;
@@ -1311,15 +1308,12 @@
         INDICE_ZONAS = d.indice_zonas;
         guardar(LS.indice, { fecha: FECHA, mapa: INDICE_ZONAS });
       }
-      guardar(claveDatos(zonaPeticion), {
-        fecha: FECHA, pedidos: PEDIDOS, zona: zonaPeticion,
-        turno_hora: TURNO_HORA, tolerancia_min: TOLERANCIA_MIN, motivos: MOTIVOS
-      });
-      pintar();
+      restaurarServicio(); proponerContexto(); guardarCacheZona(); listaAlDia(); pintar();
     } catch {
-      // Sin señal. La lista guardada sigue sirviendo —para eso se guarda—
-      // pero hay que decir que es la de la última vez, no la de ahora.
-      marcarListaVieja('sin conexión');
+      if (typeof EPOCA_SESION === 'number' && epoca !== EPOCA_SESION) return;
+      ERROR_DESCARGA=true;
+      marcarListaVieja(listaDeHoy() ? 'lista de hoy guardada; no se pudo conectar al servidor' : 'falta descargar la lista de hoy');
+      estadoConexion();
     }
   }
 
@@ -1344,7 +1338,8 @@
     const caja = $('lista-vieja');
     if (!caja) return;
     caja.textContent = 'Estás viendo la lista del ' + (fechaLegible(FECHA) || 'último día descargado') +
-                       ' — ' + motivo + '. Conéctate y vuelve a abrir la app para ver la de hoy.';
+                       ' — ' + motivo + '. Pulsa Descargar reparto de hoy cuando tengas señal.';
+    caja.classList.toggle('hoy-guardada',listaDeHoy());
     caja.classList.remove('oculto');
   }
 
@@ -1353,7 +1348,7 @@
     if (!caja) return;
     // Aunque la descarga salga bien, si la fecha en pantalla es anterior a hoy
     // algo quedó atrás y hay que decirlo igual.
-    const hoyAparato = fechaDelAparato();
+    const hoyAparato = diaComedor();
     if (FECHA && hoyAparato && FECHA < hoyAparato) {
       caja.textContent = 'Esta lista es del ' + (fechaLegible(FECHA) || FECHA) +
                          ', no de hoy. Vuelve a abrir la app con señal.';
@@ -1410,7 +1405,7 @@
   }
 
   function abrirReceptor(p) {
-    RECEPTOR_PENDIENTE = { pedido: p, esperandoGafete: false };
+    RECEPTOR_PENDIENTE = { pedido: p, esperandoGafete: false, metodo: ORIGEN_PENDIENTE };
     $('receptor-titulo').textContent = 'Confirma quién recibe';
     $('receptor-texto').textContent = 'Esta persona fue indicada para recibir toda la cobertura. Solo se pregunta en el primer paquete del folio.';
     $('receptor-resumen').innerHTML = '<span>Responsable indicado</span><b>' + esc(p.responsable_nombre || '—') + '</b><small>#' + esc(p.responsable_numero || '—') + ' · ' + esc(p.folio || '') + '</small>';
@@ -1450,7 +1445,7 @@
     recordarReceptor(p, receptor);
     RECEPTOR_PENDIENTE = null;
     cerrarReceptor();
-    registrarEntrega(p, receptor);
+    registrarEntrega(p, receptor, pendiente.metodo);
   }
 
   function solicitarGafeteReceptor() {
@@ -1487,14 +1482,15 @@
     const p = pendiente.pedido;
     RECEPTOR_PENDIENTE = null;
     cerrarReceptor();
-    registrarEntrega(p, receptor);
+    registrarEntrega(p, receptor, pendiente.metodo);
     return true;
   }
 
   function entregar(codigo, origen) {
     // El campo se limpia SIEMPRE, no solo al acertar: con un lector, un rechazo
     // que dejara el texto haría que el siguiente escaneo se pegara al anterior.
-    if (origen === 'manual') { $('manual').value = ''; enfocarLector(); }
+    if (origen === 'lector') { $('manual').value = ''; enfocarLector(); }
+    if (!['camara','lector','manual'].includes(origen) || $('manual-confirmacion').open) return;
     codigo = String(codigo || '').trim();
     if (!codigo) return;
     if (RECEPTOR_PENDIENTE?.esperandoGafete && leerGafeteReceptor(codigo)) return;
@@ -1541,6 +1537,7 @@
         : 'El número ' + identificador + ' no tiene pedido para hoy.');
     }
     if (!validarGrupoEnPantalla(p)) return;
+    ORIGEN_PENDIENTE=origen;
     if (p.entregado_en) return flash('dup', 'Ya estaba entregada', p.nombre + ' — se registró antes.');
 
     if (p.tipo === 'cobertura') {
@@ -1551,10 +1548,12 @@
     registrarEntrega(p, null);
   }
 
-  function registrarEntrega(p, receptor) {
+  function registrarEntrega(p, receptor, metodo = ORIGEN_PENDIENTE) {
     if (!p || p.entregado_en || !validarGrupoEnPantalla(p)) return;
 
-    p.entregado_en = new Date().toISOString();
+    p.entregado_en = ahoraComedor().toISOString();
+    p.metodo_entrega=metodo;
+    if (p.tipo !== 'cobertura' && SUPERVISOR_ACTUAL) { p.entregado_a='supervisor'; p.recibido_por=SUPERVISOR_ACTUAL; }
     if (p.tipo === 'cobertura' && receptor) {
       p.entregado_a = 'responsable';
       p.recibido_por = receptor.nombre;
@@ -1579,8 +1578,9 @@
       tipo: p.tipo === 'cobertura' ? 'cobertura' : 'regular',
       codigo_entrega: p.tipo === 'cobertura' ? p.codigo_entrega : p.numero_empleado,
       numero_empleado: p.numero_empleado, entregado_en: p.entregado_en,
-      fecha: FECHA, zona: ZONA, turno: TURNO, accion: 'entrega',
-      entregado_a: p.tipo === 'cobertura' ? 'responsable' : 'empleado',
+      fecha: FECHA, zona: ZONA, turno: TURNO, accion: 'entrega', metodo_entrega:metodo,
+      entregado_a: p.tipo === 'cobertura' ? 'responsable' : SUPERVISOR_ACTUAL ? 'supervisor' : 'empleado',
+      recibido_por: p.tipo === 'cobertura' ? receptor?.nombre || null : SUPERVISOR_ACTUAL || null,
       receptor_numero: receptor?.numero || null,
       receptor_nombre: receptor?.nombre || null,
       receptor_discrepante: receptor?.discrepante === true,
@@ -1592,6 +1592,7 @@
       precision_m: pos ? pos.precision_m : null
     });
     guardar(LS.cola, COLA);
+    guardarCacheZona();
 
     const tardia = esTardia(p);
     flash(tardia ? 'dup' : 'ok', p.nombre,
@@ -1607,15 +1608,29 @@
     enfocarLector();   // dejar el campo armado para el siguiente escaneo
   }
 
-  function entregarManual() { entregar($('manual').value, 'manual'); }
-
-  function entregarDesdeLista(claveCodificada) {
-    const p = pedidoPorClave(decodeURIComponent(claveCodificada));
-    if (!p) return;
-    const codigo = p.tipo === 'cobertura'
-      ? 'EX|' + p.codigo_entrega + '|' + FECHA
-      : p.numero_empleado;
-    entregar(codigo, 'lista');
+  function entregarManual() {
+    if (MODO_LECTOR) entregar($('manual').value,'lector'); else buscarManual();
+  }
+  function buscarManual() {
+    if (!listaDeHoy() || !SERVICIO_INICIADO) return flash('mal','Comienza el reparto','Revisa el punto y horario y pulsa Comenzar entrega.');
+    const numero=$('manual').value.trim();
+    if (!numero) return;
+    const candidatos=comidasEnPantalla().filter(p => String(p.numero_empleado) === numero && !p.entregado_en);
+    if (!candidatos.length) return flash('mal','Sin comida pendiente en este servicio','Verifica el número escrito en la etiqueta, el punto y el horario.');
+    MANUAL_NUMERO=numero;
+    $('manual-error').textContent='';
+    $('manual-resultados').innerHTML=candidatos.map(p => `<article><b>${esc(p.nombre)} · #${esc(p.numero_empleado)}</b><p>${esc(p.platillo)}</p><p>${esc(ZONA_TXT[p.zona])} · ${esc(servicioActual().hora)} · ${p.tipo === 'cobertura' ? 'Cobertura ' + esc(p.folio || '') : 'Regular'}</p><button class="btn" type="button" onclick="confirmarManual('${codificarClave(clavePedido(p))}')">Confirmar esta comida</button></article>`).join('');
+    $('manual-confirmacion').showModal();
+  }
+  function cancelarManual() {
+    MANUAL_NUMERO=''; if ($('manual-confirmacion').open) $('manual-confirmacion').close();
+  }
+  function confirmarManual(clave) {
+    const p=pedidoPorClave(decodeURIComponent(clave));
+    if (!MANUAL_NUMERO || !p || String(p.numero_empleado) !== MANUAL_NUMERO || !validarGrupoEnPantalla(p)) return;
+    cancelarManual(); $('manual').value='';
+    const codigo=p.tipo === 'cobertura' ? 'EX|' + p.codigo_entrega + '|' + FECHA : p.numero_empleado + '|' + FECHA;
+    entregar(codigo,'manual');
   }
 
   // ── Entrega tardía ────────────────────────────────────────
@@ -1647,7 +1662,6 @@
     return limiteDelTurno(p.turno, p.zona || ZONA);
   }
 
-  let pedidoEnMotivo = null;
 
   // Para retomar una tardía que quedó sin motivo (la app se cerró a media)
   function pedirMotivoPorClave(claveCodificada) {
@@ -1682,10 +1696,7 @@
       const enCola = COLA.find(e => clavePedido(e) === clavePedido(pedidoEnMotivo));
       if (enCola) enCola.motivo_tardia = id;
       guardar(LS.cola, COLA);
-      guardar(claveDatos(ZONA), {
-        fecha: FECHA, pedidos: PEDIDOS, zona: ZONA,
-        turno_hora: TURNO_HORA, tolerancia_min: TOLERANCIA_MIN, motivos: MOTIVOS
-      });
+      guardarCacheZona();
     }
     pedidoEnMotivo = null;
     $('motivo-fondo').classList.remove('ver');
@@ -1746,24 +1757,27 @@
   }
 
   // ── Cámara ────────────────────────────────────────────────
-  async function alternarCamara() {
+  async function alternarCamara(prueba = false) {
+    if (!prueba && (!listaDeHoy() || !SERVICIO_INICIADO)) return flash('mal','Comienza el reparto','Revisa el punto y horario y pulsa Comenzar entrega.');
     if (escaneando) return detenerCamara();
+    if (ABRIENDO_CAMARA) return;
+    ABRIENDO_CAMARA=true;
+    const contexto=FECHA + '|' + ZONA + '|' + SERVICIO_ID;
+    let nuevo=null;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      nuevo=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      if ((!SERVICIO_INICIADO && !prueba) || contexto !== FECHA + '|' + ZONA + '|' + SERVICIO_ID) { nuevo.getTracks().forEach(t=>t.stop()); return; }
+      const v=$('video'); v.srcObject=nuevo; await v.play();
+      if ((!SERVICIO_INICIADO && !prueba) || contexto !== FECHA + '|' + ZONA + '|' + SERVICIO_ID) { nuevo.getTracks().forEach(t=>t.stop()); return; }
+      stream=nuevo; escaneando=true;
+      $('camara').classList.remove('oculta'); $('btn-camara').classList.add('alta');
+      $('btn-camara').setAttribute('aria-pressed','true'); $('btn-camara-label').textContent='Cerrar cámara';
+      $('scan-status').textContent='Buscando código…'; pintarLlegada(); requestAnimationFrame(leerCuadro);
     } catch {
-      $('scan-status').textContent = 'Cámara sin permiso';
-      return mostrarAviso('avisoSync', 'No se pudo abrir la cámara. Usa la captura manual o revisa los permisos.', 'err');
-    }
-    const v = $('video');
-    v.srcObject = stream;
-    await v.play();
-    escaneando = true;
-    $('camara').classList.remove('oculta');
-    $('btn-camara').classList.add('alta');
-    $('btn-camara').setAttribute('aria-pressed', 'true');
-    $('btn-camara-label').textContent = 'Cerrar cámara';
-    $('scan-status').textContent = 'Buscando código…';
-    requestAnimationFrame(leerCuadro);
+      if (nuevo) nuevo.getTracks().forEach(t=>t.stop());
+      $('scan-status').textContent='Cámara sin permiso';
+      mostrarAviso('avisoSync','No se pudo abrir la cámara. Usa el número de la etiqueta dañada o revisa los permisos.','err');
+    } finally { ABRIENDO_CAMARA=false; }
   }
 
   function detenerCamara() {
@@ -1775,6 +1789,7 @@
     $('btn-camara').setAttribute('aria-pressed', 'false');
     $('btn-camara-label').textContent = 'Abrir cámara';
     $('scan-status').textContent = 'Cámara detenida';
+    if (APP_ARRANCADA) pintarLlegada();
     enfocarLector();   // al cerrar la cámara, el lector vuelve a quedar armado
   }
 
@@ -1801,8 +1816,7 @@
 
   // ── Pintado ───────────────────────────────────────────────
   function pintar() {
-    $('cab-fecha').textContent = fechaLegible(FECHA) || 'Sin fecha de servicio';
-    $('zona-activa-txt').textContent = ZONA_TXT[ZONA] || '—';
+    $('cab-fecha').textContent = FECHA ? FECHA.split('-').reverse().join('/') : 'Sin fecha de servicio';
     // Quién opera esta tablet. En modo legado no hay persona: se dice tal cual
     // en vez de inventar un nombre.
     const ses = $('sesion-repartidor');
@@ -1810,37 +1824,20 @@
       $('sesion-nombre').textContent = SESION?.repartidor?.nombre || 'Reparto general';
       ses.classList.toggle('legado', !SESION?.repartidor);
     }
-    $('zona-activa').dataset.zona = ZONA || '';
-    const selector = $('turno-reparto');
-    selector.value = TURNO;
-    selector.disabled = !FECHA || !ZONA;
-    for (const opcion of selector.options) if (opcion.value) opcion.textContent = TURNO_TXT[opcion.value] +
-      (FECHA && ZONA ? ' · ' + GoLunchOperacion.horaTexto(opcion.value,ZONA,FECHA) : '');
-    $('btn-camara').disabled = !TURNO;
-
-    // El servidor ya filtra por zona; este segundo filtro es por si quedó una
-    // caché mezclada de la versión anterior. Contadores, listas y "última
-    // entrega" salen todos de aquí, así que con esto ninguno cuenta de más.
-    const delDia = GoLunchReparto.pedidosDelGrupo(PEDIDOS, ZONA, TURNO);
+    $('btn-camara').disabled = !escaneando && (!listaDeHoy() || !SERVICIO_INICIADO);
+    const delDia = comidasEnPantalla();
     const hechas = delDia.filter(p => p.entregado_en);
     const faltan = delDia.filter(p => !p.entregado_en);
 
     pintarLlegada();
     pintarUbicacion();
-    // Cerrar ruta solo tiene sentido con algo pendiente y la ruta ya empezada:
-    // ofrecerlo antes del primer escaneo invita a cerrar sin haber repartido.
-    const cr = $('cerrar-ruta');
-    const faltanRegulares = GoLunchReparto.pendientesDelCierre(PEDIDOS, ZONA, TURNO);
-    const hechasRegulares = hechas.filter(p => p.tipo === 'regular');
-    if (cr) cr.classList.toggle('oculto', !(faltanRegulares.length && hechasRegulares.length));
-    $('btn-cerrar-ruta').textContent = 'Entregar pendientes de ' + (TURNO_TXT[TURNO] || 'este turno') + ' al supervisor';
-
-    $('n-entregado').textContent = hechas.length;
-    $('n-falta').textContent = faltan.length;
-    $('n-cola').textContent = COLA.length;
+    estadoConexion();
+    $('n-entregado').textContent = listaDeHoy() && servicioActual() ? hechas.length : '—';
+    $('n-falta').textContent = listaDeHoy() && servicioActual() ? faltan.length : '—';
+    $('n-cola').textContent = COLA.length + LLEGADAS.length;
     $('badge-pendientes').textContent = faltan.length;
     $('badge-entregadas').textContent = hechas.length;
-    $('caja-cola').classList.toggle('vacia', COLA.length === 0);
+    $('caja-cola').classList.toggle('vacia', COLA.length + LLEGADAS.length === 0);
 
     const ultima = hechas.slice().sort((a, b) => new Date(b.entregado_en) - new Date(a.entregado_en))[0];
     $('ultima-entrega').classList.toggle('oculto', !ultima);
@@ -1865,6 +1862,7 @@
           ${p.tipo === 'cobertura'
             ? `<span class="cobertura-receptor">Recibe: ${esc(p.recibido_por || p.responsable_nombre || '—')}${p.receptor_discrepante ? ' · receptor distinto' : ''}</span>`
             : ''}
+          ${p.metodo_entrega ? '<span>' + esc(({camara:'Escaneo de cámara',lector:'Escaneo de lector',manual:'Captura manual · etiqueta dañada'})[p.metodo_entrega] || '') + '</span>' : ''}
           ${p.entregado_a === 'supervisor'
             ? `<span class="al-supervisor">Entregada al supervisor${p.recibido_por ? ' · ' + esc(p.recibido_por) : ''}</span>`
             : ''}
@@ -1874,15 +1872,15 @@
         </div>
         ${hecho
           ? (faltaMotivo
-              ? `<button class="btn-e alerta" onclick="pedirMotivoPorClave('${encodeURIComponent(clavePedido(p))}')">Motivo</button>`
+              ? `<button class="btn-e alerta" onclick="pedirMotivoPorClave('${codificarClave(clavePedido(p))}')">Motivo</button>`
               : `<span class="hora ${tardia ? 'tarde' : ''}">${horaLocal(p.entregado_en)}</span>`)
-          : `<button class="btn-e" onclick="entregarDesdeLista('${encodeURIComponent(clavePedido(p))}')">Entregar</button>`}
+          : `<span class="hora">#${esc(p.numero_empleado)}</span>`}
       </div>`;
     };
 
     $('lista-pendientes').innerHTML = faltan.length
       ? faltan.map(p => fila(p, false)).join('')
-      : '<p class="lista-vacia">' + (TURNO ? 'No quedan entregas pendientes en esta zona y turno.' : 'Selecciona Turno A o B para consultar y registrar entregas.') + '</p>';
+      : '<p class="lista-vacia">' + (servicioActual() ? 'No quedan entregas pendientes en este servicio.' : 'Elige el punto y servicio para consultar sus comidas.') + '</p>';
     $('lista-hechas').innerHTML = hechas.length
       ? hechas.map(p => fila(p, true)).join('')
       : '<p class="lista-vacia">Aún no hay entregas registradas.</p>';

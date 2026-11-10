@@ -1979,7 +1979,7 @@ main {
   border-radius: 6px;
   background: var(--azul-light);
   color: var(--azul-mid);
-  font-size: .65rem;
+  font-size: .75rem;
   font-style: normal;
   font-weight: 900;
   letter-spacing: .055em;
@@ -2343,7 +2343,7 @@ main {
 
   #sesion-nombre::before,
   .zona-activa-copy small {
-    font-size: .66rem;
+    font-size: .75rem;
     letter-spacing: .055em;
   }
 
@@ -2390,7 +2390,7 @@ main {
     margin-top: -2px;
     padding: 0;
     gap: 7px;
-    font-size: .66rem;
+    font-size: .75rem;
     order: 4;
   }
 
@@ -2550,3 +2550,45 @@ main {
 .turno-activo select:focus-visible { outline: 2px solid var(--azul-vivo); outline-offset: 2px; }
 @media (max-width: 719px) { .turno-activo { order: 3; flex: 0 0 100%; } }
 @media (max-width: 360px) { .turno-activo { grid-template-columns: 1fr; gap: 4px; } }
+
+/* Reparto guiado: una visita, un servicio y una acción principal. */
+.app-header { position: relative; }
+.app-header .sesion-repartidor { min-height: 44px; padding-block: 3px; }
+.header-actions .conexion { font-size: .75rem; white-space: normal; max-width: 112px; text-align: center; }
+.servicio-ruta { padding: 18px; border: 1px solid var(--azul-line); box-shadow: none; }
+.servicio-ruta h1 { color: var(--tinta); font-size: 1.45rem; line-height: 1.2; letter-spacing: -.02em; }
+.servicio-horario { margin-top: 8px; font-size: 1.05rem; font-weight: 750; color: var(--tinta); }
+#servicio-ayuda { margin-top: 8px; font-size: .9rem; color: var(--gris-text); }
+.servicio-ruta .btn-llegada { margin-top: 16px; min-height: 56px; font-size: 1.1rem; }
+.servicio-ruta.iniciado .btn-llegada { min-height: 44px; margin-top: 10px; font-size: .95rem; }
+.servicio-opciones { display: grid; gap: 8px; margin-top: 10px; }
+.servicio-opciones .btn { white-space: normal; text-align: left; min-height: 48px; }
+.ajustes-reparto { margin-top: 14px; font-size: .9rem; }
+.ajustes-reparto summary { cursor: pointer; min-height: 44px; display: list-item; padding: 10px 0; font-weight: 700; color: var(--azul); }
+.ajustes-reparto p { color: var(--gris-text); }
+.acciones-reparto { display: grid; gap: 8px; margin: 14px 0; }
+.acciones-reparto .btn { white-space: normal; min-height: 48px; }
+.descargar-reparto { margin: 12px; width: calc(100% - 24px); }
+.confirmacion-manual { margin: auto; width: min(460px,calc(100% - 24px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px; color: var(--tinta); background: var(--blanco,#fff); border: 1px solid var(--azul-line); border-radius: 14px; }
+.confirmacion-manual::backdrop { background: rgb(3 15 38 / 65%); }
+.confirmacion-manual h2 { font-size: 1.25rem; line-height: 1.3; }
+.confirmacion-manual p { margin: 10px 0; }
+.confirmacion-manual article { padding: 14px 0; border-top: 1px solid var(--azul-line); }
+.confirmacion-manual .btn { width: 100%; min-height: 48px; white-space: normal; }
+#manual-error { color: var(--rojo); }
+:root[data-theme="dark"] .servicio-ruta { background: #0e2039; }
+:root[data-theme="dark"] .ajustes-reparto summary { color: #b9d2ff; }
+:root[data-theme="dark"] .confirmacion-manual { background: #0e2039; }
+@media (max-width: 430px) {
+  .app-header > .brand-lockup { flex-basis: 94px; }
+  .app-header > .app-heading { flex-basis: 64px; }
+  .app-header .brand-lockup img:first-child { width: 44px; }
+  .app-header .brand-lockup img:last-child { width: 38px; }
+  .header-theme { min-width: 44px; width: 44px; height: 44px; }
+  .header-actions { gap: 5px; }
+  .servicio-ruta { padding: 14px; }
+}
+
+@media (max-width: 430px) {
+  .app-header > .app-heading { min-width: 80px; }
+}
