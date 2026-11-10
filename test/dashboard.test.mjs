@@ -8,7 +8,7 @@ import {datosDashboard} from './fixtures/dashboard.mjs';
 test('61 regulares y 4 coberturas suman 65 comidas de 62 empleados, sin sobrescribir filas',()=>{
   const d=datosDashboard(), r=construirDashboard(d);
   assert.deepEqual({...r.resumen},{activos:131,ordenaron:62,no_ordenaron:69,total_comidas:65,regulares:61,coberturas:4,
-    vieron_no_ordenaron:12,no_abrieron:57,sin_dato:0,accesos_ok:true,entregados:65,pendientes:0,tardias:3});
+    vieron_no_ordenaron:12,no_abrieron:57,sin_dato:0,accesos_ok:true,entregados:65,pendientes:0,tardias:3,no_surtidos:0});
   assert.equal(r.filas.length,134);
   for(const numero of ['00001','00002','00003'])assert.deepEqual(r.filas.filter(f=>f.numero_empleado===numero).map(f=>f.tipo),['regular','cobertura']);
   assert.equal(r.filas.filter(f=>f.numero_empleado==='00062').length,1);

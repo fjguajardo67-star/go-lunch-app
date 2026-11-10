@@ -1220,7 +1220,7 @@
           // siempre y con ella el cambio de zona. Se avisa con nombre y apellido
           // para que ese pedido se registre desde el equipo que sí le toca.
           const RECHAZO_DEFINITIVO = [
-            'sin_pedido', 'sin_pedido_especial', 'solicitud_cancelada',
+            'sin_pedido', 'sin_pedido_especial', 'solicitud_cancelada', 'no_surtido',
             'empleado_no_encontrado', 'sin_numero', 'zona_incorrecta'
           ];
           const rechazados = d.resultados.filter(x => !x.ok && RECHAZO_DEFINITIVO.includes(x.motivo));
@@ -1239,7 +1239,9 @@
               rechazados.length + ' escaneo(s) no se pudieron registrar: ' +
               rechazados.map(x => x.motivo === 'zona_incorrecta'
                 ? (x.numero_empleado || x.codigo_entrega) + ' es de ' + (ZONA_TXT[x.zona_esperada] || 'otra zona') + ' — regístralo desde ese equipo'
-                : (x.numero_empleado || x.codigo_entrega) + ' (' + x.motivo + ')').join(', '), 'err');
+                : (x.numero_empleado || x.codigo_entrega) + (x.motivo === 'no_surtido'
+                  ? ': administración registró no surtido, sin cargo. Verifica la incidencia antes de entregar.'
+                  : ' (' + x.motivo + ')')).join(', '), 'err');
           }
           const revisar = d.resultados.filter(x => !x.ok && !RECHAZO_DEFINITIVO.includes(x.motivo));
           if (revisar.length) mostrarAviso('avisoSync', revisar.length +

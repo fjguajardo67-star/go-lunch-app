@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { MOTIVOS_TARDIA, ZONA as ZONA_COMEDOR } from './menu.js';
 import { contarServicios, limiteComida, tardiaComida, horaComida } from './comidas.js';
+import { noSurtida } from './incidencias.js';
 
 const MIN_OPINIONES = 5;
 
@@ -28,7 +29,7 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
       const plat = p.opcion_texto || p.opcion_id;
       porPlatillo[plat] = (porPlatillo[plat] || 0) + 1;
 
-      if (p.tipo !== 'cobertura') {
+      if (!noSurtida(p) && p.tipo !== 'cobertura') {
         if (['si', 'tal_vez', 'no'].includes(p.rating)) rating[p.rating]++;
         else rating.sin_responder++;
       }
@@ -38,7 +39,7 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
       // contesta la única pregunta que justifica preguntar: cuál quitar.
       // Se cuentan aparte los entregados, porque solo un platillo entregado
       // se pudo calificar: es el denominador honesto de la participación.
-      if (p.tipo !== 'cobertura') {
+      if (!noSurtida(p) && p.tipo !== 'cobertura') {
       const c = porPlatilloRating[plat] || (porPlatilloRating[plat] = {
         platillo: plat, porciones: 0, entregados: 0, si: 0, tal_vez: 0, no: 0
       });
@@ -46,6 +47,10 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
       if (p.entregado_en) c.entregados++;
       if (['si', 'tal_vez', 'no'].includes(p.rating)) c[p.rating]++;
       }
+
+      // Una falla del servicio conserva la solicitud, pero no se atribuye al
+      // empleado ni se usa como entrega, merma por no recoger o calificación.
+      if (noSurtida(p)) continue;
 
       // Sin turno no hay hora de entrega que vencer (pedidos viejos de
       // WhatsApp): se da por vencido cuando el día ya pasó.
@@ -132,7 +137,12 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
 
     return {
       ini, fin, ...contarServicios(pedidos),
-      rating_elegibles: pedidos.filter(p => p.tipo !== 'cobertura').length,
+      rating_elegibles: pedidos.filter(p => p.tipo !== 'cobertura' && !noSurtida(p)).length,
+      no_surtidos: pedidos.filter(noSurtida).length,
+      incidencias: pedidos.filter(noSurtida).map(p => ({ fecha:p.fecha_menu, tipo:p.tipo || 'regular', folio:p.folio || null,
+        numero_empleado:p.empleados?.numero_empleado || '', nombre:p.empleados?.nombre || '',
+        platillo:p.opcion_texto || p.opcion_id, turno:p.turno, zona:p.zona,
+        motivo:p.no_surtido_motivo, registrado_en:p.no_surtido_en, registrado_por:p.no_surtido_por })),
       // Ordenados para graficar sin que el cliente tenga que hacerlo
       pedidos_por_dia: Object.entries(porDia).sort().map(([fecha, n]) => ({ fecha, pedidos: n, ...contarServicios(pedidos.filter(p => p.fecha_menu === fecha)) })),
       porciones_por_platillo: Object.entries(porPlatillo)

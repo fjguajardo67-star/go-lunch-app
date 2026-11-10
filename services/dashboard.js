@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { claveEmpleado } from './telefono.js';
 import { esEntregaTardia, TOLERANCIA_TARDIA_MIN, ZONA } from './menu.js';
+import { noSurtida } from './incidencias.js';
 
 const numero = valor => String(valor ?? '').trim();
 const identidad = (telefono, nro) => {
@@ -37,6 +38,7 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
       tardia = limite.isValid && hora.isValid ? hora > limite : null;
     }
     return {
+      id:p.id, no_surtido_en:p.no_surtido_en || null, no_surtido_motivo:p.no_surtido_motivo || null, no_surtido_por:p.no_surtido_por || null,
       tipo, origen: especial ? p.origen || 'supervisor' : 'regular',
       folio: especial ? p.folio || null : null,
       nombre: (especial ? p.empleado_nombre_snapshot : p.empleados?.nombre) || emp?.nombre || 'Empleado sin nombre',
@@ -46,7 +48,7 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
       entrega_programada_en: programada,
       entregado_en: entregada, motivo_tardia: p.motivo_tardia || null,
       visto_en: acc?.visto_en || null, veces: acc?.veces || 0,
-      estado: !entregada ? 'pendiente' : tardia ? 'tardia' : 'entregado'
+      estado: noSurtida(p) ? 'no_surtido' : !entregada ? 'pendiente' : tardia ? 'tardia' : 'entregado'
     };
   }
 
@@ -79,7 +81,7 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
       total_comidas:comidas.length, regulares:pedidos.length, coberturas:especiales.length,
       vieron_no_ordenaron:cuenta('vio_no_ordeno'), no_abrieron:cuenta('no_abrio'),
       sin_dato:cuenta('sin_dato'), accesos_ok:accesosOk,
-      entregados:cuenta('entregado') + cuenta('tardia'), pendientes:cuenta('pendiente'), tardias:cuenta('tardia')
+      entregados:cuenta('entregado') + cuenta('tardia'), pendientes:cuenta('pendiente'), tardias:cuenta('tardia'), no_surtidos:cuenta('no_surtido')
     },
     filas
   };

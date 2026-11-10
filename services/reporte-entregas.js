@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { DateTime } from 'luxon';
 import { validarPeriodo, contarServicios, horarioComida } from './comidas.js';
 import { ZONA, ZONAS, TURNOS } from './menu.js';
+import { noSurtida, entregada } from './incidencias.js';
 
 const logo = archivo => 'data:image/svg+xml;base64,' + readFileSync(new URL('../public/' + archivo, import.meta.url)).toString('base64');
 const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg');
@@ -24,8 +25,9 @@ function paginar(grupos) {
   const nueva = () => { const p = { partes: [], usado: 0 }; paginas.push(p); return p; };
   const altoFila = fila => 3 + 3.8 * Math.max(1,
     Math.ceil(fila.numero.length / 9), Math.ceil(fila.nombre.length / 23),
-    Math.ceil(fila.platillo.length / 22), Math.ceil(fila.servicio.length / 16) + (fila.folio ? Math.ceil(fila.folio.length / 17) : 0),
-    Math.ceil(fila.horario.length / 11));
+    Math.ceil(fila.platillo.length / 22) + (fila.incidencia ? 3 + Math.ceil(fila.motivo.length / 22) : 0),
+    Math.ceil(fila.servicio.length / 16) + (fila.folio ? Math.ceil(fila.folio.length / 17) : 0),
+    fila.incidencia ? 6 : Math.ceil(fila.horario.length / 11));
   for (const grupo of grupos) {
     let inicio = 0, parte = 0;
     while (inicio < grupo.filas.length) {
@@ -46,27 +48,31 @@ export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = 
   validarPeriodo(fecha);
   elaboro = validarElaboro(elaboro);
   const delDia = comidas.filter(p => p.fecha_menu === fecha);
-  const entregadas = delDia.filter(p => p.entregado_en);
+  const entregadas = delDia.filter(entregada), noSurtidas = delDia.filter(noSurtida);
   const registradas = contarServicios(delDia), entregado = contarServicios(entregadas);
   const grupos = new Map();
-  for (const p of entregadas) {
-    const clave = JSON.stringify([p.turno ?? null, p.zona ?? null]);
+  for (const p of [...entregadas, ...noSurtidas]) {
+    const incidencia = noSurtida(p);
+    const clave = JSON.stringify([incidencia, p.turno ?? null, p.zona ?? null]);
     if (!grupos.has(clave)) grupos.set(clave, {
-      turno: p.turno, zona: p.zona,
+      turno: p.turno, zona: p.zona, incidencia,
       turno_texto: TURNOS[p.turno] || 'Sin turno asignado', zona_texto: ZONAS[p.zona] || 'Sin zona asignada', filas: []
     });
     const hora = DateTime.fromISO(p.entregado_en, { zone: ZONA });
+    const registrada = DateTime.fromISO(p.no_surtido_en || '', { zone: ZONA });
     grupos.get(clave).filas.push({
       numero: String(p.empleados?.numero_empleado || 'Sin número'), nombre: p.empleados?.nombre || 'Sin nombre',
       platillo: p.opcion_texto || p.opcion_id || 'Sin platillo registrado',
       tipo: p.tipo || 'regular', servicio: p.tipo === 'cobertura' ? (p.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : 'Regular',
       folio: p.folio || null, horario: horarioComida(p, fecha),
+      incidencia, motivo:p.no_surtido_motivo || '', autor:p.no_surtido_por || '',
+      incidencia_fecha: registrada.isValid ? registrada.toFormat('dd/MM/yyyy HH:mm') : '',
       hora_registrada: hora.isValid ? hora.setZone(ZONA).toFormat('HH:mm') : 'Sin hora válida',
       fecha_registrada: hora.isValid && hora.setZone(ZONA).toISODate() !== fecha ? hora.setZone(ZONA).toFormat('dd/MM/yyyy') : null
     });
   }
   const orden = (valor, opciones) => Object.keys(opciones).includes(valor) ? Object.keys(opciones).indexOf(valor) : Object.keys(opciones).length;
-  const lista = [...grupos.values()].sort((a, b) => orden(a.turno, TURNOS) - orden(b.turno, TURNOS) ||
+  const lista = [...grupos.values()].sort((a, b) => Number(a.incidencia) - Number(b.incidencia) || orden(a.turno, TURNOS) - orden(b.turno, TURNOS) ||
     String(a.zona ?? '').localeCompare(String(b.zona ?? '')));
   for (const grupo of lista) {
     grupo.filas.sort((a, b) => numeros.compare(a.numero, b.numero) || numeros.compare(a.nombre, b.nombre) || numeros.compare(a.servicio, b.servicio));
@@ -74,25 +80,26 @@ export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = 
   }
   return { fecha, fecha_texto: DateTime.fromISO(fecha).toFormat('dd/MM/yyyy'), elaboro,
     generado: ahora.setZone(ZONA).toFormat('dd/MM/yyyy HH:mm'),
-    registradas, entregado, pendientes: delDia.length - entregadas.length, grupos: lista, paginas: paginar(lista) };
+    registradas, entregado, no_surtidos:noSurtidas.length,
+    pendientes: delDia.length - entregadas.length - noSurtidas.length, grupos: lista, paginas: paginar(lista) };
 }
 
 export function htmlReporteEntregas(datos) {
   const resumen = `<section class="resumen" aria-label="Resumen de comidas solicitadas y entregadas">
     ${[[datos.registradas.regulares, 'Regulares solicitadas'], [datos.registradas.coberturas, 'Coberturas solicitadas'],
-      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Pendientes']]
+      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Pendientes'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
       .map(([n, texto]) => `<div class="metrica"><strong>${n}</strong><span>${texto}</span></div>`).join('')}
-    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes = total solicitado. El detalle incluye únicamente entregas registradas.</p>`;
+    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.</p>`;
   const paginas = datos.paginas.map((pagina, indice) => `<section class="hoja">
     <header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div>
       <h1>Reporte diario de comidas entregadas</h1><div class="fecha"><strong>Servicio: ${esc(datos.fecha_texto)}</strong><span>Generado: ${esc(datos.generado)}</span></div></header>
     ${indice === 0 ? resumen : ''}
     ${pagina.partes.map(({ grupo, filas, continuacion, ultima }) => `<section class="grupo">
-      <h2>${esc(grupo.turno_texto)} · ${esc(grupo.zona_texto)}${continuacion ? ' · Continuación' : ''}</h2>
+      <h2>${grupo.incidencia ? 'Incidencias sin cargo · ' : ''}${esc(grupo.turno_texto)} · ${esc(grupo.zona_texto)}${continuacion ? ' · Continuación' : ''}</h2>
       <table><colgroup><col class="numero"><col class="nombre"><col class="platillo"><col class="servicio"><col class="hora"><col class="hora"></colgroup>
-        <thead><tr><th scope="col">N.º empleado</th><th scope="col">Nombre</th><th scope="col">Platillo</th><th scope="col">Servicio</th><th scope="col">Hora prevista</th><th scope="col">Entrega registrada</th></tr></thead>
-        <tbody>${filas.map(f => `<tr><td>${esc(f.numero)}</td><td>${esc(f.nombre)}</td><td>${esc(f.platillo)}</td><td>${esc(f.servicio)}${f.folio ? `<small>${esc(f.folio)}</small>` : ''}</td><td>${esc(f.horario)}</td><td>${esc(f.hora_registrada)}${f.fecha_registrada ? `<small>${esc(f.fecha_registrada)}</small>` : ''}</td></tr>`).join('')}</tbody>
-      </table><p class="subtotal">${ultima ? `Subtotal del grupo: <b>${grupo.total}</b> · Regulares: ${grupo.regulares} · Coberturas: ${grupo.coberturas}` : `En esta hoja: <b>${filas.length}</b> · El grupo continúa en la siguiente hoja.`}</p>
+        <thead><tr><th scope="col">N.º empleado</th><th scope="col">Nombre</th><th scope="col">Platillo${grupo.incidencia ? ' / Motivo' : ''}</th><th scope="col">Servicio</th><th scope="col">Hora prevista</th><th scope="col">${grupo.incidencia ? 'Registró' : 'Entrega registrada'}</th></tr></thead>
+        <tbody>${filas.map(f => `<tr><td>${esc(f.numero)}</td><td>${esc(f.nombre)}</td><td>${esc(f.platillo)}${f.incidencia ? `<small>No surtido por cocina/reparto · Sin cargo al empleado</small><small>${esc(f.motivo)}</small>` : ''}</td><td>${esc(f.servicio)}${f.folio ? `<small>${esc(f.folio)}</small>` : ''}</td><td>${esc(f.horario)}</td><td>${f.incidencia ? `${esc(f.autor)}<small>${esc(f.incidencia_fecha)}</small>${f.hora_registrada !== 'Sin hora válida' ? `<small>Marca previa rectificada: ${esc(f.hora_registrada)}</small>` : ''}` : `${esc(f.hora_registrada)}${f.fecha_registrada ? `<small>${esc(f.fecha_registrada)}</small>` : ''}`}</td></tr>`).join('')}</tbody>
+      </table><p class="subtotal">${ultima ? `${grupo.incidencia ? 'Sin cargo en este grupo' : 'Subtotal del grupo'}: <b>${grupo.total}</b> · Regulares: ${grupo.regulares} · Coberturas: ${grupo.coberturas}` : `En esta hoja: <b>${filas.length}</b> · El grupo continúa en la siguiente hoja.`}</p>
     </section>`).join('')}
     ${datos.entregado.total === 0 ? '<p class="vacio">No hay entregas registradas para esta fecha.</p>' : ''}
     ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} ${datos.entregado.total === 1 ? 'comida' : 'comidas'}</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p>${datos.elaboro ? `<p>Elaboró: ${esc(datos.elaboro)}</p>` : ''}</div>` : ''}
@@ -106,7 +113,7 @@ export function htmlReporteEntregas(datos) {
 .ayuda{margin:16px 24px;font-size:14px;line-height:1.5}.documento{max-width:216mm;margin:20px auto}.hoja{padding:14mm;background:white;margin-bottom:20px}
 .marcas{display:flex;justify-content:space-between;align-items:center;margin-bottom:3mm}.marcas img{width:38mm;height:13mm;object-fit:contain}.marcas img:last-child{width:39mm}
 h1{font-size:17pt;line-height:1.15;margin:0 0 3mm}.fecha{display:flex;justify-content:space-between;gap:4mm;font-size:9pt;line-height:1.3;margin-bottom:4mm}
-.resumen{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2mm}.metrica{padding:3mm 1.5mm;border:1px solid #b7c0cf;text-align:center;break-inside:avoid}.metrica strong{display:block;font-size:21pt;line-height:1.1;font-variant-numeric:tabular-nums}.metrica span{display:block;font-size:8pt;line-height:1.2;margin-top:1.5mm}
+.resumen{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2mm}.metrica{padding:3mm 1.5mm;border:1px solid #b7c0cf;text-align:center;break-inside:avoid}.metrica strong{display:block;font-size:21pt;line-height:1.1;font-variant-numeric:tabular-nums}.metrica span{display:block;font-size:8pt;line-height:1.2;margin-top:1.5mm}
 .nota-resumen{font-size:8pt;line-height:1.3;margin:2mm 0 4mm}.grupo{margin-bottom:3mm}h2{font-size:10pt;line-height:1.2;margin:0;padding:2mm 0}
 table{border-collapse:collapse;table-layout:fixed;width:100%;font-size:8.5pt;line-height:1.2}.numero{width:10%}.nombre{width:27%}.platillo{width:25%}.servicio{width:18%}.hora{width:10%}
 th,td{text-align:left;vertical-align:top;border:1px solid #aeb7c5;padding:1.4mm;overflow-wrap:anywhere}th{font-size:8pt}td small{display:block;font-size:7pt;line-height:1.2;margin-top:.5mm}.subtotal{font-size:8pt;margin:1.5mm 0 0;line-height:1.3}
