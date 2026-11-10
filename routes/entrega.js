@@ -219,6 +219,88 @@ function puedeConZona(req, zona) {
   return permitidas.includes(zona);
 }
 
+const UUID_PROPUESTA = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function propuestaSegura(p) { return { id: p.id, zona: p.zona, estado: p.estado }; }
+function propuestaParaReparto(p, req) {
+  const propia = req.repartidor
+    ? p.actor === 'repartidor' && String(p.repartidor_id) === String(req.repartidor.id)
+    : req.esLegado && p.actor === 'legado';
+  return propia && p.estado === 'rechazada'
+    ? { ...propuestaSegura(p), motivo_rechazo: p.motivo }
+    : propuestaSegura(p);
+}
+function errorPropuesta(res, err) {
+  const motivo = String(err.message || '');
+  const estados = {
+    propuesta_invalida: 400, resolucion_invalida: 400, motivo_invalido: 400,
+    autor_no_autorizado: 403, punto_ya_fijado: 409, idempotencia_conflicto: 409,
+    propuesta_resuelta: 409, propuesta_no_encontrada: 404
+  };
+  if (estados[motivo]) return res.status(estados[motivo]).json({ error: motivo, motivo });
+  console.error('[Propuestas de punto] No se pudo completar la consulta:', motivo);
+  return res.status(503).json({ error: 'No se pudo confirmar la propuesta. Conserva los datos y vuelve a intentar.' });
+}
+
+// Consulta separada de /hoy: una tabla de propuestas aún no desplegada nunca
+// impide descargar los pedidos. Debe ir antes de GET /:fecha.
+entregaRouter.get('/propuestas-punto', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const completas = req.esAdmin === true;
+    const zonas = zonasPermitidas(req);
+    const propuestas = await db.getPropuestasPuntoEntrega(completas, zonas);
+    res.json({ propuestas: propuestas
+      .filter(p => zonas === null || zonas.includes(p.zona))
+      .filter(p => !completas || p.estado === 'pendiente')
+      .map(p => completas ? {
+        ...propuestaSegura(p), lat: p.lat, lon: p.lon, precision_m: p.precision_m,
+        capturado_en: p.capturado_en, creado_en: p.creado_en, repartidor_nombre: p.repartidor_nombre
+      } : propuestaParaReparto(p, req)) });
+  } catch (err) { return errorPropuesta(res, err); }
+});
+
+entregaRouter.post('/propuestas-punto', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    const { id, zona, lat, lon, precision_m, capturado_en } = req.body || {};
+    const iso = typeof capturado_en === 'string' &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?(?:Z|[+-]\d{2}:\d{2})$/.test(capturado_en)
+      ? DateTime.fromISO(capturado_en, { setZone: true }) : null;
+    if (typeof id !== 'string' || !UUID_PROPUESTA.test(id) || !ZONAS_VALIDAS.includes(zona) ||
+        !Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lon) || Math.abs(lon) > 180 ||
+        !Number.isFinite(precision_m) || precision_m <= 0 || precision_m > PRECISION_PUNTO_MAXIMA_M ||
+        !iso?.isValid || iso.year < 1) {
+      return res.status(400).json({ error: 'Se requieren UUID, zona, coordenadas válidas, precisión mayor que 0 y hasta 25 m, y hora ISO con zona.', motivo: 'propuesta_invalida' });
+    }
+    if (!puedeConZona(req, zona)) return res.status(403).json({ error: 'No tienes autorizada esa zona', motivo: 'zona_no_autorizada' });
+    const rol = req.esAdmin ? rolPanel(req.headers['x-admin-key']) : null;
+    const resultado = await db.proponerPuntoEntrega({ id, zona, lat, lon, precision_m, capturado_en,
+      actor: req.repartidor ? 'repartidor' : req.esLegado ? 'legado' : rol,
+      repartidor_id: req.repartidor?.id ?? null,
+      repartidor_nombre: req.repartidor?.nombre ?? (req.esLegado ? 'Reparto general' : rol === 'gerente' ? 'Gerente' : 'Administrador') });
+    return res.json({ propuesta: propuestaSegura(resultado.propuesta), ya_existia: resultado.ya_existia === true });
+  } catch (err) { return errorPropuesta(res, err); }
+});
+
+entregaRouter.post('/propuestas-punto/:id/resolver', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  // El middleware da preferencia al Bearer. Un repartidor con un header de
+  // panel añadido sigue siendo repartidor y no puede resolver propuestas.
+  const rol = req.esAdmin && rolPanel(req.headers['x-admin-key']);
+  if (!rol) return res.status(403).json({ error: 'Solo administración o gerencia puede resolver propuestas', motivo: 'autor_no_autorizado' });
+  try {
+    const { accion, motivo } = req.body || {};
+    if (!UUID_PROPUESTA.test(req.params.id) || !['aprobar', 'rechazar'].includes(accion)) {
+      return res.status(400).json({ error: 'UUID o acción inválidos', motivo: 'resolucion_invalida' });
+    }
+    if (accion === 'rechazar' && (typeof motivo !== 'string' || motivo.trim().length < 5 || motivo.trim().length > 300)) {
+      return res.status(400).json({ error: 'El rechazo requiere un motivo de 5 a 300 caracteres', motivo: 'motivo_invalido' });
+    }
+    const resultado = await db.resolverPropuestaPuntoEntrega(req.params.id, accion, accion === 'rechazar' ? motivo.trim() : null, rol);
+    return res.json({ propuesta: propuestaSegura(resultado.propuesta), ya_resuelta: resultado.ya_resuelta === true });
+  } catch (err) { return errorPropuesta(res, err); }
+});
+
 // La página de reparto descarga esto al salir y luego trabaja sin señal.
 // Con ?zona= devuelve solo esa ruta, para que dos repartidores trabajen a la
 // vez sin verse las listas. Sin zona descarga todas las zonas de la sesión.

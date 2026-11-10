@@ -503,6 +503,28 @@
     background: var(--dorado-light, #fdf5e6); border: 1px solid #e8d5a8;
     color: #725514; font-size: .78rem;
   }
+  .puntos-panel { font-size: .875rem; }
+  .puntos-panel .cocina-card-header p { font-size: .875rem; }
+  .puntos-panel button.accion { min-height: 44px; margin-top: 0; }
+  .puntos-panel button:focus-visible { outline: 3px solid var(--azul); outline-offset: 3px; }
+  .puntos-panel button:disabled { opacity: .6; cursor: not-allowed; }
+  .puntos-panel button:disabled:hover { background: var(--azul); }
+  .puntos-panel button.sec:disabled:hover { background: var(--blanco); }
+  .puntos-panel h4 { font-size: 1rem; color: var(--azul); }
+  .puntos-estado { margin: 12px 0; color: var(--gris-text); overflow-wrap: anywhere; }
+  .puntos-estado:empty { display: none; }
+  .puntos-estado.err { padding: 12px 14px; border-radius: 8px; background: var(--rojo-light); color: var(--rojo); }
+  .propuestas-punto { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--gris-line); }
+  .propuestas-encabezado { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .propuestas-punto > p { margin-top: 8px; color: var(--gris-text); max-width: 70ch; }
+  .propuesta-punto { padding: 18px 0; border-bottom: 1px solid var(--gris-line); overflow-wrap: anywhere; }
+  .propuesta-punto:last-child { border-bottom: 0; }
+  .propuesta-punto h5 { font-size: .9375rem; color: var(--tinta); }
+  .propuesta-punto dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px 24px; margin: 12px 0; }
+  .propuesta-punto dt { color: var(--gris-text); }
+  .propuesta-punto dd { margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .propuesta-acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .propuesta-bloqueo { color: var(--gris-text); }
   .oculto { display: none !important; }
 
   /* ── Coberturas: operación del mismo día, aislada del pedido regular ── */
@@ -1166,7 +1188,7 @@
           <div id="rpBox" style="margin-top:14px"></div>
         </div>
 
-        <div class="card">
+        <div class="card puntos-panel">
           <div class="cocina-card-header">
             <div class="cocina-icono" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
@@ -1177,12 +1199,24 @@
             La referencia contra la que se mide cada entrega:
             <b>ASLA (LZCA)</b>, fuera del puerto, y
             <b>REFIS (LZCR)</b>, dentro del puerto.
-            <b>Abre este panel desde la tablet, parado en el andén, y toca Capturar.</b>
-            Desde una computadora no se puede: ahí la ubicación sale del wifi y se
-            va cientos de metros.
+            <b>Puedes revisar y aprobar propuestas desde esta computadora.</b>
+            Para la captura directa de administración, abre este panel desde un
+            celular o tablet, físicamente en el punto de entrega, y toca Capturar.
+            El GPS de una computadora puede ubicarte a cientos de metros del sitio.
           </p>
-          <div id="puntosBox"></div>
+          <h4>Puntos oficiales</h4>
+          <p id="puntosEstado" class="puntos-estado" role="status" aria-live="polite"></p>
+          <div id="puntosBox"><p class="puntos-estado">Los puntos oficiales se consultan al abrir esta sección.</p></div>
           <div id="puntoAviso" class="aviso"></div>
+          <section class="propuestas-punto" aria-labelledby="propuestas-punto-titulo">
+            <div class="propuestas-encabezado">
+              <h4 id="propuestas-punto-titulo">Propuestas pendientes de reparto</h4>
+              <button class="accion sec" id="btn-propuestas-punto" type="button" onclick="cargarPropuestasPunto()">Actualizar propuestas</button>
+            </div>
+            <p>Revisa quién capturó el GPS, la zona y la precisión. Al aprobar se fija el punto oficial con radio de 150 m. Un punto oficial existente se conserva.</p>
+            <p id="propuestasPuntoEstado" class="puntos-estado" role="status" aria-live="polite"></p>
+            <div id="propuestasPuntoBox" onclick="accionPropuestaPunto(event)"></div>
+          </section>
         </div>
       </div>
 
@@ -1422,7 +1456,7 @@
     });
     if (nombre === 'reparto') {
       cargarRepartidores();
-      cargarPuntos();
+      cargarPropuestasPunto();
     }
   }
 
@@ -1456,7 +1490,13 @@
       ...opts,
       headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO, ...(opts.headers||{}) }
     });
-    if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || res.status);
+    if (!res.ok) {
+      const datos = await res.json().catch(()=>({}));
+      const error = new Error(datos.error || res.status);
+      error.status = res.status;
+      error.motivo = datos.motivo || datos.codigo || datos.code || '';
+      throw error;
+    }
     return res.json();
   }
 
@@ -2564,31 +2604,203 @@
   ];
   const PRECISION_PUNTO_MAXIMA_M = 25;
   let PUNTOS_GUARDADOS = [];
+  let PUNTOS_VERIFICADOS = false, PUNTOS_CARGANDO = false;
+  let PROPUESTAS_PUNTO = [], PROPUESTAS_CARGADAS = false, PROPUESTAS_VIGENTES = false;
+  let PROPUESTAS_CARGANDO = false, PROPUESTA_RESOLVIENDO = null;
+  const MOTIVOS_PROPUESTA = new Map();
+
+  function mensajePuntos(id, texto, error = false) {
+    const el = document.getElementById(id);
+    el.className = 'puntos-estado' + (error ? ' err' : '');
+    el.textContent = texto;
+  }
+
+  function coordenadasPuntoValidas(p) {
+    return p && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90
+      && Number.isFinite(p.lon) && Math.abs(p.lon) <= 180;
+  }
+
+  function puntoOficialFijado(zona) {
+    return PUNTOS_GUARDADOS.some(p => p.zona === zona && p.lat != null);
+  }
 
   async function cargarPuntos() {
     const box = document.getElementById('puntosBox');
-    if (!box) return;
+    if (!box || PUNTOS_CARGANDO) return;
+    PUNTOS_CARGANDO = true;
+    PUNTOS_VERIFICADOS = false;
+    mensajePuntos('puntosEstado', 'Consultando puntos oficiales…');
+    pintarPropuestasPunto();
     try {
       const hoy = fechaComedor();
       const d = await api('/api/entrega/' + hoy);
-      PUNTOS_GUARDADOS = d.puntos || [];
-    } catch { PUNTOS_GUARDADOS = []; }
+      if (!Array.isArray(d.puntos)) throw new Error('Respuesta de puntos incompleta.');
+      PUNTOS_GUARDADOS = d.puntos;
+      PUNTOS_VERIFICADOS = true;
+      pintarPuntos();
+      mensajePuntos('puntosEstado', '');
+    } catch (e) {
+      mensajePuntos('puntosEstado', 'No se pudieron verificar los puntos oficiales: ' + e.message +
+        ' Se conservan los datos anteriores. Usa Actualizar propuestas para reintentar; aprobar permanece bloqueado.', true);
+    } finally {
+      PUNTOS_CARGANDO = false;
+      pintarPropuestasPunto();
+    }
+  }
 
+  function pintarPuntos() {
+    const box = document.getElementById('puntosBox');
     box.innerHTML = ZONAS_PUNTO.map(z => {
-      const p = PUNTOS_GUARDADOS.find(x => x.zona === z.zona);
+      const p = PUNTOS_GUARDADOS.find(x => x.zona === z.zona && x.lat != null);
       const fijado = p && p.lat != null;
       return `<div style="border:1px solid var(--gris-line);border-radius:11px;padding:14px;margin-bottom:10px">
         <div style="font-weight:800;color:var(--azul)">${escaparHtml(z.nombre)}</div>
         <div style="font-size:.78rem;color:var(--gris-text);margin-bottom:8px">${escaparHtml(z.direccion)}</div>
         <div style="font-size:.85rem;margin-bottom:10px">${fijado
-          ? '📍 <b>' + p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) + '</b>' +
-            '<span style="color:var(--gris-text)"> · radio ' + (p.radio_m || 150) + ' m</span>'
+          ? (coordenadasPuntoValidas(p) ? '<b>' + p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) + '</b>' : '<b>Punto oficial registrado; coordenadas no disponibles</b>') +
+            '<span style="color:var(--gris-text)"> · radio ' + (Number.isFinite(p.radio_m) && p.radio_m > 0 ? p.radio_m : 150) + ' m</span>'
           : '<span style="color:var(--rojo);font-weight:700">Sin fijar — la distancia de las entregas sale vacía</span>'}</div>
         <button class="accion ${fijado ? 'sec' : ''}" onclick="capturarPunto('${z.zona}')">
           ${fijado ? 'Volver a capturar' : 'Capturar con este dispositivo'}
         </button>
       </div>`;
     }).join('');
+  }
+
+  function fechaPropuestaPunto(iso) {
+    const fecha = typeof iso === 'string' && iso ? new Date(iso) : null;
+    return fecha && Number.isFinite(fecha.getTime())
+      ? new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR, dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' }).format(fecha)
+      : 'No disponible';
+  }
+
+  function pintarPropuestasPunto() {
+    const box = document.getElementById('propuestasPuntoBox');
+    if (!box) return;
+    const ocupado = PROPUESTAS_CARGANDO || PUNTOS_CARGANDO || !!PROPUESTA_RESOLVIENDO;
+    document.getElementById('btn-propuestas-punto').disabled = ocupado;
+    box.setAttribute('aria-busy', String(ocupado));
+    if (!PROPUESTAS_CARGADAS) return;
+    if (!PROPUESTAS_PUNTO.length) {
+      box.innerHTML = '<p class="puntos-estado">No hay propuestas pendientes en la última consulta correcta. Reparto puede enviar una nueva captura desde el celular en el sitio.</p>';
+      return;
+    }
+    box.innerHTML = PROPUESTAS_PUNTO.map(p => {
+      const z = ZONAS_PUNTO.find(z => z.zona === p.zona);
+      const idValido = typeof p.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id);
+      const fijado = puntoOficialFijado(p.zona);
+      const gpsValido = coordenadasPuntoValidas(p) && Number.isFinite(p.precision_m)
+        && p.precision_m > 0 && p.precision_m <= PRECISION_PUNTO_MAXIMA_M;
+      const bloqueo = fijado ? 'Esta zona ya tiene punto oficial. Puedes rechazar la propuesta y conservar el punto existente.'
+        : !PUNTOS_VERIFICADOS ? 'Actualiza para verificar los puntos oficiales antes de aprobar.'
+        : !gpsValido || !z || !idValido ? 'La captura tiene datos incompletos o precisión insuficiente. Solicita una nueva captura.'
+        : !PROPUESTAS_VIGENTES ? 'Actualiza las propuestas antes de reintentar.' : '';
+      const id = escaparHtml(encodeURIComponent(String(p.id || '')));
+      const accion = PROPUESTA_RESOLVIENDO?.id === p.id ? PROPUESTA_RESOLVIENDO.accion : '';
+      return `<article class="propuesta-punto">
+        <h5>${escaparHtml(z?.nombre || p.zona || 'Zona no disponible')} · Pendiente</h5>
+        <dl>
+          <div><dt>Capturó</dt><dd>${escaparHtml(p.repartidor_nombre || 'Nombre no disponible')}</dd></div>
+          <div><dt>Coordenadas</dt><dd>${coordenadasPuntoValidas(p) ? p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) : 'No disponibles'}</dd></div>
+          <div><dt>Precisión GPS</dt><dd>${Number.isFinite(p.precision_m) && p.precision_m > 0 ? '±' + p.precision_m + ' m' : 'No disponible'}</dd></div>
+          <div><dt>Radio al aprobar</dt><dd>150 m</dd></div>
+          <div><dt>Captura · hora de México</dt><dd>${escaparHtml(fechaPropuestaPunto(p.capturado_en))}</dd></div>
+          <div><dt>Recibida · hora de México</dt><dd>${escaparHtml(fechaPropuestaPunto(p.creado_en))}</dd></div>
+        </dl>
+        ${bloqueo ? '<p class="propuesta-bloqueo">' + escaparHtml(bloqueo) + '</p>' : ''}
+        <div class="propuesta-acciones">
+          <button class="accion" type="button" data-propuesta-id="${id}" data-propuesta-accion="aprobar" ${ocupado || bloqueo ? 'disabled' : ''}>${accion === 'aprobar' ? 'Aprobando…' : 'Aprobar punto'}</button>
+          <button class="accion sec" type="button" data-propuesta-id="${id}" data-propuesta-accion="rechazar" ${ocupado || !idValido || !PROPUESTAS_VIGENTES ? 'disabled' : ''}>${accion === 'rechazar' ? 'Rechazando…' : 'Rechazar y pedir captura'}</button>
+        </div>
+      </article>`;
+    }).join('');
+  }
+
+  async function cargarPropuestasPunto() {
+    if (PROPUESTAS_CARGANDO || PROPUESTA_RESOLVIENDO) return;
+    PROPUESTAS_CARGANDO = true;
+    PROPUESTAS_VIGENTES = false;
+    mensajePuntos('propuestasPuntoEstado', 'Consultando propuestas pendientes…');
+    pintarPropuestasPunto();
+    const [oficiales, propuestas] = await Promise.allSettled([
+      cargarPuntos(), api('/api/entrega/propuestas-punto', { cache: 'no-store' })
+    ]);
+    try {
+      if (oficiales.status === 'rejected') throw oficiales.reason;
+      if (propuestas.status === 'rejected') throw propuestas.reason;
+      if (!Array.isArray(propuestas.value.propuestas)) throw new Error('Respuesta de propuestas incompleta.');
+      PROPUESTAS_PUNTO = propuestas.value.propuestas.filter(p => p && p.estado === 'pendiente');
+      PROPUESTAS_CARGADAS = true;
+      PROPUESTAS_VIGENTES = true;
+      mensajePuntos('propuestasPuntoEstado', 'Propuestas actualizadas.');
+    } catch (e) {
+      mensajePuntos('propuestasPuntoEstado', 'No se pudieron actualizar las propuestas: ' + e.message +
+        (PROPUESTAS_CARGADAS ? ' Se conserva la última lista.' : ' Aún no se pudo consultar la lista.') +
+        ' Usa Actualizar propuestas para reintentar.', true);
+    } finally {
+      PROPUESTAS_CARGANDO = false;
+      pintarPropuestasPunto();
+    }
+  }
+
+  function accionPropuestaPunto(event) {
+    const boton = event.target.closest('button[data-propuesta-accion]');
+    if (!boton || boton.disabled) return;
+    resolverPropuestaPunto(decodeURIComponent(boton.dataset.propuestaId), boton.dataset.propuestaAccion);
+  }
+
+  async function resolverPropuestaPunto(id, accion) {
+    if (PROPUESTA_RESOLVIENDO || PROPUESTAS_CARGANDO || PUNTOS_CARGANDO || !PROPUESTAS_VIGENTES) return;
+    const p = PROPUESTAS_PUNTO.find(p => p.id === id);
+    if (!p || !['aprobar', 'rechazar'].includes(accion) || !/^[0-9a-f-]{36}$/i.test(id)) return;
+    const z = ZONAS_PUNTO.find(z => z.zona === p.zona);
+    const datos = { accion };
+    if (accion === 'aprobar') {
+      if (!PUNTOS_VERIFICADOS || puntoOficialFijado(p.zona)) {
+        mensajePuntos('propuestasPuntoEstado', 'No se puede aprobar: verifica los puntos oficiales. Un punto ya fijado se conserva.', true);
+        return;
+      }
+      if (!z || !coordenadasPuntoValidas(p) || !Number.isFinite(p.precision_m) || p.precision_m <= 0 || p.precision_m > PRECISION_PUNTO_MAXIMA_M) return;
+      if (!confirm('¿Aprobar el punto de ' + z.nombre + '?\n\nCapturó: ' + (p.repartidor_nombre || 'Nombre no disponible') +
+        '\n' + p.lat.toFixed(6) + ', ' + p.lon.toFixed(6) + ' (±' + p.precision_m + ' m)\nRadio: 150 m\n\n' +
+        'Se fijará como referencia oficial para las entregas de esta zona. Puedes aprobar desde esta computadora.')) return;
+    } else {
+      const motivo = prompt('Motivo del rechazo (5 a 300 caracteres). Reparto podrá realizar una nueva captura.',
+        MOTIVOS_PROPUESTA.get(id) || 'Solicitar nueva captura desde el celular, en el punto de entrega.');
+      if (motivo === null) return;
+      datos.motivo = motivo.trim();
+      MOTIVOS_PROPUESTA.set(id, datos.motivo);
+      if (datos.motivo.length < 5 || datos.motivo.length > 300) {
+        mensajePuntos('propuestasPuntoEstado', 'Escribe un motivo de rechazo de 5 a 300 caracteres y vuelve a intentar.', true);
+        return;
+      }
+    }
+    PROPUESTA_RESOLVIENDO = { id, accion };
+    pintarPropuestasPunto();
+    mensajePuntos('propuestasPuntoEstado', accion === 'aprobar' ? 'Aprobando punto…' : 'Rechazando propuesta…');
+    let actualizar = false, resultado = '', fallo = false;
+    try {
+      // Sólo el ID identifica la captura almacenada; nunca se envían coordenadas del DOM.
+      await api('/api/entrega/propuestas-punto/' + encodeURIComponent(id) + '/resolver', { method: 'POST', body: JSON.stringify(datos) });
+      PROPUESTAS_PUNTO = PROPUESTAS_PUNTO.filter(p => p.id !== id);
+      MOTIVOS_PROPUESTA.delete(id);
+      resultado = accion === 'aprobar' ? 'Propuesta aprobada. El punto oficial se guardó con radio de 150 m.' : 'Propuesta rechazada. Reparto puede enviar una nueva captura.';
+      actualizar = true;
+    } catch (e) {
+      fallo = true;
+      PROPUESTAS_VIGENTES = false;
+      if (e.status === 409 && (e.motivo === 'punto_ya_fijado' || /punto_ya_fijado/.test(e.message))) {
+        resultado = 'Esta zona ya tiene punto oficial. Se conserva y se vuelven a consultar los puntos y las propuestas.';
+        PUNTOS_VERIFICADOS = false;
+        actualizar = true;
+      } else resultado = 'No se pudo resolver la propuesta: ' + e.message + ' Se conserva la lista y el motivo. Usa Actualizar propuestas antes de reintentar.';
+    } finally {
+      PROPUESTA_RESOLVIENDO = null;
+      pintarPropuestasPunto();
+    }
+    if (actualizar) await cargarPropuestasPunto();
+    // Los errores de refresco conservan su mensaje y los últimos datos conocidos.
+    if (!actualizar || PROPUESTAS_VIGENTES) mensajePuntos('propuestasPuntoEstado', resultado, fallo);
   }
 
   // Promedia varias lecturas en vez de tomar una sola: parado en el sitio, el

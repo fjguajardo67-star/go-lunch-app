@@ -492,6 +492,38 @@ export async function getPuntosEntrega() {
   return data || [];
 }
 
+export async function getPropuestasPuntoEntrega(completas = false, zonas = null) {
+  if (Array.isArray(zonas) && !zonas.length) return [];
+  return leerPaginas(() => {
+    let q = supabase.from('propuestas_puntos_entrega').select(completas
+      ? 'id,zona,lat,lon,precision_m,capturado_en,creado_en,repartidor_nombre,estado'
+      : 'id,zona,estado,actor,repartidor_id,motivo');
+    if (completas) q = q.eq('estado', 'pendiente');
+    if (zonas !== null) q = q.in('zona', zonas);
+    return q.order('creado_en', { ascending: completas }).order('id', { ascending: completas });
+  });
+}
+
+export async function proponerPuntoEntrega(d) {
+  const { data, error } = await supabase.rpc('proponer_punto_entrega', {
+    p_id: d.id, p_zona: d.zona, p_lat: d.lat, p_lon: d.lon,
+    p_precision_m: d.precision_m, p_capturado_en: d.capturado_en,
+    p_actor: d.actor, p_repartidor_id: d.repartidor_id, p_repartidor_nombre: d.repartidor_nombre
+  });
+  if (error) throw error;
+  if (!data?.propuesta?.id) throw new Error('La base no confirmó la propuesta');
+  return data;
+}
+
+export async function resolverPropuestaPuntoEntrega(id, accion, motivo, rol) {
+  const { data, error } = await supabase.rpc('resolver_propuesta_punto_entrega', {
+    p_id: id, p_accion: accion, p_motivo: motivo, p_rol: rol
+  });
+  if (error) throw error;
+  if (!data?.propuesta?.id) throw new Error('La base no confirmó la resolución');
+  return data;
+}
+
 export async function guardarPuntoEntrega({ zona, punto = '', nombre, direccion, lat, lon, radio_m }) {
   const { data, error } = await supabase
     .from('puntos_entrega')
