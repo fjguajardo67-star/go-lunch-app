@@ -72,7 +72,7 @@
     volver.type = 'button';
     volver.textContent = 'Volver al panel';
     volver.className = 'accion sec';
-    volver.style.cssText = 'align-self:flex-start;margin:12px 16px';
+    volver.style.cssText = 'align-self:flex-start;margin:12px 16px;min-height:44px';
     const frame = document.createElement('iframe');
     frame.title = 'Documento listo para imprimir';
     frame.style.cssText = 'width:100%;flex:1;min-height:0;border:0';
