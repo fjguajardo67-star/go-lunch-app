@@ -74,13 +74,18 @@ test('un rechazo de un lote no borra la cola del otro turno si ese envío falla'
  assert.equal(c.COLA.length,1);assert.equal(c.COLA[0].turno,'turno_b');
 });
 
-test('la lógica de grupos se sirve desde la caché del service worker sin conexión',async()=>{
+test('la lógica de grupos y de bitácora se sirve desde la caché sin conexión',async()=>{
  const eventos={};let respuesta;
+ const recursos=['/reparto-grupos.js','/bitacora-rutas.js'];
  const c=vm.createContext({URL,Request,Response,console,self:{location:{origin:'http://prueba'},addEventListener:(n,fn)=>eventos[n]=fn},
-  fetch:async()=>{throw new Error('Sin conexión');},caches:{match:async r=>r.url.endsWith('/reparto-grupos.js')?new Response('grupo disponible sin señal'):undefined}});
+  fetch:async()=>{throw new Error('Sin conexión');},caches:{match:async r=>recursos.some(path=>r.url.endsWith(path))?new Response(r.url):undefined}});
  vm.runInContext(readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),c);
- eventos.fetch({request:new Request('http://prueba/reparto-grupos.js'),respondWith:r=>respuesta=r});
- assert.ok(respuesta);assert.equal(await (await respuesta).text(),'grupo disponible sin señal');
+ for(const path of recursos){
+  respuesta=undefined;
+  const url='http://prueba'+path;
+  eventos.fetch({request:new Request(url),respondWith:r=>respuesta=r});
+  assert.ok(respuesta);assert.equal(await (await respuesta).text(),url);
+ }
 });
 
 test('API valida grupo real, rechaza cierre masivo y permite entrega individual al supervisor',async()=>{
