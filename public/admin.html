@@ -294,7 +294,17 @@
   .dashboard-grupo-titulo h4 { font-size: 1rem; }
   .dashboard-grupo-titulo p, .dashboard-nota { font-size: .8rem; color: var(--gris-text); }
   .dashboard-metricas { display: grid; gap: 10px; }
-  .dashboard-comidas { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  .dashboard-comidas { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .incidencia-dialog { color:var(--tinta); background:#fff; border:1px solid var(--gris-line); border-radius:12px; padding:24px; width:min(560px,calc(100% - 32px)); max-height:90dvh; overflow:auto; margin:auto; }
+  .incidencia-dialog::backdrop { background:rgba(12,27,53,.55); }
+  .incidencia-dialog h2 { font-size:1.25rem; margin:0 0 16px; }
+  .incidencia-dialog p { line-height:1.5; margin:12px 0; overflow-wrap:anywhere; }
+  .incidencia-dialog input { font-size:16px; }
+  .incidencia-dialog fieldset { border:0; padding:0; margin:0; min-width:0; }
+  .incidencia-dialog .confirmacion { display:flex; gap:10px; margin:18px 0; text-transform:none; letter-spacing:normal; align-items:flex-start; }
+  .incidencia-dialog .confirmacion input { width:20px; height:20px; flex-shrink:0; }
+  .incidencia-dialog .acciones { display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; }
+  .incidencia-detalle { display:block; white-space:normal; max-width:32ch; font-size:.8rem; line-height:1.4; margin:5px 0; overflow-wrap:anywhere; }
   .dashboard-empleados { grid-template-columns: repeat(4, minmax(0,1fr)); }
   .dashboard-metrica {
     min-width: 0; padding: 14px 10px; border-radius: 9px;
@@ -1308,6 +1318,7 @@
 
 <script src="/operacion.js"></script>
 <script src="/reportes-excel.js"></script>
+<script src="/incidencias-panel.js"></script>
 <script>
 
   // ⚙️ La URL pública del backend en Railway; en local usa el mismo origen
@@ -1594,7 +1605,15 @@
   //   · solo con la ventana al frente — un panel olvidado en una tablet no
   //     debe seguir consultando toda la noche contra el plan Free de Supabase.
   const REFRESCO_MS = 30000;
-  let temporizadorDash = null, ultimoDash = null;
+  let temporizadorDash = null, ultimoDash = null, filasDashboard = [];
+  function registrarIncidencia(indice) {
+    const fila = filasDashboard[indice];
+    if (!fila?.id || fila.no_surtido_en) return;
+    GoLunchIncidencias.abrir(fila, document.getElementById('db-fecha').value, api, async () => {
+      await verDashboard();
+      document.getElementById('db-reporte-aviso').textContent = 'Incidencia registrada. Regenera el PDF diario y sustituye cualquier versión enviada previamente a RRHH.';
+    });
+  }
 
   function esHoy() {
     const f = document.getElementById('db-fecha');
@@ -1638,6 +1657,7 @@
     try {
       const data = await api('/api/dashboard/' + fecha);
       const r = data.resumen, filas = data.filas || [];
+      filasDashboard = filas;
       if (!filas.length) { box.innerHTML = '<div class="vacio">No hay empleados activos.</div>'; return; }
 
       const tarjeta = (n, etiqueta, variante = '') =>
@@ -1651,7 +1671,8 @@
       h += tarjeta(r.total_comidas, 'Total de comidas', 'total');
       h += tarjeta(r.entregados, 'Entregadas', 'verde');
       h += tarjeta(r.pendientes, 'Pendientes', 'ambar');
-      h += '</div><p class="dashboard-tardias' + (r.tardias > 0 ? ' con-retrasos' : '') + '"><strong>' +
+      h += tarjeta(r.no_surtidos || 0, 'No surtidas · Sin cargo');
+      h += '</div><p class="dashboard-nota">Entregadas + pendientes + no surtidas = total de comidas. Las no surtidas se excluyen del descuento al empleado.</p><p class="dashboard-tardias' + (r.tardias > 0 ? ' con-retrasos' : '') + '"><strong>' +
         r.tardias + (r.tardias === 1 ? ' entrega tardía' : ' entregas tardías') + '</strong> · Incluidas en las entregadas.</p></section>';
 
       h += '<section class="dashboard-bloque" aria-labelledby="dash-empleados-titulo">' +
@@ -1680,6 +1701,7 @@
         entregado: ['✅ Entregado',  '#f0f7f0'],
         tardia:    ['⏱️ Tardía',     '#fff9e6'],
         pendiente:     ['⬜ Pendiente',        ''],
+        no_surtido:    ['No surtido · Sin cargo', '#eef2f7'],
         vio_no_ordeno: ['👀 Vio, no pidió',   '#fff9e6'],
         no_abrio:      ['— No abrió la app',  'var(--gris-bg)'],
         // Cuando la bitácora de accesos falla no se puede saber si entró o no.
@@ -1694,7 +1716,7 @@
       h += '<div style="overflow-x:auto"><table style="min-width:850px"><tr>' +
            '<th>Empleado</th><th>Servicio</th><th>Platillo</th><th>Zona</th><th>Turno y horario</th>' +
            '<th>Hora de entrega</th><th>Estado</th></tr>';
-      filas.forEach(f => {
+      filas.forEach((f, indice) => {
         const [txt, bg] = ESTADO[f.estado] || ['—', ''];
         const vacio = '<span style="color:#aaa">—</span>';
         const servicio = f.tipo === 'cobertura' ? (f.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : f.platillo ? 'Regular' : '';
@@ -1707,8 +1729,10 @@
              '<td>' + (f.platillo ? escaparHtml(f.platillo) : vacio) + '</td>' +
              '<td style="font-size:.82rem">' + (f.zona ? zonaTxt(f.zona) : vacio) + '</td>' +
              '<td style="font-size:.82rem">' + (horario || vacio) + '</td>' +
-             '<td style="font-size:.82rem;font-variant-numeric:tabular-nums">' + horaTxt(f.entregado_en) + '</td>' +
-             '<td style="font-size:.82rem;white-space:nowrap">' + txt +
+             '<td style="font-size:.82rem;font-variant-numeric:tabular-nums">' + (f.no_surtido_en ? '—' + (f.entregado_en ? '<span class="incidencia-detalle">Marca previa rectificada: ' + horaTxt(f.entregado_en) + '</span>' : '') : horaTxt(f.entregado_en)) + '</td>' +
+             '<td style="font-size:.82rem">' + txt +
+               (f.no_surtido_en ? '<span class="incidencia-detalle">' + escaparHtml(f.no_surtido_motivo) + '</span><span class="incidencia-detalle">Registró: ' + escaparHtml(f.no_surtido_por) + ' · ' + escaparHtml(new Date(f.no_surtido_en).toLocaleString('es-MX',{timeZone:'America/Mexico_City'})) + '</span>' :
+                f.id && fecha <= fechaComedor() ? '<button type="button" class="accion sec" style="margin-top:8px;white-space:normal" onclick="registrarIncidencia(' + indice + ')">Registrar no surtido</button>' : '') +
                (f.estado === 'tardia'
                  ? '<div style="font-size:.75rem;color:var(--gris-text)">' +
                    (f.motivo_tardia ? MOTIVO_TXT(f.motivo_tardia) : '⚠ sin motivo') + '</div>'
@@ -1723,7 +1747,7 @@
       const vivo = esHoy();
       h += '<p style="margin-top:12px;font-size:.75rem;color:var(--gris-text);text-align:right">' +
            (vivo ? '<span style="color:var(--verde)">●</span> Se actualiza solo cada 30 s · '
-                 : 'Día cerrado, no cambia · ') +
+                 : 'Consulta histórica · ') +
            'actualizado <span id="dashDesde">hace un momento</span></p>';
       box.innerHTML = h;
       programarRefresco();
@@ -1865,6 +1889,7 @@
         cajita(e.entregados, 'Entregados a tiempo', 'var(--verde)', '#f0f7f0') +
         cajita(e.tardios, 'Tardíos', '#b8860b', '#fff9e6') +
         cajita(e.no_entregados, 'No entregados', 'var(--rojo)', '#fdecec') +
+        cajita(d.no_surtidos || 0, 'No surtidos · Sin cargo', 'var(--gris-text)', 'var(--gris-bg)') +
         (e.indeterminados ? cajita(e.indeterminados, 'Entregados sin puntualidad verificable', 'var(--gris-text)', 'var(--gris-bg)') : '') +
         '</div>' +
         (e.pendientes
@@ -1877,6 +1902,10 @@
             d.motivos_tardia.map(m => '<tr><td>' + m.motivo + '</td><td>' + m.veces + '</td></tr>').join('') +
             '</table>'
           : ''));
+
+      if (d.incidencias?.length) h += bloque('Incidencias sin cargo al empleado',
+        '<p>Fallas de cocina o reparto autorizadas. Se excluyen de entregas, pendientes y no recogidos.</p><table><tr><th>Fecha</th><th>Empleado</th><th>Platillo</th><th>Motivo</th><th>Registró</th></tr>' +
+        d.incidencias.map(i => '<tr><td>' + escaparHtml(i.fecha) + '</td><td>#' + escaparHtml(i.numero_empleado) + ' · ' + escaparHtml(i.nombre) + '</td><td>' + escaparHtml(i.platillo) + '</td><td>' + escaparHtml(i.motivo) + '</td><td>' + escaparHtml(i.registrado_por) + '</td></tr>').join('') + '</table>');
 
       // 5 · Quién no recoge. Solo cuenta pedidos cuya hora de entrega ya pasó,
       // para no acusar a nadie por un pedido que todavía no le toca recoger.
@@ -2006,12 +2035,13 @@
             d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true }) + '</span>';
       };
       let h = `<table><tr><th>Empleado</th><th>No.</th><th>Platillo</th><th>Zona</th><th>Turno</th><th>Entregado</th></tr>`;
-      let entregados = 0;
+      let entregados = 0, noSurtidos = 0;
       for (const p of r.pedidos) {
-        if (p.entregado_en) entregados++;
-        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno, p.zona, f)}</td><td>${horaEntrega(p.entregado_en)}</td></tr>`;
+        if (p.no_surtido_en) noSurtidos++;
+        else if (p.entregado_en) entregados++;
+        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno, p.zona, f)}</td><td>${p.no_surtido_en ? 'No surtido · Sin cargo al empleado' : horaEntrega(p.entregado_en)}</td></tr>`;
       }
-      h += `</table><p style="margin-top:10px;font-size:.85rem;color:var(--gris)">Total: ${r.count} pedidos · Entregados: ${entregados} · Sin recoger: ${r.count - entregados}</p>`;
+      h += `</table><p style="margin-top:10px;font-size:.85rem;color:var(--gris)">Total: ${r.count} pedidos · Entregados: ${entregados} · Pendientes: ${r.count - entregados - noSurtidos} · No surtidos sin cargo: ${noSurtidos}</p>`;
       box.innerHTML = h;
     } catch(e) { box.innerHTML = `<div class="aviso err">Error: ${e.message}</div>`; }
   }
@@ -3324,7 +3354,7 @@
       box.innerHTML = solicitudes.map(s => {
         const cancelada = s.estado === 'cancelada';
         const items = (s.items || []).map(i => {
-          const receptor = i.entregado_en
+          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entregado_en
             ? ' · Entregado a ' + escaparHtml(i.receptor_nombre || s.responsable_nombre_snapshot) +
               (i.receptor_discrepante ? (i.receptor_verificado === false ? ' · gafete por revisar' : ' · receptor distinto verificado') : '')
             : '';

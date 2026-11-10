@@ -43,7 +43,7 @@ function pintarPedidos() {
     const estado = s.estado === 'cancelada' ? 'Cancelado' : s.estado === 'entregada' ? 'Entregado' : 'Confirmado';
     return '<article class="pedido"><h3>' + escapar(s.folio) + ' · ' + estado + '</h3><p><b>' + (s.turno === 'turno_a' ? 'Turno A' : 'Turno B y extras') + ' · ' + escapar(GoLunchOperacion.ZONAS[s.zona]) + ' · ' + hora(s.entrega_programada_en) + '</b></p><p>' + s.total_porciones + ' alimento(s) · Recibe ' + escapar(s.responsable_nombre_snapshot) + ' #' + escapar(s.responsable_numero_snapshot) + '</p>' +
       (s.estado === 'confirmada' ? '<small>' + (s.editable ? 'Cambios y cancelación hasta las ' : 'Cambios cerrados a las ') + hora(s.limite_cambios_en) + '.</small>' : '') +
-      '<details><summary>Ver empleados y platillos</summary><ul>' + s.items.map(i => '<li>#' + escapar(i.empleado_numero_snapshot) + ' · ' + escapar(i.empleado_nombre_snapshot) + ' — ' + escapar(i.opcion_texto) + '</li>').join('') + '</ul></details>' +
+      '<details><summary>Ver empleados y platillos</summary><ul>' + s.items.map(i => '<li>#' + escapar(i.empleado_numero_snapshot) + ' · ' + escapar(i.empleado_nombre_snapshot) + ' — ' + escapar(i.opcion_texto) + (i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : '') + '</li>').join('') + '</ul></details>' +
       (s.editable ? '<div class="pedido-acciones" data-limite="' + escapar(s.limite_cambios_en) + '"><button class="btn sec" onclick="editarSolicitud(' + s.id + ')">Modificar</button><button class="btn sec danger" onclick="cancelarSolicitud(' + s.id + ')">Cancelar pedido</button></div>' : '') + '</article>';
   }).join('') : '<p>No has registrado pedidos para hoy.</p>';
 }
