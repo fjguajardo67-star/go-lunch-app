@@ -2599,3 +2599,26 @@ main {
 .propuesta-punto p { margin-top: 8px; color: var(--gris-text); font-size: .9rem; }
 .propuesta-punto .btn, .propuesta-punto .btn-texto { margin-top: 12px; min-height: 48px; white-space: normal; }
 .propuesta-punto .btn { width: 100%; }
+
+.bitacora-ruta {
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--azul-line);
+  border-radius: 14px;
+  background: var(--blanco);
+  color: var(--tinta);
+}
+.bitacora-ruta h2 { font-size: 1.15rem; line-height: 1.3; }
+.bitacora-controles { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; margin-top: 10px; }
+.bitacora-controles label { flex: 1 1 200px; font-size: .85rem; font-weight: 750; }
+.bitacora-controles select {
+  display: block; width: 100%; min-height: 48px; margin-top: 3px; padding: 8px;
+  border: 1px solid var(--azul-line); border-radius: 8px;
+  font: inherit; color: var(--tinta); background: var(--blanco);
+}
+.bitacora-controles select:focus-visible { outline: 2px solid var(--azul-vivo); outline-offset: 2px; }
+.bitacora-controles .btn { flex: 1 0 auto; min-height: 48px; white-space: normal; }
+#bitacora-estado { margin-top: 8px; color: var(--gris-text); font-size: .9rem; }
+#bitacora-sincronizar { min-height: 44px; }
+:root[data-theme="dark"] .bitacora-ruta { background: #0e2039; }
+:root[data-theme="dark"] .bitacora-controles select { background: #122745; color: #eef5ff; }

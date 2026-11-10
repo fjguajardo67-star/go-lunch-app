@@ -29,7 +29,8 @@ test('la lista y el cierre se limitan al grupo; coberturas y tipos desconocidos 
 
 test('finalizar reparto detiene la sesión sin marcar pendientes ni cambiar la cola',()=>{
  const html=readFileSync(new URL('../public/entrega.html',import.meta.url),'utf8');
- const fn=html.match(/function finalizarReparto\([\s\S]*?\n  }/)[0];
+ const funciones=['finalizarReparto','cerrarEscaneoDeServicio'].map(nombre=>
+  html.match(new RegExp('function '+nombre+'\\([\\s\\S]*?\\n  }'))[0]).join('\n');
  const captura={};const copia=structuredClone(pedidos);
  const cola=[{numero_empleado:'002',entregado_en:pedidos[1].entregado_en}];
  const contexto=vm.createContext({PEDIDOS:copia,COLA:structuredClone(cola),SERVICIO_INICIADO:true,SERVICIO_MANUAL:false,
@@ -37,7 +38,7 @@ test('finalizar reparto detiene la sesión sin marcar pendientes ni cambiar la c
   comidasEnPantalla:()=>copia.filter(p=>p.zona===zona&&p.turno==='turno_a'),
   confirm:mensaje=>{captura.prompt=mensaje;return true;},detenerCamara:()=>{captura.camara=true;},
   cancelarManual:()=>{},recordarServicio:()=>{},pintar:()=>{}});
- vm.runInContext(fn+';finalizarReparto()',contexto);
+ vm.runInContext(funciones+';finalizarReparto()',contexto);
  assert.equal(contexto.SERVICIO_INICIADO,false);assert.equal(contexto.SUPERVISOR_ACTUAL,'');assert.equal(captura.camara,true);
  assert.deepEqual(contexto.COLA,cola);assert.deepEqual(copia,pedidos);assert.match(captura.prompt,/3 comida\(s\) pendientes/);
 });

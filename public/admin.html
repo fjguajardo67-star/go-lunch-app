@@ -525,6 +525,15 @@
   .propuesta-punto dd { margin-top: 2px; font-variant-numeric: tabular-nums; }
   .propuesta-acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
   .propuesta-bloqueo { color: var(--gris-text); }
+  .bitacora-filtros { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
+  .bitacora-filtros label { display: grid; gap: 4px; }
+  .bitacora-informe { border-top: 1px solid var(--gris-line); margin-top: 16px; padding-top: 14px; }
+  .bitacora-informe h4 { font-size: 1rem; }
+  .bitacora-informe p, .bitacora-informe small { color: var(--gris-text); }
+  .bitacora-informe ol { list-style: none; padding: 0; margin-top: 8px; }
+  .bitacora-informe li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 7px 0; border-bottom: 1px solid var(--gris-line); }
+  .bitacora-informe li span { font-variant-numeric: tabular-nums; }
+  .bitacora-informe li small { flex-basis: 100%; font-size: .8rem; }
   .oculto { display: none !important; }
 
   /* ── Coberturas: operación del mismo día, aislada del pedido regular ── */
@@ -1151,6 +1160,18 @@
 
       <!-- Configuración que se modifica ocasionalmente. -->
       <div class="cocina-vista" data-cocina-panel="reparto" hidden>
+        <section class="card" aria-labelledby="bitacora-panel-titulo">
+          <div class="cocina-card-header"><div>
+            <h3 id="bitacora-panel-titulo">Bitácora de rutas</h3>
+            <p>Salida del comedor, visitas y regreso de cada repartidor.</p>
+          </div></div>
+          <form class="bitacora-filtros" onsubmit="event.preventDefault(); consultarBitacora()">
+            <label>Fecha de reparto <input id="bitacora-fecha" type="date" required></label>
+            <button class="accion sec" type="submit" id="bitacora-consultar">Consultar rutas</button>
+          </form>
+          <p class="puntos-estado" id="bitacora-panel-estado" role="status" aria-live="polite"></p>
+          <div id="bitacora-panel-resultados"></div>
+        </section>
         <div class="card">
           <div class="cocina-card-header">
             <div class="cocina-icono" aria-hidden="true">
@@ -1351,6 +1372,7 @@
 <iframe id="cov-print-frame" class="cov-print-frame" title="Impresión automática de comanda de cobertura"></iframe>
 
 <script src="/operacion.js"></script>
+<script src="/bitacora-rutas.js"></script>
 <script src="/reportes-excel.js"></script>
 <script src="/incidencias-panel.js"></script>
 <script>
@@ -1457,6 +1479,9 @@
     if (nombre === 'reparto') {
       cargarRepartidores();
       cargarPropuestasPunto();
+      const fecha = document.getElementById('bitacora-fecha');
+      if (!fecha.value) fecha.value = fechaComedor();
+      consultarBitacora();
     }
   }
 
@@ -2592,6 +2617,53 @@
       document.getElementById('rpClaveNueva').classList.add('oculto');
       cargarRepartidores();
     } catch (e) { aviso('rpAviso', 'Error: ' + e.message, false); }
+  }
+
+  async function consultarBitacora() {
+    const campo = document.getElementById('bitacora-fecha');
+    const boton = document.getElementById('bitacora-consultar');
+    const salida = document.getElementById('bitacora-panel-resultados');
+    const fecha = campo.value;
+    if (!fecha || boton.disabled) return;
+    boton.disabled = true;
+    salida.replaceChildren();
+    mensajePuntos('bitacora-panel-estado', 'Consultando rutas…');
+    try {
+      const datos = await api('/api/entrega/bitacora?fecha=' + encodeURIComponent(fecha), { cache: 'no-store' });
+      if (campo.value !== fecha) {
+        mensajePuntos('bitacora-panel-estado', 'Pulsa Consultar rutas para ver la fecha seleccionada.');
+        return;
+      }
+      const rutas = GoLunchBitacora.agrupar(datos.marcas);
+      mensajePuntos('bitacora-panel-estado', rutas.length ? '' : 'Aún no hay rutas registradas para esta fecha.');
+      salida.innerHTML = rutas.map(informeRuta).join('');
+    } catch (error) {
+      mensajePuntos('bitacora-panel-estado', error.message, true);
+    } finally {
+      boton.disabled = false;
+    }
+  }
+
+  function informeRuta(ruta) {
+    const operador = ruta.marcas[0]?.repartidor_nombre || 'Reparto general';
+    const fechaHora = new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR,
+      day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+    const duracion = (inicio, fin) => {
+      const ms = Date.parse(fin.ocurrido_en) - Date.parse(inicio.ocurrido_en);
+      return ms < 60000 ? 'menos de 1 min' : Math.floor(ms / 60000) + ' min';
+    };
+    const cerrada = ruta.siguiente < 0;
+    const estado = cerrada ? 'Cerrada · ' + duracion(ruta.marcas[0], ruta.marcas.at(-1)) + ' en ruta' : 'En curso';
+    const pasos = ruta.plan.pasos.map((paso, i) => {
+      const marca = ruta.marcas[i];
+      if (!marca) return `<li><b>${paso.titulo}</b><span>Pendiente</span></li>`;
+      const anterior = ruta.marcas[i - 1];
+      const gps = Number.isFinite(marca.lat) && Number.isFinite(marca.lon)
+        ? `${marca.lat.toFixed(5)}, ${marca.lon.toFixed(5)} · ±${Math.round(marca.precision_m)} m` : 'Sin coordenadas';
+      const detalle = anterior ? `${duracion(anterior, marca)} desde la marca anterior · ${gps}` : gps;
+      return `<li><b>${paso.titulo}</b><span>${escaparHtml(fechaHora.format(new Date(marca.ocurrido_en)))}</span><small>${detalle}</small></li>`;
+    }).join('');
+    return `<article class="bitacora-informe"><h4>${ruta.plan.titulo}</h4><p>${escaparHtml(operador)} · ${estado}</p><ol>${pasos}</ol></article>`;
   }
 
   // ── Puntos de entrega ──

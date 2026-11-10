@@ -14,6 +14,7 @@ function contexto(usuario=20) {
   PEDIDOS:[{id:1}],TODOS_PEDIDOS:[{id:1}],PUNTOS:[{id:1}],LLEGADAS_DIA:[{id:1}],
   RELOJ:{servidor:'ahora'},ULTIMA_DESCARGA:'ahora',ERROR_DESCARGA:false,
   COLA:[{numero_empleado:'001'}],LLEGADAS:[{zona:'zona_refris'}],
+  BITACORA:{confirmadas:[],pendientes:[],ocupadas:[]},AVISO_BITACORA:'',
   LS:{servicio:'servicio',sesion:'sesion',clave:'clave',zona:'zona'},CLAVE:'clave-anterior',
   agenda:()=>[servicio],servicioActual:()=>servicio,
   leerLS:k=>almacenamiento.get(k),localStorage:{removeItem:k=>almacenamiento.delete(k)},
