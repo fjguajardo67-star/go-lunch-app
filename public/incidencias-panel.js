@@ -31,7 +31,7 @@
       evento.preventDefault(); if (campos.disabled) return;
       error.textContent = ''; campos.disabled = true; enviar.textContent = 'Registrando…';
       try {
-        await api('/api/incidencias/' + fila.tipo + '/' + fila.id, { method:'POST', body:JSON.stringify({ motivo:motivo.value.trim(), entregado_esperado:fila.entregado_en || null }) });
+        await api('/api/incidencias/' + fila.tipo + '/' + fila.id, { method:'POST', body:JSON.stringify({ fecha, motivo:motivo.value.trim(), entregado_esperado:fila.entregado_en || null }) });
         dialogo.close(); await actualizar();
       } catch (err) { error.textContent = err.message; }
       finally { campos.disabled = false; enviar.textContent = 'Autorizar sin cargo'; }

@@ -323,7 +323,7 @@ export async function getPedidosPorFecha(fecha) {
 
 export async function registrarNoSurtido(d, rol) {
   const { data, error } = await supabase.rpc('registrar_comida_no_surtida', {
-    p_tipo: d.tipo, p_id: d.id, p_motivo: d.motivo, p_rol: rol, p_entregado_esperado: d.entregado_esperado
+    p_tipo: d.tipo, p_id: d.id, p_fecha_esperada:d.fecha, p_motivo: d.motivo, p_rol: rol, p_entregado_esperado: d.entregado_esperado
   });
   if (error) throw error;
   if (!data?.no_surtido_en) throw new Error('La base no confirmó la incidencia.');

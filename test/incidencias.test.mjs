@@ -73,15 +73,15 @@ test('API exige credenciales de panel, motivo y versión; la atribución viene d
   const {adminRouter}=await import('../routes/admin.js'); const app=express();app.use(express.json());app.use('/api',adminRouter);
   const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
   const url='http://127.0.0.1:'+server.address().port+'/api/incidencias/regular/12';
-  const entrada={motivo:incidencia.no_surtido_motivo,entregado_esperado:null,p_rol:'admin',no_surtido_por:'inventado'};
+  const entrada={fecha:'2026-11-10',motivo:incidencia.no_surtido_motivo,entregado_esperado:null,p_rol:'admin',no_surtido_por:'inventado'};
   const post=(datos,clave='gerente-prueba')=>fetch(url,{method:'POST',headers:{'content-type':'application/json',...(clave?{'x-admin-key':clave}:{})},body:JSON.stringify(datos)});
   try {
     assert.equal((await post(entrada,null)).status,401);assert.equal(rpc,null);
-    for(const d of [{motivo:'error'},{...entrada,motivo:'x'},{...entrada,motivo:'a'.repeat(501)},{...entrada,entregado_esperado:'invalido'}])assert.equal((await post(d)).ok,false);
+    for(const d of [{motivo:'error'},{...entrada,fecha:'2026-02-30'},{...entrada,motivo:'x'},{...entrada,motivo:'a'.repeat(501)},{...entrada,entregado_esperado:'invalido'}])assert.equal((await post(d)).ok,false);
     assert.equal(rpc,null);
     for(const [clave,rol] of [['gerente-prueba','gerente'],['admin-prueba','admin']]){
       const res=await post(entrada,clave);assert.equal(res.status,200);assert.equal(res.headers.get('cache-control'),'no-store');
-      assert.equal(rpc.datos.p_rol,rol); assert.equal(rpc.datos.p_id,12);assert.equal(rpc.datos.no_surtido_por,undefined);
+      assert.equal(rpc.datos.p_rol,rol); assert.equal(rpc.datos.p_fecha_esperada,'2026-11-10'); assert.equal(rpc.datos.p_id,12);assert.equal(rpc.datos.no_surtido_por,undefined);
     }
     conflicto=true;const res=await post(entrada);assert.equal(res.status,409);assert.match((await res.json()).error,/Cambió el estado/);
     for(const t of ['otra','regular'])assert.throws(()=>validarIncidencia(t,'0',entrada));

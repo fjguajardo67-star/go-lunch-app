@@ -64,7 +64,7 @@ CREATE TRIGGER proteger_folio_con_incidencia BEFORE UPDATE ON public.solicitudes
   FOR EACH ROW EXECUTE FUNCTION public.proteger_folio_con_incidencia();
 
 CREATE FUNCTION public.registrar_comida_no_surtida(
-  p_tipo text, p_id bigint, p_motivo text, p_rol text, p_entregado_esperado timestamptz
+  p_tipo text, p_id bigint, p_motivo text, p_rol text, p_entregado_esperado timestamptz, p_fecha_esperada date
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog, public AS $$
 DECLARE r record; padre bigint; estado_padre text; fecha date; instante timestamptz := clock_timestamp();
 BEGIN
@@ -87,9 +87,10 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'comida_no_encontrada'; END IF;
     fecha := r.fecha_servicio;
   END IF;
+  IF fecha > (instante AT TIME ZONE 'America/Mexico_City')::date THEN RAISE EXCEPTION 'servicio_futuro'; END IF;
+  IF p_fecha_esperada IS NULL OR fecha IS DISTINCT FROM p_fecha_esperada THEN RAISE EXCEPTION 'fecha_servicio_actualizada'; END IF;
   -- Un doble clic o una respuesta perdida recupera la misma autorización.
   IF r.no_surtido_en IS NOT NULL THEN RETURN to_jsonb(r); END IF;
-  IF fecha > (instante AT TIME ZONE 'America/Mexico_City')::date THEN RAISE EXCEPTION 'servicio_futuro'; END IF;
   IF r.entregado_en IS DISTINCT FROM p_entregado_esperado THEN RAISE EXCEPTION 'estado_entrega_actualizado'; END IF;
   IF p_tipo='regular' THEN
     UPDATE public.pedidos SET no_surtido_en=instante, no_surtido_motivo=btrim(p_motivo), no_surtido_por=p_rol
@@ -101,8 +102,8 @@ BEGIN
   RETURN to_jsonb(r);
 END;
 $$;
-REVOKE ALL ON FUNCTION public.registrar_comida_no_surtida(text,bigint,text,text,timestamptz) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.registrar_comida_no_surtida(text,bigint,text,text,timestamptz) TO service_role;
+REVOKE ALL ON FUNCTION public.registrar_comida_no_surtida(text,bigint,text,text,timestamptz,date) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.registrar_comida_no_surtida(text,bigint,text,text,timestamptz,date) TO service_role;
 REVOKE ALL ON FUNCTION public.proteger_comida_no_surtida() FROM PUBLIC,anon,authenticated;
 REVOKE ALL ON FUNCTION public.proteger_folio_con_incidencia() FROM PUBLIC,anon,authenticated;
 NOTIFY pgrst,'reload schema';

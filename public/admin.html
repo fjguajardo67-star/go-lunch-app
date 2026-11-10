@@ -1605,11 +1605,18 @@
   //   · solo con la ventana al frente — un panel olvidado en una tablet no
   //     debe seguir consultando toda la noche contra el plan Free de Supabase.
   const REFRESCO_MS = 30000;
-  let temporizadorDash = null, ultimoDash = null, filasDashboard = [];
+  let temporizadorDash = null, ultimoDash = null, filasDashboard = [], fechaDashboard = null, consultaDashboard = 0;
+  document.getElementById('db-fecha').addEventListener('change', () => {
+    consultaDashboard++; filasDashboard = []; fechaDashboard = null;
+    document.getElementById('dashboardBox').textContent = 'La fecha cambió. Pulsa Consultar para cargar sus comidas.';
+  });
   function registrarIncidencia(indice) {
     const fila = filasDashboard[indice];
+    if (!fechaDashboard || fechaDashboard !== document.getElementById('db-fecha').value) {
+      document.getElementById('db-reporte-aviso').textContent = 'Consulta la fecha seleccionada antes de registrar una incidencia.'; return;
+    }
     if (!fila?.id || fila.no_surtido_en) return;
-    GoLunchIncidencias.abrir(fila, document.getElementById('db-fecha').value, api, async () => {
+    GoLunchIncidencias.abrir(fila, fechaDashboard, api, async () => {
       await verDashboard();
       document.getElementById('db-reporte-aviso').textContent = 'Incidencia registrada. Regenera el PDF diario y sustituye cualquier versión enviada previamente a RRHH.';
     });
@@ -1651,13 +1658,15 @@
   // "Cargando...", que a cada rato sería más molesto que útil.
   async function verDashboard(silencioso = false) {
     const fecha = document.getElementById('db-fecha').value;
+    const consulta = ++consultaDashboard;
     const box = document.getElementById('dashboardBox');
     if (!fecha) { box.innerHTML = '<p class="aviso err">Selecciona una fecha.</p>'; return; }
     if (!silencioso) box.innerHTML = '<p style="color:var(--gris-text)">Cargando...</p>';
     try {
       const data = await api('/api/dashboard/' + fecha);
+      if (consulta !== consultaDashboard || fecha !== document.getElementById('db-fecha').value) return;
       const r = data.resumen, filas = data.filas || [];
-      filasDashboard = filas;
+      filasDashboard = filas; fechaDashboard = fecha;
       if (!filas.length) { box.innerHTML = '<div class="vacio">No hay empleados activos.</div>'; return; }
 
       const tarjeta = (n, etiqueta, variante = '') =>
@@ -1756,7 +1765,7 @@
       // al operador sin nada, y lo que ya estaba en pantalla sigue siendo
       // válido. El sello de "actualizado hace X" se encarga de delatar que la
       // información se está quedando vieja.
-      if (silencioso) return;
+      if (silencioso || consulta !== consultaDashboard || fecha !== document.getElementById('db-fecha').value) return;
       box.innerHTML = '<p class="aviso err">Error: ' + e.message + '</p>';
     }
   }
