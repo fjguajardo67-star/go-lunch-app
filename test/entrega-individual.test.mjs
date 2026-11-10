@@ -95,6 +95,15 @@ test('API de entrega individual: métodos, primera marca, colas antiguas y zonas
       const r = await fetch(url + '/hoy' + query, { headers }); return { status: r.status, ...await r.json() };
     }
 
+    await t.test('una llegada de otro repartidor no se atribuye a la sesión actual', async () => {
+      reiniciar();
+      const antes=JSON.stringify(tablas.llegadas);
+      const r=await fetch(url+'/llegada',{method:'POST',headers:{'content-type':'application/json',...sesion()},
+        body:JSON.stringify({fecha,zona,turno:'turno_a',llegada_en:hora,repartidor_id:11})});
+      assert.equal(r.status,403);assert.equal((await r.json()).motivo,'otro_repartidor');
+      assert.equal(JSON.stringify(tablas.llegadas),antes);assert.equal(escrituras.length,0);
+    });
+
     await t.test('cámara, lector y captura manual persisten en ambas clases; reintentos conservan TODA la evidencia', async () => {
       for (const metodo of ['camara', 'lector', 'manual']) for (const tipo of ['regular', 'cobertura']) {
         reiniciar();

@@ -340,6 +340,9 @@ entregaRouter.get('/:fecha', async (req, res) => {
 entregaRouter.post('/llegada', async (req, res) => {
   try {
     const { fecha, zona, turno, punto, llegada_en, lat, lon, precision_m } = req.body || {};
+    if (req.repartidor && req.body?.repartidor_id != null && Number(req.body.repartidor_id) !== Number(req.repartidor.id)) {
+      return res.status(403).json({ error: 'Esta llegada pertenece a otro repartidor', motivo: 'otro_repartidor' });
+    }
     if (!fecha || !zona || !turno) {
       return res.status(400).json({ error: 'Se requieren fecha, zona y turno' });
     }
