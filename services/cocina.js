@@ -169,7 +169,8 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   const enHoja = modo === 'hoja';
   const conMarco = extensionCierreEtiqueta(ancho, alto) > 0 || pedidos.some(p => p.tipo === 'cobertura');
   const desglose = contarServicios(seleccionarPedidosCocina(pedidos, filtros));
-  const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
+  const margenCarta = Number(ancho) > 187.9 ? 7 : 14;
+  const columnas = Math.max(1, Math.floor((215.9 - 2 * margenCarta + 4) / (Number(ancho) + 4)));
 
   // Las etiquetas salen agrupadas por turno y zona: así se empacan y se
   // reparten en el mismo orden en que la cocina las va a necesitar.
@@ -287,7 +288,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   ${conMarco ? `.marco-etiqueta{width:${ancho}mm;height:${alto}mm;flex:none;break-inside:avoid;page-break-inside:avoid}` : ''}
   ${enHoja
     ? `/* Prueba en papel carta: se recortan para validar la medida */
-       @page { size: letter; margin: 14mm; }
+       @page { size: letter; margin: ${margenCarta}mm; }
        @media print {
          .hoja.prueba { display: block; font-size: 0; }
          .hoja.prueba .etiqueta { display: ${esFormatoReparto(ancho, alto) ? 'inline-grid' : 'inline-flex'}; border: .2mm dashed #999; vertical-align: top; margin: 0 4mm 4mm 0; break-inside: avoid; page-break-inside: avoid; }
@@ -313,7 +314,7 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
     ${enHoja
       ? 'Imprime esta hoja en papel normal y recórtala para comprobar que la medida cabe en el contenedor <b>antes</b> de comprar el rollo. Cambia el tamaño con <b>?ancho=</b> y <b>?alto=</b> en milímetros.'
       : 'Ajusta el tamaño con <b>?ancho=</b> y <b>?alto=</b> (mm) para que coincida con tu rollo. Para probar en papel carta primero, agrega <b>&amp;modo=hoja</b>.'}
-    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: rollo de 62 mm, largo de 100 mm y orientación horizontal. El formato de 100 × 62 mm conserva el diseño de 90 mm y añade <b>10 mm en blanco solo a la izquierda</b> para cerrar el recipiente. Coloca el QR sobre una superficie plana, sin doblarlo. Las etiquetas van ordenadas por turno y zona.
+    En el diálogo de impresión: <b>escala 100 %, sin márgenes y desactivar Encabezados y pies de página</b> para quitar fecha, título, URL y número de página. Para Brother: rollo de 62 mm, largo de ${ancho} mm y orientación horizontal. El formato de 200 × 62 mm conserva el diseño de 90 mm y añade <b>110 mm en blanco solo a la izquierda</b> para cerrar el recipiente. Coloca el QR sobre una superficie plana, sin doblarlo. Las etiquetas van ordenadas por turno y zona.
   </div>
   <div class="hoja ${enHoja ? 'prueba' : 'rollo'}">
     ${orden.length ? cuerpo : vacio}

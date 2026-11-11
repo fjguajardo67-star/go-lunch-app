@@ -7,9 +7,21 @@ const {htmlEtiquetasCobertura}=await import('../services/cocina-cobertura.js');
 const fecha='2026-11-07';
 const pedido={turno:'turno_a',zona:'zona_vdc',opcion_texto:'Pollo <especial>',empleados:{nombre:'Nombre <de prueba>',numero_empleado:'00123'}};
 
+test('100 × 62 sigue disponible y la etiqueta larga mantiene el mismo QR y bloque impreso',()=>{
+ const anterior=htmlEtiquetas({fecha,ancho:100,alto:62,pedidos:[pedido]});
+ const larga=htmlEtiquetas({fecha,pedidos:[pedido]});
+ assert.match(anterior,/size: 100mm 62mm/);
+ assert.match(anterior,/padding-left: 10mm/);
+ assert.match(larga,/padding-left: 110mm/);
+ for(const html of [anterior,larga]) {
+  assert.match(html,/width: 90mm/);
+  assert.match(html,/data-codigo="00123\|2026-11-07"/);
+ }
+});
+
 test('etiqueta regular horizontal conserva número y fecha sin pie externo',()=>{
  const html=htmlEtiquetas({fecha,pedidos:[pedido]});
- assert.match(html,/@page \{ size: 100mm 62mm; margin: 0; \}/);
+ assert.match(html,/@page \{ size: 200mm 62mm; margin: 0; \}/);
  assert.match(html,/ASLA &nbsp;·&nbsp; 10:00/);
  assert.match(html,/font-size: 21pt/);
  assert.match(html,/width: 32mm; height: 32mm/);
@@ -23,13 +35,13 @@ test('etiqueta regular horizontal conserva número y fecha sin pie externo',()=>
  assert.doesNotMatch(html,/<div class="pie">|<span>#00123<\/span>/);
  assert.match(html,/desactivar Encabezados y pies de página/);
  assert.doesNotMatch(html,/transform:scale\(0\.85\)/);
- assert.match(html,/\.marco-etiqueta \{ padding-left: 10mm;/);
- assert.match(html,/\.marco-etiqueta\{width:100mm;height:62mm/);
+ assert.match(html,/\.marco-etiqueta \{ padding-left: 110mm;/);
+ assert.match(html,/\.marco-etiqueta\{width:200mm;height:62mm/);
  assert.match(html,/width: 90mm;/);
 });
 test('especial conserva QR, empleado, fecha y responsable',()=>{
  const html=htmlEtiquetasCobertura({fecha,items:[{empleado_nombre_snapshot:'Prueba',empleado_numero_snapshot:'00077',opcion_texto:'Ensalada',codigo_entrega:'uuid-especial',secuencia:1,solicitud:{turno:'turno_b',zona:'zona_refris',folio:'FOLIO-NO-IMPRIMIR',total_porciones:1,responsable_nombre_snapshot:'Responsable <prueba>',responsable_numero_snapshot:'001'}}]});
- assert.match(html,/@page\{size:100mm 62mm;margin:0\}/);
+ assert.match(html,/@page\{size:200mm 62mm;margin:0\}/);
  assert.match(html,/REFIS · 5:00 PM/);
  assert.match(html,/Recibe: Responsable &lt;prueba&gt; #001/);
  assert.match(html,/EX\|uuid-especial\|2026-11-07/);
@@ -42,8 +54,8 @@ test('especial conserva QR, empleado, fecha y responsable',()=>{
 });
 test('la calibración de cobertura mantiene el papel y respeta tamaños alternativos',()=>{
  const carta=htmlEtiquetasCobertura({fecha,modo:'hoja',items:[]});
- assert.match(carta,/@page\{size:letter portrait;margin:14mm\}/);
- assert.match(carta,/\.marco-etiqueta\{width:100mm;height:62mm/);
+ assert.match(carta,/@page\{size:letter portrait;margin:7mm\}/);
+ assert.match(carta,/\.marco-etiqueta\{width:200mm;height:62mm/);
  assert.match(carta,/Sin solicitudes confirmadas/);
  const chico=htmlEtiquetasCobertura({fecha,ancho:62,alto:40,modo:'rollo',items:[]});
  assert.match(chico,/@page\{size:62mm 40mm;margin:0\}/);
@@ -65,7 +77,7 @@ test('tamaños alternativos y prueba carta siguen disponibles; sin QR usa todo e
  const chico=htmlEtiquetas({fecha,ancho:62,alto:40,pedidos:[pedido]});
  assert.match(chico,/@page \{ size: 62mm 40mm; margin: 0; \}/);
  const carta=htmlEtiquetas({fecha,modo:'hoja',qr:false,pedidos:[pedido]});
- assert.match(carta,/@page \{ size: letter; margin: 14mm; \}/);
+ assert.match(carta,/@page \{ size: letter; margin: 7mm; \}/);
  assert.doesNotMatch(carta,/data-codigo=/);
  assert.match(carta,/:not\(:has\(.qr\)\) .texto \{ grid-column: 1 \/ -1/);
 });

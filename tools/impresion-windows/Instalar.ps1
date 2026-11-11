@@ -53,7 +53,7 @@ try {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $destino 'Ejecutar.ps1') -Modo preparar
   if ($LASTEXITCODE -ne 0) { throw 'La prueba no termino bien. La tarea NO se ha activado.' }
   Write-Host 'Abra los PDF generados. Imprima una prueba de cada uno y compruebe tamano, texto y QR.'
-  Write-Host 'Brother: rollo 62 mm, largo 100 mm, horizontal; POS58: rollo 58 mm; ambas al 100 %, sin ajustar a pagina.'
+  Write-Host 'Brother: rollo 62 mm, largo 200 mm, horizontal; POS58: rollo 58 mm; ambas al 100 %, sin ajustar a pagina.'
   if ((Read-Host 'Cuando las DOS pruebas fisicas salgan bien, escriba ACTIVAR. Cualquier otro texto sale sin programar') -cne 'ACTIVAR') {
     Write-Host 'No se activo ninguna tarea. Puede repetir la instalacion cuando termine de calibrar.'
     exit 0
@@ -64,7 +64,7 @@ try {
   $trigger=New-ScheduledTaskTrigger -Daily -At '21:30'
   $principal=New-ScheduledTaskPrincipal -UserId $usuario -LogonType Interactive -RunLevel Limited
   $ajustes=New-ScheduledTaskSettingsSet -WakeToRun -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 15)
-  Register-ScheduledTask -TaskName 'GoLunch-Impresion-2130' -Action $accion -Trigger $trigger -Principal $principal -Settings $ajustes -Description 'Comanda POS58 y etiquetas Brother 100x62 horizontal a las 21:30 para el dia siguiente.' | Out-Null
+  Register-ScheduledTask -TaskName 'GoLunch-Impresion-2130' -Action $accion -Trigger $trigger -Principal $principal -Settings $ajustes -Description 'Comanda POS58 y etiquetas Brother 200x62 horizontal a las 21:30 para el dia siguiente.' | Out-Null
   Write-Host 'ACTIVADO: todos los dias a las 9:30 PM. Mantenga la sesion iniciada y la PC conectada.' -ForegroundColor Green
   Write-Host ('Documentos y registro: '+$config.carpeta)
   Read-Host 'Enter para cerrar' | Out-Null

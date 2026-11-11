@@ -89,7 +89,8 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
   const enHoja = modo === 'hoja';
   // Calibración física de la Brother: conservar el papel y centrar el contenido al 85 %.
   const escala = esFormatoReparto(ancho, alto) ? .85 : 1;
-  const columnas = Math.max(1, Math.floor((215.9 - 28 + 4) / (Number(ancho) + 4)));
+  const margenCarta = Number(ancho) > 187.9 ? 7 : 14;
+  const columnas = Math.max(1, Math.floor((215.9 - 2 * margenCarta + 4) / (Number(ancho) + 4)));
   const fechaCorta = DateTime.fromISO(fecha, { zone: ZONA_TZ }).toFormat('dd/MM/yyyy');
   const orden = [...items].sort((a, b) =>
     a.solicitud.zona.localeCompare(b.solicitud.zona) ||
@@ -113,8 +114,8 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
 ${estiloEtiquetaReparto(ancho, alto)}
 .marco-etiqueta{width:${ancho}mm;height:${alto}mm;flex:none;break-inside:avoid;page-break-inside:avoid}
 .marco-etiqueta>.etiqueta{transform:scale(${escala});transform-origin:center center}
-${enHoja ? `@page{size:letter portrait;margin:14mm}@media print{.hoja.prueba{display:block;font-size:0}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.prueba .etiqueta{border:.2mm dashed #999}}` : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.marco-etiqueta{break-after:page;page-break-after:always}.marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}`}
+${enHoja ? `@page{size:letter portrait;margin:${margenCarta}mm}@media print{.hoja.prueba{display:block;font-size:0}.hoja.prueba .marco-etiqueta{display:inline-block;vertical-align:top;margin:0 4mm 4mm 0}.hoja.prueba .marco-etiqueta:nth-child(${columnas}n){margin-right:0}.hoja.prueba .etiqueta{border:.2mm dashed #999}}` : `@page{size:${ancho}mm ${alto}mm;margin:0}@media print{.marco-etiqueta{break-after:page;page-break-after:always}.marco-etiqueta:last-child{break-after:auto;page-break-after:auto}}`}
 </style></head><body><div class="barra"><b>Etiquetas · cobertura ${esc(fechaCorta)}</b><span>${orden.length} alimento(s)</span><button onclick="window.print()">Imprimir</button></div>
-<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: rollo de 62 mm, largo de 100 mm, orientación horizontal. En 100 × 62 mm se añaden <b>10 mm en blanco solo a la izquierda</b> para cerrar el recipiente; coloca el QR en una superficie plana.${escala === .85 ? ' La reducción de cobertura al <b>85 %</b> ya está incluida y centrada dentro del bloque impreso de 90 mm; mantén la escala del navegador en <b>100 %</b>.' : ''} El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
+<div class="ayuda">Una etiqueta por recipiente. Escala 100 %, sin márgenes y desactivar <b>Encabezados y pies de página</b> en el navegador. Brother: rollo de 62 mm, largo de ${ancho} mm, orientación horizontal. En 200 × 62 mm se añaden <b>110 mm en blanco solo a la izquierda</b> para cerrar el recipiente; coloca el QR en una superficie plana.${escala === .85 ? ' La reducción de cobertura al <b>85 %</b> ya está incluida y centrada dentro del bloque impreso de 90 mm; mantén la escala del navegador en <b>100 %</b>.' : ''} El QR registra esta cobertura sin interferir con el pedido regular del empleado.</div><main class="hoja ${enHoja ? 'prueba' : 'rollo'}">${cuerpo || '<p>Sin solicitudes confirmadas.</p>'}</main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script><script>document.querySelectorAll('.qr[data-codigo]').forEach(c=>new QRCode(c,{text:c.dataset.codigo,width:320,height:320,correctLevel:QRCode.CorrectLevel.M}));</script>${scriptAjustarTextoEtiqueta}</body></html>`;
 }
