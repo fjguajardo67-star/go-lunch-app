@@ -1,8 +1,8 @@
 GO LUNCH — IMPRESION AUTOMATICA WINDOWS — 9:30 PM
 
 1. Instale los drivers y pruebe ambas impresoras en Windows.
-   Brother QL-800: rollo de 62 mm, largo de 100 mm, orientacion horizontal.
-   Resultado: 100 mm de ancho x 62 mm de alto; escala 100 %, sin margenes.
+   Brother QL-800: rollo de 62 mm, largo de 200 mm, orientacion horizontal.
+   Resultado: 200 mm de ancho x 62 mm de alto; escala 100 %, sin margenes.
    VOLTECK POS58: rollo 58 mm. Use el nombre instalado, no la marca.
 2. Instale Node.js LTS (22 o posterior): https://nodejs.org/
    Instale SumatraPDF: https://www.sumatrapdfreader.org/download-free-pdf-viewer
@@ -48,6 +48,6 @@ Fuentes:
 https://www.sumatrapdfreader.org/docs/Command-line-arguments
 https://learn.microsoft.com/powershell/module/scheduledtasks/register-scheduledtask
 
-La etiqueta mide 100 x 62 mm. Los 10 mm nuevos quedan en blanco solo a la
+La etiqueta mide 200 x 62 mm. Los 110 mm adicionales quedan en blanco solo a la
 izquierda para cerrar el recipiente. El bloque impreso mantiene sus 90 mm
 y la calibracion anterior. Mantenga el QR plano, sin doblarlo.

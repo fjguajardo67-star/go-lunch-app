@@ -1,11 +1,11 @@
-// Rollo de 62 mm, corte de 100 mm: 10 mm de cierre a la izquierda
+// Rollo de 62 mm, corte de 200 mm: 110 mm de cierre a la izquierda
 // y el mismo bloque impreso de 90 mm usado anteriormente.
-export const ANCHO_ETIQUETA = 100;
+export const ANCHO_ETIQUETA = 200;
 export const ALTO_ETIQUETA = 62;
 export const ANCHO_CONTENIDO_ETIQUETA = 90;
 
 export function esFormatoReparto(ancho, alto) {
-  return [ANCHO_CONTENIDO_ETIQUETA, ANCHO_ETIQUETA].includes(Number(ancho)) && Number(alto) === ALTO_ETIQUETA;
+  return [ANCHO_CONTENIDO_ETIQUETA, 100, ANCHO_ETIQUETA].includes(Number(ancho)) && Number(alto) === ALTO_ETIQUETA;
 }
 
 export function extensionCierreEtiqueta(ancho, alto) {

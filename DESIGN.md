@@ -77,9 +77,9 @@ Los indicadores se presentan en dos bloques con unidades explícitas: Comidas pr
 
 ## Etiquetas de reparto
 
-Formato predeterminado horizontal de 100 × 62 mm: rollo Brother de 62 mm y corte de 100 mm. Los 10 mm adicionales quedan en blanco únicamente en el extremo izquierdo para cerrar recipientes de polipropileno. El bloque impreso de 90 × 62 mm conserva exactamente sus fuentes, márgenes interiores de 9 mm, distribución, QR de 32 mm, número de empleado y fecha. No se añade espacio al extremo derecho ni se amplía el contenido. La pestaña se usa para el cierre y el QR permanece sobre una cara plana del recipiente.
+Formato predeterminado horizontal de 200 × 62 mm: rollo Brother de 62 mm y corte de 200 mm. Los 110 mm adicionales quedan en blanco únicamente en el extremo izquierdo para cerrar recipientes de polipropileno. El bloque impreso de 90 × 62 mm conserva exactamente sus fuentes, márgenes interiores de 9 mm, distribución, QR de 32 mm, número de empleado y fecha. No se añade espacio al extremo derecho ni se amplía el contenido. La pestaña se usa para el cierre y el QR permanece sobre una cara plana del recipiente.
 
-Las coberturas conservan su calibración física al 85 %, centrada dentro del bloque de 90 mm situado después de la pestaña izquierda. La escala del navegador es 100 % y el marco completo mide 100 × 62 mm, una sola página por etiqueta. El formato anterior de 90 × 62 mm permanece seleccionable, con su diseño y calibración previos.
+Las coberturas conservan su calibración física al 85 %, centrada dentro del bloque de 90 mm situado después de la pestaña izquierda. La escala del navegador es 100 % y el marco completo mide 200 × 62 mm, una sola página por etiqueta. El formato anterior de 90 × 62 mm permanece seleccionable, con su diseño y calibración previos.
 
 ## Grupo activo de reparto
 
