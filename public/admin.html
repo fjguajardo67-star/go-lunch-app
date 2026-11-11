@@ -999,8 +999,17 @@
           <div class="row-fin" style="margin-bottom:16px">
             <div><label for="cov-turno">Turno de producción</label><select id="cov-turno" onchange="cargarCobertura()"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select></div>
             <div><label for="cov-fecha">Fecha de servicio a consultar</label><input type="date" id="cov-fecha" style="max-width:190px" onchange="cargarCobertura()"></div>
+            <div>
+              <label for="cov-tamano">Tamaño de etiqueta (rollo × largo)</label>
+              <select id="cov-tamano" aria-describedby="cov-impresion-ayuda">
+                <option value="200x62" selected>62 × 200 mm — larga</option>
+                <option value="100x62">62 × 100 mm — anterior</option>
+                <option value="90x62">62 × 90 mm — anterior</option>
+              </select>
+            </div>
             <button class="accion sec" onclick="cargarCobertura()">Consultar día</button>
           </div>
+          <p id="cov-impresion-ayuda" style="font-size:.85rem;color:var(--gris-text);margin-bottom:16px;line-height:1.5">Este tamaño aplica a las etiquetas del turno y de cada folio. En la Brother selecciona rollo de <b>62 mm</b> y el mismo largo, orientación horizontal y escala <b>100 %</b>. Para la etiqueta larga, el papel debe medir <b>62 × 200 mm</b>; un papel de 100 mm recorta el contenido.</p>
           <div class="cov-resumen">
             <div><strong id="cov-n-sol">0</strong><span>Solicitudes activas</span></div>
             <div><strong id="cov-n-por">0</strong><span>Alimentos confirmados</span></div>
@@ -3232,7 +3241,7 @@
       : API_BASE + '/etiquetas-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY);
     if (tipo === 'comanda') url += '&ancho=58';
     if (tipo === 'etiquetas') {
-      const tamano = document.getElementById('im-tamano')?.value || '200x62';
+      const tamano = document.getElementById('cov-tamano')?.value || '200x62';
       const [ancho, alto] = tamano.split('x');
       url += '&ancho=' + encodeURIComponent(ancho) + '&alto=' + encodeURIComponent(alto);
     }
