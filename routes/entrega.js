@@ -20,6 +20,9 @@ import {
 } from '../services/menu.js';
 import { validarReceptorEscaneado } from '../services/cobertura.js';
 import { turnoValido } from '../services/reparto-grupos.js';
+import '../public/bitacora-rutas.js';
+
+const { permitidas: rutasPermitidas, porId: itinerarioPorId } = globalThis.GoLunchBitacora;
 
 export const entregaRouter = express.Router();
 
@@ -218,6 +221,66 @@ function puedeConZona(req, zona) {
   if (!zona) return true;            // sin zona declarada no hay qué restringir
   return permitidas.includes(zona);
 }
+
+function fechaRutaValida(fecha) {
+  return typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)
+    && DateTime.fromISO(fecha, { zone: ZONA }).toISODate() === fecha && fecha <= hoy();
+}
+
+const conflictosRuta = new Map([
+  ['ruta_otro_repartidor', 'Otro repartidor ya inició esta ruta.'],
+  ['falta_marca_anterior', 'Primero se tiene que sincronizar la marca anterior.'],
+  ['fecha_marca_invalida', 'La hora de esta marca está fuera de la secuencia de la ruta.']
+]);
+
+// La bitácora se consulta por separado de /hoy para que el escaneo siga
+// disponible aunque la consulta de rutas falle.
+entregaRouter.get('/bitacora', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const fecha = req.query.fecha || hoy();
+  if (!fechaRutaValida(fecha)) return res.status(400).json({ error: 'Fecha de ruta inválida.' });
+  try {
+    const rutas = rutasPermitidas(zonasPermitidas(req));
+    const marcas = await db.getMarcasRutaReparto(fecha, rutas.map(ruta => ruta.id));
+    if (req.esAdmin) return res.json({ fecha, marcas });
+    const operador = String(req.repartidor?.id ?? 'legado');
+    const propias = marcas.filter(marca => String(marca.repartidor_id ?? 'legado') === operador);
+    const ocupadas = marcas.filter(marca => marca.paso === 0 && String(marca.repartidor_id ?? 'legado') !== operador)
+      .map(marca => marca.ruta);
+    return res.json({ fecha, marcas: propias, ocupadas });
+  } catch (err) {
+    console.error('[Bitácora de reparto] Error de consulta:', err.message);
+    return res.status(503).json({ error: 'No se pudo consultar la bitácora. Vuelve a intentar.' });
+  }
+});
+
+entregaRouter.post('/bitacora', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  if (!req.repartidor && !req.esLegado) return res.status(403).json({ error: 'Registra la ruta desde Entrega.' });
+  const { fecha, ruta, paso, ocurrido_en, lat, lon, precision_m } = req.body || {};
+  const plan = itinerarioPorId(ruta);
+  const hora = typeof ocurrido_en === 'string' && /(?:Z|[+-]\d{2}:\d{2})$/.test(ocurrido_en)
+    ? DateTime.fromISO(ocurrido_en, { setZone: true }) : null;
+  if (!fechaRutaValida(fecha) || !plan || !Number.isInteger(paso) || !plan.pasos[paso]
+    || !hora?.isValid || hora.toMillis() > DateTime.now().plus({ minutes: 5 }).toMillis()) {
+    return res.status(400).json({ error: 'Fecha, itinerario, marca u hora inválidos.' });
+  }
+  if (!plan.zonas.every(zona => puedeConZona(req, zona))) {
+    return res.status(403).json({ error: 'La sesión no tiene autorizados todos los puntos de esta ruta.' });
+  }
+  const gpsValido = Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180
+    && Number.isFinite(precision_m) && precision_m >= 0 && precision_m <= PRECISION_MAXIMA_M;
+  try {
+    const marca = await db.registrarMarcaRutaReparto({ fecha, ruta, paso, ocurrido_en: hora.toUTC().toISO(),
+      lat: gpsValido ? lat : null, lon: gpsValido ? lon : null, precision_m: gpsValido ? precision_m : null }, req.repartidor);
+    if (!marca || marca.paso !== paso) throw new Error('La base no devolvió la marca');
+    return res.json({ marca });
+  } catch (err) {
+    if (conflictosRuta.has(err.message)) return res.status(409).json({ error: conflictosRuta.get(err.message), motivo: err.message });
+    console.error('[Bitácora de reparto] Error de registro:', err.message);
+    return res.status(503).json({ error: 'No se confirmó la marca. Se conserva para reintentar.' });
+  }
+});
 
 const UUID_PROPUESTA = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function propuestaSegura(p) { return { id: p.id, zona: p.zona, estado: p.estado }; }

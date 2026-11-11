@@ -486,6 +486,30 @@ export async function getLlegadasPorFecha(fecha, zona = null) {
   return data || [];
 }
 
+export async function getMarcasRutaReparto(fecha, rutas) {
+  if (!rutas.length) return [];
+  const { data, error } = await supabase.from('marcas_ruta_reparto').select('*')
+    .eq('fecha', fecha).in('ruta', rutas).order('ruta').order('paso');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function registrarMarcaRutaReparto(marca, repartidor) {
+  const { data, error } = await supabase.rpc('registrar_marca_ruta_reparto', {
+    p_fecha: marca.fecha,
+    p_ruta: marca.ruta,
+    p_paso: marca.paso,
+    p_repartidor_id: repartidor?.id ?? null,
+    p_repartidor_nombre: repartidor?.nombre ?? 'Reparto general',
+    p_ocurrido_en: marca.ocurrido_en,
+    p_lat: marca.lat,
+    p_lon: marca.lon,
+    p_precision_m: marca.precision_m
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function getPuntosEntrega() {
   const { data, error } = await supabase.from('puntos_entrega').select('*');
   if (error) throw error;
