@@ -6,17 +6,20 @@ import { construirReporte } from './reportes.js';
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina } from './seleccion-cocina.js';
 import { prepararReporteEntregas, htmlReporteEntregas, documentoReporte, encabezadoReporte, validarElaboro, pieReporte, esc } from './reporte-entregas.js';
 
+import { validarEstimacion, htmlCaratulaEstimacion, estilosEstimacion } from './caratula-estimacion.js';
+
 const fechaTexto = fecha => DateTime.fromISO(fecha).toFormat('dd/MM/yyyy');
 
-export function prepararReportePeriodo(ini, fin, comidas, { elaboro = '', filtros = {}, ahora = DateTime.now() } = {}) {
+export function prepararReportePeriodo(ini, fin, comidas, { elaboro = '', filtros = {}, estimacion = null, ahora = DateTime.now() } = {}) {
   if (!ini || !fin) throw Object.assign(new Error('Selecciona Desde y Hasta para el reporte.'), { status: 400 });
   validarPeriodo(ini, fin);
   elaboro = validarElaboro(elaboro);
+  estimacion = validarEstimacion(estimacion, elaboro);
   filtros = normalizarSeleccionCocina(filtros);
   const elegidas = seleccionarPedidosCocina(comidas.filter(p => p.fecha_menu >= ini && p.fecha_menu <= fin), filtros);
   const resumen = construirReporte(ini, fin, elegidas, ahora);
   const dias = resumen.pedidos_por_dia.map(({ fecha }) => prepararReporteEntregas(fecha, elegidas, { elaboro, ahora }));
-  return { ini, fin, elaboro, filtros, resumen, dias,
+  return { ini, fin, elaboro, filtros, estimacion, seleccion: textoSeleccionCocina(filtros), resumen, dias,
     periodo: fechaTexto(ini) + ' al ' + fechaTexto(fin), generado: ahora.setZone(ZONA).toFormat('dd/MM/yyyy HH:mm') };
 }
 
@@ -73,21 +76,23 @@ function paginasResumen(d) {
 
 export function htmlReportePeriodo(d) {
   const r = d.resumen, resumen = paginasResumen(d);
-  const totalPaginas = resumen.length + d.dias.reduce((n, dia) => n + dia.paginas.length, 0);
+  const offset = d.estimacion ? 1 : 0;
+  const totalPaginas = offset + resumen.length + d.dias.reduce((n, dia) => n + dia.paginas.length, 0);
   const entregadas = r.entrega.entregados + r.entrega.tardios + r.entrega.indeterminados;
   const metricas = [[r.regulares, 'Regulares solicitadas'], [r.coberturas, 'Coberturas solicitadas'], [r.total, 'Total solicitado'],
     [entregadas, 'Entregadas'], [r.entrega.no_entregados, 'Sin confirmación'], [r.no_surtidos, 'No surtidas · Sin cargo']];
   let paginas = resumen.map((p, i) => `<section class="hoja">
     ${encabezadoReporte('Reporte de servicio del periodo', d.periodo, d.generado)}
     <p class="nota-resumen">${esc(textoSeleccionCocina(d.filtros))}</p>
-    ${i === 0 ? `<section class="resumen">${metricas.map(([n, t]) => `<div class="metrica"><strong>${n}</strong><span>${t}</span></div>`).join('')}</section><p class="nota-resumen">Solicitadas = entregadas + sin confirmación + no surtidas. Una comida sin confirmación requiere conciliación; no acredita una falta de recogida. Las incidencias sin cargo conservan su registro y se detallan por separado. Este documento acompaña la estimación; no calcula importes.</p>` : ''}
+    ${i === 0 ? `<section class="resumen">${metricas.map(([n, t]) => `<div class="metrica"><strong>${n}</strong><span>${t}</span></div>`).join('')}</section><p class="nota-resumen">Solicitadas = entregadas + sin confirmación + no surtidas. Una comida sin confirmación requiere conciliación; no acredita una falta de recogida. Las incidencias sin cargo conservan su registro y se detallan por separado. ${d.estimacion ? 'La carátula presenta la cantidad de servicios capturada para revisión y aprobación.' : 'Este documento acompaña la estimación; no calcula importes.'}</p>` : ''}
     ${p.partes.join('')}
-    ${pieReporte(d.elaboro, i + 1, totalPaginas)}
+    ${pieReporte(d.elaboro, i + 1 + offset, totalPaginas)}
   </section>`).join('');
-  let paginaInicial = resumen.length + 1;
+  if (d.estimacion) paginas = htmlCaratulaEstimacion(d, totalPaginas) + paginas;
+  let paginaInicial = resumen.length + 1 + offset;
   for (const dia of d.dias) {
     paginas += htmlReporteEntregas(dia, { fragmento: true, paginaInicial, totalPaginas });
     paginaInicial += dia.paginas.length;
   }
-  return documentoReporte({ titulo: `CICSA_Glovis_Periodo_${d.ini}_${d.fin}`, etiqueta: 'Reporte del periodo · ' + d.periodo, paginas });
+  return documentoReporte({ titulo: `CICSA_Glovis_Periodo_${d.ini}_${d.fin}`, etiqueta: (d.estimacion ? 'Reporte y estimación · ' : 'Reporte del periodo · ') + d.periodo, paginas, estilos: d.estimacion ? estilosEstimacion : '', conEstimacion: !!d.estimacion });
 }

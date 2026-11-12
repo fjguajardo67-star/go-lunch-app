@@ -18,6 +18,7 @@ import { normalizarSeleccionCocina, seleccionarPedidosCocina } from '../services
 import { construirReporte } from '../services/reportes.js';
 import { construirDashboard } from '../services/dashboard.js';
 import { prepararReporteEntregas, htmlReporteEntregas, validarElaboro } from '../services/reporte-entregas.js';
+import { validarEstimacion } from '../services/caratula-estimacion.js';
 import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
 import { validarIncidencia, errorIncidencia } from '../services/incidencias.js';
 
@@ -556,9 +557,13 @@ adminRouter.get('/reporte-periodo', async (req, res) => {
     if (!ini || !fin) throw Object.assign(new Error('Selecciona Desde y Hasta para el reporte.'), { status: 400 });
     validarPeriodo(ini, fin);
     const elaboro = validarElaboro(req.query.elaboro);
+    if (req.query.estimacion !== undefined && !['0', '1'].includes(req.query.estimacion)) {
+      throw Object.assign(new Error('Selecciona si deseas incluir la estimación.'), { status: 400 });
+    }
+    const estimacion = validarEstimacion(req.query.estimacion === '1' ? { numero: req.query.numero_estimacion, servicios: req.query.servicios_estimacion } : null, elaboro);
     const filtros = normalizarSeleccionCocina(req.query);
     const comidas = await comidasDelPeriodo(ini, fin);
-    res.type('html').send(htmlReportePeriodo(prepararReportePeriodo(ini, fin, comidas, { elaboro, filtros })));
+    res.type('html').send(htmlReportePeriodo(prepararReportePeriodo(ini, fin, comidas, { elaboro, filtros, estimacion })));
   } catch (error) {
     if (!error.status) console.error('[Reporte del periodo]', error.message);
     res.status(error.status || 500).json({ error: error.status ? error.message : 'No se pudo generar el reporte completo. Vuelve a intentar con conexión.' });
