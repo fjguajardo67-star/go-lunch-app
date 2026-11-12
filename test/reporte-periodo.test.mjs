@@ -4,6 +4,38 @@ import { DateTime } from 'luxon';
 import { datosReportes } from './fixtures/reportes.mjs';
 import { unirComidas } from '../services/comidas.js';
 import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
+import { validarEstimacion } from '../services/caratula-estimacion.js';
+
+test('carátula opcional calcula centavos exactos sobre cantidad conciliada y numera el PDF completo', () => {
+  const comidas = datos().map(p => ({ ...p, entregado_en: null }));
+  const opciones = { elaboro: 'Diana <Alefer>', estimacion: { numero: '001 <Glovis>', servicios: '3' } };
+  const d = prepararReportePeriodo('2026-11-07', '2026-11-07', comidas, opciones);
+  assert.deepEqual(d.estimacion, { numero: '001 <Glovis>', servicios: 3, subtotal: 35400, iva: 5664, total: 41064 });
+  const html = htmlReportePeriodo(d);
+  assert.match(html, /001 &lt;Glovis&gt;/); assert.match(html, /Diana &lt;Alefer&gt;/);
+  assert.match(html, /\$354\.00/); assert.match(html, /\$56\.64/); assert.match(html, /\$410\.64/);
+  assert.equal((html.match(/\$118\.00/g) || []).length, 1);
+  assert.match(html, /Aprobó para facturación/); assert.doesNotMatch(html, /Este reporte no requiere firma/);
+  assert.ok(html.indexOf('Estimación de servicios') < html.indexOf('Reporte de servicio del periodo'));
+  const paginas = [...html.matchAll(/Página (\d+) de (\d+)/g)];
+  assert.deepEqual(paginas.map(m => Number(m[1])), paginas.map((_, i) => i + 1));
+  assert.ok(paginas.every(m => Number(m[2]) === paginas.length));
+  assert.equal(d.resumen.total, 68); assert.equal(d.dias[0].entregado.total, 0);
+  const simple = htmlReportePeriodo(prepararReportePeriodo('2026-11-07', '2026-11-07', comidas));
+  assert.doesNotMatch(simple, /class="estimacion"|Aprobó para facturación/);
+  assert.equal(validarEstimacion({ numero: '1', servicios: 1 }, 'Ana').total, 13688);
+});
+
+test('estimación rechaza cantidades, número y autor inválidos sin inventar datos', () => {
+  assert.equal(validarEstimacion(null), null);
+  for (const servicios of ['', '0', '-1', '1.5', '1e3', '1000000', 'NaN', ['1'], null]) {
+    assert.throws(() => validarEstimacion({ numero: '001', servicios }, 'Ana'), e => e.status === 400);
+  }
+  for (const numero of ['', ' ', 'a'.repeat(41), ['001'], '001\n002']) {
+    assert.throws(() => validarEstimacion({ numero, servicios: '1' }, 'Ana'), e => e.status === 400);
+  }
+  assert.throws(() => validarEstimacion({ numero: '001', servicios: '1' }, ' '), e => e.status === 400);
+});
 
 const datos = () => {
   const d = datosReportes();

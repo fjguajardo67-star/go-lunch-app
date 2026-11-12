@@ -108,6 +108,13 @@ test('API admite admin y gerente por header, nunca genera un reporte parcial si 
       assert.equal((await fetch(semanal + '?' + q, { headers: { 'x-admin-key': process.env.ADMIN_KEY } })).status, 400);
       assert.equal(consultas, antes);
     }
+    const conEst = await fetch(semanal + '?ini=' + d.fecha + '&fin=' + d.fecha + '&estimacion=1&numero_estimacion=001&servicios_estimacion=3&elaboro=Ana', { headers: { 'x-admin-key': process.env.ADMIN_KEY } });
+    assert.equal(conEst.status, 200); assert.match(await conEst.text(), /\$410\.64/);
+    for (const extra of ['estimacion=1', 'estimacion=2', 'estimacion=1&estimacion=0', 'estimacion=1&numero_estimacion=001&servicios_estimacion=-2&elaboro=Ana']) {
+      const antes = consultas;
+      assert.equal((await fetch(semanal + '?ini=' + d.fecha + '&fin=' + d.fecha + '&' + extra, { headers: { 'x-admin-key': process.env.ADMIN_KEY } })).status, 400);
+      assert.equal(consultas, antes);
+    }
     const anteriores = consultas;
     for (const ruta of ['2026-02-30', d.fecha + '?elaboro=A&elaboro=B']) {
       assert.equal((await fetch(url + ruta, { headers: { 'x-admin-key': process.env.ADMIN_KEY } })).status, 400);

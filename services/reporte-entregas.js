@@ -125,7 +125,7 @@ export function pieReporte(elaboro, pagina, total) {
   </footer>`;
 }
 
-export function documentoReporte({ titulo, etiqueta, paginas }) {
+export function documentoReporte({ titulo, etiqueta, paginas, estilos = '', conEstimacion = false }) {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
 <title>${esc(titulo)}</title><style>
 *{box-sizing:border-box}body{margin:0;color:#14233e;background:#edf0f5;font-family:Arial,sans-serif}
@@ -144,7 +144,8 @@ th,td{text-align:left;vertical-align:top;border:1px solid #aeb7c5;padding:1.4mm;
 @page{size:letter portrait;margin:14mm}
 @media screen and (max-width:650px){.documento{overflow-x:auto;margin:12px}.hoja{min-width:188mm}.barra,.ayuda{margin-left:0;margin-right:0}.barra{padding:12px}.ayuda{padding:0 12px}}
 @media print{body{color:#000;background:white}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja{padding:0;margin:0;break-after:page;page-break-after:always}.hoja:last-child{break-after:auto;page-break-after:auto}th,td,.metrica,.cierre{border-color:#000}thead{display:table-header-group}tr,.subtotal,footer{break-inside:avoid;page-break-inside:avoid}h2{break-after:avoid;page-break-after:avoid}}
+${estilos}
 </style></head><body><div class="barra"><b>${esc(etiqueta)}</b><button type="button" onclick="window.print()">Imprimir / Guardar PDF</button></div>
-<p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Para enviar por correo, elige Guardar como PDF. Este reporte no requiere firma. En celular, desliza la hoja horizontalmente para ver todas las columnas.</p>
+<p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Para enviar por correo, elige Guardar como PDF. ${conEstimacion ? 'La carátula incluye espacios de revisión y aprobación para facturación.' : 'Este reporte no requiere firma.'} En celular, desliza la hoja horizontalmente para ver todas las columnas.</p>
 <main class="documento">${paginas}</main></body></html>`;
 }
