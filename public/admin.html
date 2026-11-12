@@ -1338,9 +1338,10 @@
         <div id="rep-estimacion" hidden style="margin-top:16px">
           <div class="row-fin">
             <div><label for="rep-estimacion-numero">Número de estimación</label><input id="rep-estimacion-numero" type="text" maxlength="40" placeholder="Ej. 001" disabled></div>
-            <div><label for="rep-estimacion-servicios">Servicios a estimar</label><input id="rep-estimacion-servicios" type="number" min="1" max="999999" step="1" placeholder="Cantidad revisada del periodo" disabled aria-describedby="rep-estimacion-ayuda"></div>
+            <div><label for="rep-estimacion-servicios">Servicios a estimar (automático)</label><input id="rep-estimacion-servicios" type="text" readonly placeholder="Selecciona el periodo" aria-describedby="rep-estimacion-ayuda"></div>
           </div>
-          <p id="rep-estimacion-ayuda" class="reporte-nota">Captura los servicios conciliados del periodo y los filtros seleccionados. Precio unitario: $118.00 + IVA 16 %. La carátula se agrega al inicio del PDF; no modifica pedidos ni registros de entrega.</p>
+          <p id="rep-estimacion-ayuda" class="reporte-nota">Se calculan los servicios del periodo y filtros seleccionados, excluyendo los no surtidos sin cargo. Precio unitario: $118.00 + IVA 16 %. La carátula se agrega al inicio del PDF; no modifica pedidos ni registros de entrega.</p>
+          <p id="rep-estimacion-conteo" class="reporte-nota" role="status" aria-live="polite"></p>
         </div>
         <p class="reporte-nota">Un solo documento para acompañar la estimación: resumen y detalle diario de entregas con sus horarios.</p>
         <p id="rep-pdf-aviso" class="reporte-nota" role="status" aria-live="polite"></p>
@@ -1917,19 +1918,44 @@
   // ── Reportes del periodo ──
   // Las gráficas van en SVG a mano: el proyecto corre en Railway con recursos
   // limitados y no vale la pena una librería para cuatro vistas.
+  let consultaServiciosEstimacion = 0;
+  async function actualizarServiciosEstimacion() {
+    const turnoConsulta = ++consultaServiciosEstimacion;
+    const campo = document.getElementById('rep-estimacion-servicios');
+    const aviso = document.getElementById('rep-estimacion-conteo');
+    campo.value = ''; aviso.textContent = '';
+    if (document.getElementById('rep-estimacion').hidden) return;
+    const ini = document.getElementById('rep-ini').value, fin = document.getElementById('rep-fin').value;
+    if (!ini || !fin || ini > fin) { campo.placeholder = 'Selecciona un periodo válido'; return; }
+    campo.placeholder = 'Calculando…';
+    try {
+      const d = await api('/api/reportes?' + new URLSearchParams({ ini, fin }) + '&' + parametrosServicio(), { cache: 'no-store' });
+      if (turnoConsulta !== consultaServiciosEstimacion) return;
+      campo.value = String(d.total - d.no_surtidos);
+      aviso.textContent = 'Total del reporte: ' + d.total + ' · Sin cargo: ' + d.no_surtidos + '. Se actualiza al generar el PDF.';
+    } catch (error) {
+      if (turnoConsulta !== consultaServiciosEstimacion) return;
+      campo.placeholder = 'No disponible';
+      aviso.textContent = 'No se pudo consultar la cantidad. Pulsa Ver reportes para reintentar.';
+    }
+  }
+  for (const id of ['rep-ini', 'rep-fin', 'rep-turno', 'rep-zona', 'rep-servicio']) {
+    document.getElementById(id).addEventListener('change', actualizarServiciosEstimacion);
+  }
   function alternarEstimacion() {
     const boton = document.getElementById('rep-incluir-estimacion');
     const incluir = boton.getAttribute('aria-expanded') !== 'true';
     boton.setAttribute('aria-expanded', String(incluir));
     boton.textContent = incluir ? 'Quitar Estimación' : 'Incluir Estimación';
     document.getElementById('rep-estimacion').hidden = !incluir;
-    for (const id of ['rep-estimacion-numero', 'rep-estimacion-servicios']) {
+    for (const id of ['rep-estimacion-numero']) {
       document.getElementById(id).disabled = !incluir;
       document.getElementById(id).required = incluir;
     }
     document.getElementById('rep-elaboro').required = incluir;
     document.querySelector('label[for="rep-elaboro"]').textContent = incluir ? 'Elaboró' : 'Elaboró (opcional)';
     document.getElementById('rep-pdf-aviso').textContent = incluir ? 'La estimación se incluirá como primera hoja del PDF.' : 'El PDF se generará sin carátula de estimación.';
+    actualizarServiciosEstimacion();
     if (incluir) document.getElementById('rep-estimacion-numero').focus();
   }
   async function imprimirReportePeriodo() {
@@ -1938,7 +1964,7 @@
     const consultaActual = () => new URLSearchParams({
       ini: document.getElementById('rep-ini').value, fin: document.getElementById('rep-fin').value,
       elaboro: document.getElementById('rep-elaboro').value.trim(),
-      ...(document.getElementById('rep-incluir-estimacion').getAttribute('aria-expanded') === 'true' ? { estimacion: '1', numero_estimacion: document.getElementById('rep-estimacion-numero').value.trim(), servicios_estimacion: document.getElementById('rep-estimacion-servicios').value } : {}),
+      ...(document.getElementById('rep-incluir-estimacion').getAttribute('aria-expanded') === 'true' ? { estimacion: '1', numero_estimacion: document.getElementById('rep-estimacion-numero').value.trim() } : {}),
       ...Object.fromEntries(new URLSearchParams(parametrosServicio()))
     }).toString();
     const consulta = consultaActual(), valores = new URLSearchParams(consulta);
@@ -1947,9 +1973,9 @@
       document.getElementById('rep-ini').focus(); return;
     }
     if (valores.get('estimacion') === '1') {
-      for (const id of ['rep-elaboro', 'rep-estimacion-numero', 'rep-estimacion-servicios']) {
+      for (const id of ['rep-elaboro', 'rep-estimacion-numero']) {
         const campo = document.getElementById(id);
-        if (!campo.value.trim() || !campo.checkValidity()) { mensaje.textContent = 'Completa Elaboró, número de estimación y una cantidad entera de servicios.'; campo.reportValidity(); campo.focus(); return; }
+        if (!campo.value.trim() || !campo.checkValidity()) { mensaje.textContent = 'Completa Elaboró y número de estimación.'; campo.reportValidity(); campo.focus(); return; }
       }
     }
     mensaje.textContent = 'Preparando el resumen y las entregas del periodo…';
@@ -1969,6 +1995,7 @@
   }
 
   async function verReportes() {
+    actualizarServiciosEstimacion();
     const ini = document.getElementById('rep-ini').value;
     const fin = document.getElementById('rep-fin').value;
     const box = document.getElementById('reportesBox');

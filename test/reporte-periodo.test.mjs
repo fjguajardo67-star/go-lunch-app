@@ -4,11 +4,11 @@ import { DateTime } from 'luxon';
 import { datosReportes } from './fixtures/reportes.mjs';
 import { unirComidas } from '../services/comidas.js';
 import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
-import { validarEstimacion } from '../services/caratula-estimacion.js';
+import { validarEstimacion, calcularEstimacion } from '../services/caratula-estimacion.js';
 
-test('carátula opcional calcula centavos exactos sobre cantidad conciliada y numera el PDF completo', () => {
-  const comidas = datos().map(p => ({ ...p, entregado_en: null }));
-  const opciones = { elaboro: 'Diana <Alefer>', estimacion: { numero: '001 <Glovis>', servicios: '3' } };
+test('carátula opcional calcula centavos exactos sobre el conteo automático y numera el PDF completo', () => {
+  const comidas = datos().slice(0, 3).map(p => ({ ...p, entregado_en: null }));
+  const opciones = { elaboro: 'Diana <Alefer>', estimacion: { numero: '001 <Glovis>', servicios: '99999' } };
   const d = prepararReportePeriodo('2026-11-07', '2026-11-07', comidas, opciones);
   assert.deepEqual(d.estimacion, { numero: '001 <Glovis>', servicios: 3, subtotal: 35400, iva: 5664, total: 41064 });
   const html = htmlReportePeriodo(d);
@@ -20,21 +20,38 @@ test('carátula opcional calcula centavos exactos sobre cantidad conciliada y nu
   const paginas = [...html.matchAll(/Página (\d+) de (\d+)/g)];
   assert.deepEqual(paginas.map(m => Number(m[1])), paginas.map((_, i) => i + 1));
   assert.ok(paginas.every(m => Number(m[2]) === paginas.length));
-  assert.equal(d.resumen.total, 68); assert.equal(d.dias[0].entregado.total, 0);
+  assert.equal(d.resumen.total, 3); assert.equal(d.dias[0].entregado.total, 0);
   const simple = htmlReportePeriodo(prepararReportePeriodo('2026-11-07', '2026-11-07', comidas));
   assert.doesNotMatch(simple, /class="estimacion"|Aprobó para facturación/);
-  assert.equal(validarEstimacion({ numero: '1', servicios: 1 }, 'Ana').total, 13688);
+  assert.equal(calcularEstimacion(validarEstimacion({ numero: '1' }, 'Ana'), 1).total, 13688);
 });
 
-test('estimación rechaza cantidades, número y autor inválidos sin inventar datos', () => {
+test('estimación valida metadatos y usa cero cuando no hay servicios con cargo', () => {
   assert.equal(validarEstimacion(null), null);
-  for (const servicios of ['', '0', '-1', '1.5', '1e3', '1000000', 'NaN', ['1'], null]) {
-    assert.throws(() => validarEstimacion({ numero: '001', servicios }, 'Ana'), e => e.status === 400);
-  }
   for (const numero of ['', ' ', 'a'.repeat(41), ['001'], '001\n002']) {
-    assert.throws(() => validarEstimacion({ numero, servicios: '1' }, 'Ana'), e => e.status === 400);
+    assert.throws(() => validarEstimacion({ numero }, 'Ana'), e => e.status === 400);
   }
-  assert.throws(() => validarEstimacion({ numero: '001', servicios: '1' }, ' '), e => e.status === 400);
+  assert.throws(() => validarEstimacion({ numero: '001' }, ' '), e => e.status === 400);
+  const d = prepararReportePeriodo('2026-11-07', '2026-11-07', [], { elaboro: 'Ana', estimacion: { numero: '001' } });
+  assert.equal(d.estimacion.servicios, 0); assert.equal(d.estimacion.total, 0);
+  assert.match(htmlReportePeriodo(d), /\$0\.00/);
+});
+
+test('conteo automático respeta periodo, turno, zona, servicio y exclusiones sin cargo', () => {
+  const comidas = datos();
+  comidas[0].no_surtido_en = '2026-11-07T16:00:00Z';
+  const opciones = { elaboro: 'Ana', estimacion: { numero: '001', servicios: -200 } };
+  const total = prepararReportePeriodo('2026-11-07', '2026-11-07', comidas, opciones);
+  assert.equal(total.estimacion.servicios, 67);
+  assert.equal(total.estimacion.total, 67 * 13688);
+  const soloSinCargo = prepararReportePeriodo('2026-11-07', '2026-11-07', [comidas[0]], opciones);
+  assert.equal(soloSinCargo.estimacion.total, 0);
+  for (const filtros of [{ servicio: 'regular' }, { servicio: 'cobertura' }, { turno: 'turno_b', zona: 'zona_refris', servicio: 'cobertura' }]) {
+    const d = prepararReportePeriodo('2026-11-07', '2026-11-07', [...comidas, { ...comidas[1], fecha_menu: '2026-11-08' }], { ...opciones, filtros });
+    const esperadas = comidas.filter(p => !p.no_surtido_en && (!filtros.servicio || p.tipo === filtros.servicio) && (!filtros.turno || p.turno === filtros.turno) && (!filtros.zona || p.zona === filtros.zona));
+    assert.equal(d.estimacion.servicios, esperadas.length);
+    assert.equal(d.estimacion.servicios, d.resumen.total - d.resumen.no_surtidos);
+  }
 });
 
 const datos = () => {
