@@ -37,6 +37,8 @@ Los demás originales autorizados, incluido el trazo monocromático, viven en
 
 ## Pedidos de cobertura
 
+En Menú especial, el desplegable «Cambiar menú de esta fecha» mantiene separada la edición de un día de la publicación por periodo. Consulta el menú y la elegibilidad antes de habilitar las tres opciones; muestra el motivo cuando hoy, el historial o los pedidos impiden editar. Al guardar, el servidor vuelve a comprobar fecha futura, pedidos no cancelados y versión del menú, y separa el día sin cambiar las opciones vecinas. Un conflicto conserva lo escrito y pide consultar de nuevo. Solo administración guarda; gerente consulta.
+
 La solicitud del supervisor se presenta como una lista de personas y alimentos,
 no como una orden financiera. La pantalla muestra únicamente horario, menú,
 zona, responsable y beneficiarios. Costos y acuerdos comerciales no aparecen.

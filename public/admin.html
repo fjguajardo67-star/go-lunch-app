@@ -966,6 +966,22 @@
             <button class="accion sec" onclick="nuevoPeriodoMenuCobertura()">Nuevo periodo</button>
           </div>
           <div id="covMenuAviso" class="aviso"></div>
+          <details id="cov-menu-dia" style="margin-top:16px;border-top:1px solid var(--gris-line);padding-top:16px" ontoggle="if(this.open && !MENU_DIA_CARGADO)cargarMenuDiaCobertura()">
+            <summary style="font-weight:700;cursor:pointer;padding:8px 0">Cambiar menú de esta fecha</summary>
+            <p style="margin:12px 0;font-size:.9rem;line-height:1.5">Cambia únicamente un día futuro sin pedidos activos. Los demás días conservan sus opciones.</p>
+            <div class="row-fin">
+              <div><label for="cov-dia-fecha">Fecha a cambiar</label><input type="date" id="cov-dia-fecha" onchange="cargarMenuDiaCobertura()"></div>
+              <button class="accion sec" type="button" id="cov-dia-consultar" onclick="cargarMenuDiaCobertura()">Consultar menú</button>
+            </div>
+            <p id="cov-dia-estado" role="status" aria-live="polite" style="margin:12px 0;line-height:1.5"></p>
+            <div class="cov-menu-options">
+              <div><label for="cov-dia-op1">Opción 1</label><input id="cov-dia-op1" type="text" readonly></div>
+              <div><label for="cov-dia-op2">Opción 2</label><input id="cov-dia-op2" type="text" readonly></div>
+              <div><label for="cov-dia-op3">Opción 3</label><input id="cov-dia-op3" type="text" readonly></div>
+            </div>
+            <button class="accion" type="button" id="cov-dia-guardar" onclick="guardarMenuDiaCobertura()" disabled>Guardar cambios de esta fecha</button>
+            <div id="covDiaAviso" class="aviso" role="status" aria-live="polite"></div>
+          </details>
         </div>
 
         <div class="card">
@@ -1511,7 +1527,7 @@
     document.querySelectorAll('#p-empleados input, #p-empleados select').forEach(e => { e.disabled = true; });
     document.querySelectorAll('button[onclick]').forEach(b => {
       const accion = b.getAttribute('onclick');
-      const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura)\(/.test(accion);
+      const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura|guardarMenuDiaCobertura)\(/.test(accion);
       const mutaEmpleado = b.closest('#p-empleados') && !/^(imprimirEmpleadosVisibles|cargarEmpleados|descargarFormato|descargarPlantilla)/.test(accion);
       if (mutaMenu || mutaEmpleado) {
         b.disabled = true;
@@ -3483,6 +3499,79 @@
       await cargarSolicitudesCobertura(s.fecha_servicio);
     } catch(e) { avisoExtraordinaria(e.message + ' Puedes reintentar con los mismos datos.', 'err'); }
     finally { boton.disabled = false; boton.textContent = 'Autorizar y registrar pedido'; }
+  }
+
+  let MENU_DIA_CARGADO = null;
+  let MENU_DIA_CONSULTA = 0;
+  let MENU_DIA_GUARDANDO = false;
+
+  async function cargarMenuDiaCobertura() {
+    if (MENU_DIA_GUARDANDO) return;
+    const campo = document.getElementById('cov-dia-fecha');
+    if (!campo.value) {
+      const manana = new Date(fechaComedor() + 'T12:00:00Z');
+      manana.setUTCDate(manana.getUTCDate() + 1);
+      campo.value = manana.toISOString().slice(0,10);
+    }
+    const fecha = campo.value;
+    const consulta = ++MENU_DIA_CONSULTA;
+    MENU_DIA_CARGADO = null;
+    document.getElementById('cov-dia-guardar').disabled = true;
+    document.getElementById('cov-dia-estado').textContent = 'Consultando menú y pedidos…';
+    document.getElementById('covDiaAviso').className = 'aviso';
+    for (let i=1;i<=3;i++) {
+      const input=document.getElementById('cov-dia-op'+i);
+      input.value=''; input.readOnly=true;
+    }
+    try {
+      const r = await api('/api/cobertura/menu/' + encodeURIComponent(fecha), {cache:'no-store'});
+      if (consulta !== MENU_DIA_CONSULTA || campo.value !== fecha) return;
+      MENU_DIA_CARGADO = {fecha,menu:r.menu,permitido:r.edicion?.permitido === true};
+      document.getElementById('cov-dia-estado').textContent = r.edicion?.motivo || 'No se pudo verificar si esta fecha admite cambios.';
+      for (let i=1;i<=3;i++) {
+        const input=document.getElementById('cov-dia-op'+i);
+        input.value=r.menu?.['opcion_'+i] || '';
+        input.readOnly=!MENU_DIA_CARGADO.permitido || PANEL_ROL !== 'admin';
+      }
+      document.getElementById('cov-dia-guardar').disabled = !MENU_DIA_CARGADO.permitido || PANEL_ROL !== 'admin';
+    } catch (e) {
+      if (consulta === MENU_DIA_CONSULTA) document.getElementById('cov-dia-estado').textContent = 'No se pudo consultar: ' + e.message;
+    }
+  }
+
+  async function guardarMenuDiaCobertura() {
+    const cargado=MENU_DIA_CARGADO;
+    if (MENU_DIA_GUARDANDO || PANEL_ROL !== 'admin' || !cargado?.permitido) return;
+    if (document.getElementById('cov-dia-fecha').value !== cargado.fecha)
+      return aviso('covDiaAviso','Consulta la fecha seleccionada antes de guardar.',false);
+    const body={version:cargado.menu.actualizado_en};
+    for(let i=1;i<=3;i++) body['opcion_'+i]=document.getElementById('cov-dia-op'+i).value.trim();
+    const opciones=[body.opcion_1,body.opcion_2,body.opcion_3];
+    if(opciones.some(op=>!op) || new Set(opciones.map(op=>op.toLocaleUpperCase('es-MX'))).size!==3)
+      return aviso('covDiaAviso','Completa tres opciones distintas.',false);
+    const boton=document.getElementById('cov-dia-guardar');
+    MENU_DIA_GUARDANDO=true; boton.disabled=true; boton.textContent='Guardando…';
+    document.getElementById('cov-dia-fecha').disabled=true;
+    document.getElementById('cov-dia-consultar').disabled=true;
+    for(let i=1;i<=3;i++) document.getElementById('cov-dia-op'+i).readOnly=true;
+    try {
+      const r=await api('/api/cobertura/menu/'+encodeURIComponent(cargado.fecha),{method:'POST',body:JSON.stringify(body)});
+      MENU_DIA_CARGADO={fecha:cargado.fecha,menu:r.menu,permitido:true};
+      mostrarPeriodoMenuCobertura(r.menu,cargado.fecha);
+      aviso('covMenuAviso','El formulario de periodo muestra ahora el día actualizado: '+cargado.fecha+'.');
+      aviso('covDiaAviso','Menú actualizado únicamente para '+cargado.fecha+'. Los demás días conservan sus opciones.');
+    } catch(e) {
+      MENU_DIA_CARGADO=null;
+      aviso('covDiaAviso',e.message,false);
+      document.getElementById('cov-dia-estado').textContent='Pulsa Consultar menú para revisar el estado antes de volver a editar.';
+    } finally {
+      MENU_DIA_GUARDANDO=false; boton.textContent='Guardar cambios de esta fecha';
+      const habilitado=MENU_DIA_CARGADO?.permitido === true && PANEL_ROL === 'admin';
+      boton.disabled=!habilitado;
+      document.getElementById('cov-dia-fecha').disabled=false;
+      document.getElementById('cov-dia-consultar').disabled=false;
+      for(let i=1;i<=3;i++) document.getElementById('cov-dia-op'+i).readOnly=!habilitado;
+    }
   }
 
   let MENU_COBERTURA_PERIODO_ID = null;
