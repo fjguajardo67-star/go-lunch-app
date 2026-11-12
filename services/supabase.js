@@ -1,4 +1,4 @@
-import { guardarPeriodoMenu } from './menu-cobertura.js';
+import { guardarPeriodoMenu, guardarMenuFecha } from './menu-cobertura.js';
 // services/supabase.js — Conexión y queries a la base de datos
 import { createClient } from '@supabase/supabase-js';
 import { variantesTelefono, formatoCanonico } from './telefono.js';
@@ -1062,3 +1062,7 @@ export async function marcarCoberturaEntregada(fecha, codigoEntrega, entregadoEn
 }
 
 export { supabase };
+
+export async function cambiarMenuCoberturaFecha(menu) {
+  return guardarMenuFecha(supabase, menu);
+}
