@@ -6,7 +6,7 @@ import { construirReporte } from './reportes.js';
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina } from './seleccion-cocina.js';
 import { prepararReporteEntregas, htmlReporteEntregas, documentoReporte, encabezadoReporte, validarElaboro, pieReporte, esc } from './reporte-entregas.js';
 
-import { validarEstimacion, htmlCaratulaEstimacion, estilosEstimacion } from './caratula-estimacion.js';
+import { validarEstimacion, calcularEstimacion, htmlCaratulaEstimacion, estilosEstimacion } from './caratula-estimacion.js';
 
 const fechaTexto = fecha => DateTime.fromISO(fecha).toFormat('dd/MM/yyyy');
 
@@ -18,6 +18,7 @@ export function prepararReportePeriodo(ini, fin, comidas, { elaboro = '', filtro
   filtros = normalizarSeleccionCocina(filtros);
   const elegidas = seleccionarPedidosCocina(comidas.filter(p => p.fecha_menu >= ini && p.fecha_menu <= fin), filtros);
   const resumen = construirReporte(ini, fin, elegidas, ahora);
+  estimacion = calcularEstimacion(estimacion, resumen.total - resumen.no_surtidos);
   const dias = resumen.pedidos_por_dia.map(({ fecha }) => prepararReporteEntregas(fecha, elegidas, { elaboro, ahora }));
   return { ini, fin, elaboro, filtros, estimacion, seleccion: textoSeleccionCocina(filtros), resumen, dias,
     periodo: fechaTexto(ini) + ' al ' + fechaTexto(fin), generado: ahora.setZone(ZONA).toFormat('dd/MM/yyyy HH:mm') };
@@ -84,7 +85,7 @@ export function htmlReportePeriodo(d) {
   let paginas = resumen.map((p, i) => `<section class="hoja">
     ${encabezadoReporte('Reporte de servicio del periodo', d.periodo, d.generado)}
     <p class="nota-resumen">${esc(textoSeleccionCocina(d.filtros))}</p>
-    ${i === 0 ? `<section class="resumen">${metricas.map(([n, t]) => `<div class="metrica"><strong>${n}</strong><span>${t}</span></div>`).join('')}</section><p class="nota-resumen">Solicitadas = entregadas + sin confirmación + no surtidas. Una comida sin confirmación requiere conciliación; no acredita una falta de recogida. Las incidencias sin cargo conservan su registro y se detallan por separado. ${d.estimacion ? 'La carátula presenta la cantidad de servicios capturada para revisión y aprobación.' : 'Este documento acompaña la estimación; no calcula importes.'}</p>` : ''}
+    ${i === 0 ? `<section class="resumen">${metricas.map(([n, t]) => `<div class="metrica"><strong>${n}</strong><span>${t}</span></div>`).join('')}</section><p class="nota-resumen">Solicitadas = entregadas + sin confirmación + no surtidas. Una comida sin confirmación requiere conciliación; no acredita una falta de recogida. Las incidencias sin cargo conservan su registro y se detallan por separado. ${d.estimacion ? 'La carátula incluye los servicios solicitados de esta selección, excluyendo los no surtidos sin cargo.' : 'Este documento acompaña la estimación; no calcula importes.'}</p>` : ''}
     ${p.partes.join('')}
     ${pieReporte(d.elaboro, i + 1 + offset, totalPaginas)}
   </section>`).join('');

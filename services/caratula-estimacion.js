@@ -6,7 +6,7 @@ const ALEFER = logo('alefer.svg'), GLOVIS = logo('glovis.svg');
 const moneda = centavos => '$' + (centavos / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const invalido = mensaje => { throw Object.assign(new Error(mensaje), { status: 400 }); };
 
-// Cantidad conciliada capturada por administración; no inferir cargos de escaneos faltantes.
+// Solo se aceptan metadatos del formulario; el conteo procede del reporte filtrado.
 export function validarEstimacion(datos, elaboro = '') {
   if (datos == null) return null;
   if (typeof datos !== 'object' || Array.isArray(datos)) invalido('Revisa los datos de la estimación.');
@@ -15,12 +15,16 @@ export function validarEstimacion(datos, elaboro = '') {
     invalido('Escribe un número de estimación de hasta 40 caracteres.');
   }
   if (!validarElaboro(elaboro)) invalido('Escribe quién elaboró la estimación.');
-  const cantidad = datos.servicios;
-  if (!['string', 'number'].includes(typeof cantidad) || !/^[1-9]\d{0,5}$/.test(String(cantidad))) {
-    invalido('Escribe una cantidad entera de servicios entre 1 y 999999.');
+  return { numero: numero.trim() };
+}
+
+export function calcularEstimacion(datos, servicios) {
+  if (!datos) return null;
+  if (!Number.isSafeInteger(servicios) || servicios < 0 || !Number.isSafeInteger(servicios * 13688)) {
+    invalido('No se pudo calcular la cantidad de servicios del periodo.');
   }
-  const servicios = Number(cantidad), subtotal = servicios * 11800, iva = servicios * 1888;
-  return { numero: numero.trim(), servicios, subtotal, iva, total: subtotal + iva };
+  const subtotal = servicios * 11800, iva = servicios * 1888;
+  return { numero: datos.numero, servicios, subtotal, iva, total: subtotal + iva };
 }
 
 export function htmlCaratulaEstimacion(d, totalPaginas) {

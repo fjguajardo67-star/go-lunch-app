@@ -560,7 +560,7 @@ adminRouter.get('/reporte-periodo', async (req, res) => {
     if (req.query.estimacion !== undefined && !['0', '1'].includes(req.query.estimacion)) {
       throw Object.assign(new Error('Selecciona si deseas incluir la estimación.'), { status: 400 });
     }
-    const estimacion = validarEstimacion(req.query.estimacion === '1' ? { numero: req.query.numero_estimacion, servicios: req.query.servicios_estimacion } : null, elaboro);
+    const estimacion = validarEstimacion(req.query.estimacion === '1' ? { numero: req.query.numero_estimacion } : null, elaboro);
     const filtros = normalizarSeleccionCocina(req.query);
     const comidas = await comidasDelPeriodo(ini, fin);
     res.type('html').send(htmlReportePeriodo(prepararReportePeriodo(ini, fin, comidas, { elaboro, filtros, estimacion })));
