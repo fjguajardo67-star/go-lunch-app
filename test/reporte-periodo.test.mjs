@@ -63,3 +63,20 @@ test('paginación del resumen conserva todos los platillos largos y escapa conte
   assert.equal((html.match(/Platillo &lt;especial&gt; con guarnición y descripción larga /g) || []).length, 240);
   assert.doesNotMatch(html, /<especial>/);
 });
+
+test('gráfica del periodo usa las respuestas filtradas y el pie identifica las partes y quien elaboró en cada hoja', () => {
+  const comidas = datos().map((p, i) => ({ ...p, rating: i < 17 ? 'si' : i < 29 ? 'tal_vez' : i < 34 ? 'no' : null }));
+  const d = prepararReportePeriodo('2026-11-07', '2026-11-07', comidas, { elaboro: 'Diana <Operación>' });
+  const html = htmlReportePeriodo(d), hojas = (html.match(/class="hoja"/g) || []).length;
+  assert.match(html, /aria-label="Me gustó mucho: 17\. Estuvo bien: 12\. No me gustó: 5"/);
+  assert.match(html, /34 opiniones/);
+  assert.equal((html.match(/class="pie-institucional"/g) || []).length, hojas);
+  assert.equal((html.match(/Elaboró: Diana &lt;Operación&gt;/g) || []).length, hojas);
+  assert.equal((html.match(/alt="Alefer"/g) || []).length, hojas);
+  assert.equal((html.match(/Servicio de Comedor y Catering Alefer, S.A. de C.V./g) || []).length, hojas);
+  assert.equal((html.match(/Hyundai Glovis México, S. de R.L. de C.V./g) || []).length, hojas);
+  const cobertura = htmlReportePeriodo(prepararReportePeriodo('2026-11-07', '2026-11-07', comidas, { filtros: { servicio: 'cobertura' } }));
+  assert.match(cobertura, /Aún no hay opiniones registradas/);
+  assert.doesNotMatch(cobertura, /34 opiniones|Me gustó mucho: 17/);
+  assert.match(cobertura, /Elaboró: _+/);
+});

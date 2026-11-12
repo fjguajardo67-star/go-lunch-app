@@ -6,7 +6,7 @@ import { ZONA, ZONAS, TURNOS } from './menu.js';
 import { noSurtida, entregada } from './incidencias.js';
 
 const logo = archivo => 'data:image/svg+xml;base64,' + readFileSync(new URL('../public/' + archivo, import.meta.url)).toString('base64');
-const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg');
+const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg'), LOGO_ALEFER = logo('alefer.svg');
 export const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 const numeros = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
@@ -31,8 +31,8 @@ function paginar(grupos) {
   for (const grupo of grupos) {
     let inicio = 0, parte = 0;
     while (inicio < grupo.filas.length) {
-      let pagina = paginas.at(-1), limite = paginas.length === 1 ? 130 : 165;
-      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 165; }
+      let pagina = paginas.at(-1), limite = paginas.length === 1 ? 110 : 140;
+      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 140; }
       const filas = []; let alto = 22;
       while (inicio < grupo.filas.length && (filas.length === 0 || pagina.usado + alto + altoFila(grupo.filas[inicio]) <= limite)) {
         const fila = grupo.filas[inicio++]; alto += altoFila(fila); filas.push(fila);
@@ -102,8 +102,8 @@ export function htmlReporteEntregas(datos, { fragmento = false, paginaInicial = 
       </table><p class="subtotal">${ultima ? `${grupo.incidencia ? 'Sin cargo en este grupo' : 'Subtotal del grupo'}: <b>${grupo.total}</b> · Regulares: ${grupo.regulares} · Coberturas: ${grupo.coberturas}` : `En esta hoja: <b>${filas.length}</b> · El grupo continúa en la siguiente hoja.`}</p>
     </section>`).join('')}
     ${datos.entregado.total === 0 ? '<p class="vacio">No hay entregas registradas para esta fecha.</p>' : ''}
-    ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} ${datos.entregado.total === 1 ? 'comida' : 'comidas'}</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p>${datos.elaboro ? `<p>Elaboró: ${esc(datos.elaboro)}</p>` : ''}</div>` : ''}
-    <footer><span>Hora local del comedor · America/Mexico_City</span><span>Página ${paginaInicial + indice} de ${totalPaginas}</span></footer>
+    ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} ${datos.entregado.total === 1 ? 'comida' : 'comidas'}</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p></div>` : ''}
+    ${pieReporte(datos.elaboro, paginaInicial + indice, totalPaginas)}
   </section>`).join('');
   if (fragmento) return paginas;
   return documentoReporte({ titulo: 'CICSA_Glovis_Entregas_' + datos.fecha, etiqueta: 'Reporte diario · ' + datos.fecha_texto, paginas });
@@ -111,6 +111,18 @@ export function htmlReporteEntregas(datos, { fragmento = false, paginaInicial = 
 
 export function encabezadoReporte(titulo, periodo, generado) {
   return `<header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div><h1>${esc(titulo)}</h1><div class="fecha"><strong>${esc(periodo)}</strong><span>Generado: ${esc(generado)}</span></div></header>`;
+}
+
+// Razones sociales verificadas en la carátula del contrato de suministro Glovis–Alefer.
+export function pieReporte(elaboro, pagina, total) {
+  return `<footer class="pie-institucional">
+    <p class="pie-elaboro">Elaboró: ${esc(elaboro || '____________________________')}</p>
+    <div class="pie-empresas"><img src="${LOGO_ALEFER}" alt="Alefer">
+      <div><b>Proveedor</b><span>Servicio de Comedor y Catering Alefer, S.A. de C.V.</span></div>
+      <div><b>Empresa contratante</b><span>Hyundai Glovis México, S. de R.L. de C.V.</span></div>
+    </div>
+    <div class="pie-meta"><span>Hora local del comedor · America/Mexico_City</span><span>Página ${pagina} de ${total}</span></div>
+  </footer>`;
 }
 
 export function documentoReporte({ titulo, etiqueta, paginas }) {
@@ -127,6 +139,8 @@ h1{font-size:17pt;line-height:1.15;margin:0 0 3mm}.fecha{display:flex;justify-co
 table{border-collapse:collapse;table-layout:fixed;width:100%;font-size:8.5pt;line-height:1.2}.numero{width:10%}.nombre{width:27%}.platillo{width:25%}.servicio{width:18%}.hora{width:10%}
 th,td{text-align:left;vertical-align:top;border:1px solid #aeb7c5;padding:1.4mm;overflow-wrap:anywhere}th{font-size:8pt}td small{display:block;font-size:7pt;line-height:1.2;margin-top:.5mm}.subtotal{font-size:8pt;margin:1.5mm 0 0;line-height:1.3}
 .cierre{border-top:1px solid #14233e;margin-top:4mm;padding-top:2mm;font-size:10pt;break-inside:avoid}.cierre p{font-size:8.5pt;line-height:1.3;margin:1.5mm 0 0}footer{display:flex;justify-content:space-between;gap:4mm;font-size:7.5pt;margin-top:4mm;line-height:1.2}.vacio{font-size:11pt;margin:8mm 0}
+.pie-institucional{display:block;margin-top:5mm;padding-top:4mm;font-size:8pt;line-height:1.3;break-inside:avoid}.pie-elaboro{margin:0 0 2mm;overflow-wrap:anywhere}.pie-empresas{display:grid;grid-template-columns:34mm 1fr 1fr;gap:5mm;align-items:center;border-top:1px solid #aeb7c5;padding-top:3mm}.pie-empresas img{width:34mm;height:12mm;object-fit:contain}.pie-empresas b,.pie-empresas span{display:block}.pie-empresas b{margin-bottom:1mm}.pie-meta{display:flex;justify-content:space-between;gap:4mm;font-size:7pt;margin-top:3mm}
+.opiniones-grafica{break-inside:avoid;margin-bottom:3mm}.opiniones-grafica svg{display:block;width:100%;height:40mm}.opiniones-grafica p{font-size:8pt;line-height:1.3;margin:2mm 0}
 @page{size:letter portrait;margin:14mm}
 @media screen and (max-width:650px){.documento{overflow-x:auto;margin:12px}.hoja{min-width:188mm}.barra,.ayuda{margin-left:0;margin-right:0}.barra{padding:12px}.ayuda{padding:0 12px}}
 @media print{body{color:#000;background:white}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja{padding:0;margin:0;break-after:page;page-break-after:always}.hoja:last-child{break-after:auto;page-break-after:auto}th,td,.metrica,.cierre{border-color:#000}thead{display:table-header-group}tr,.subtotal,footer{break-inside:avoid;page-break-inside:avoid}h2{break-after:avoid;page-break-after:avoid}}
