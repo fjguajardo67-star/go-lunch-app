@@ -35,3 +35,42 @@ export async function guardarPeriodoMenu(client, menu) {
   if(error)throw error;
   return data;
 }
+
+export function estadoEdicionMenuFecha(menu, solicitudes, fecha, ahora = DateTime.now()) {
+  if (!fecha || fecha <= ahora.setZone('America/Mexico_City').toISODate())
+    return {permitido:false,motivo:'Solo se pueden cambiar fechas futuras; hoy y el historial se conservan.'};
+  if (!menu?.activo) return {permitido:false,motivo:'No hay menú publicado para esta fecha. Usa Publicar menú para el periodo.'};
+  if (solicitudes > 0) return {permitido:false,motivo:'Esta fecha tiene pedidos activos o entregados. No se pueden cambiar sus opciones.'};
+  return {permitido:true,motivo:'Sin pedidos activos. Puedes cambiar las tres opciones únicamente para esta fecha.'};
+}
+
+export function validarMenuFecha(fecha, body = {}) {
+  const validacion=validarVigenciaMenu({...body,fecha_inicio:fecha,fecha_final:fecha,periodo_id:null,activo:true});
+  if(validacion.error)return validacion;
+  if(!estadoEdicionMenuFecha({activo:true},0,fecha).permitido)
+    return {error:'Solo se pueden cambiar fechas futuras.'};
+  if(typeof body?.version !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(body.version) || !DateTime.fromISO(body.version).isValid)
+    return {error:'Vuelve a consultar el menú antes de guardar.'};
+  return {menu:{...validacion.menu,fecha,version:body.version}};
+}
+
+export async function guardarMenuFecha(client, menu) {
+  const {data,error}=await client.rpc('cambiar_menu_cobertura_fecha',{
+    p_fecha:menu.fecha,p_opcion_1:menu.opcion_1,p_opcion_2:menu.opcion_2,
+    p_opcion_3:menu.opcion_3,p_version:menu.version
+  });
+  if(error)throw error;
+  return data;
+}
+
+export function errorCambiarMenuFecha(error) {
+  const mensajes={
+    menu_fecha_no_futura:'Solo se pueden cambiar fechas futuras; hoy y el historial se conservan.',
+    menu_fecha_no_publicada:'El menú ya no está publicado. Vuelve a consultar la fecha.',
+    menu_fecha_con_pedidos:'Ya hay pedidos activos o entregados para esta fecha. No se cambió el menú.',
+    menu_fecha_version_obsoleta:'El menú cambió desde que lo abriste. Vuelve a consultar antes de editar.',
+    opciones_incompletas:'Completa las tres opciones.',opciones_repetidas:'Las tres opciones deben ser distintas.'
+  };
+  if(mensajes[error?.message])return {status:409,error:mensajes[error.message]};
+  return {status:503,error:'No se pudo confirmar el cambio. Vuelve a consultar la fecha antes de reintentar.'};
+}

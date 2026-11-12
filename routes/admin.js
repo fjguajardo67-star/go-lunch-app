@@ -1,4 +1,4 @@
-import { validarVigenciaMenu, errorPublicarMenu } from '../services/menu-cobertura.js';
+import { validarVigenciaMenu, errorPublicarMenu, estadoEdicionMenuFecha, validarMenuFecha, errorCambiarMenuFecha } from '../services/menu-cobertura.js';
 import { autorizarPanel } from '../services/acceso-panel.js';
 // routes/admin.js — API REST para el panel de administración
 import express from 'express';
@@ -298,9 +298,22 @@ adminRouter.post('/cobertura/supervisores/:id/clave', async (req, res) => {
 
 adminRouter.get('/cobertura/menu/:fecha', async (req, res) => {
   try {
-    res.json({ menu: await db.getMenuCobertura(req.params.fecha) });
+    const [menu, solicitudes] = await Promise.all([db.getMenuCobertura(req.params.fecha), db.contarSolicitudesCobertura(req.params.fecha)]);
+    res.json({ menu, edicion: estadoEdicionMenuFecha(menu, solicitudes, req.params.fecha) });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.post('/cobertura/menu/:fecha', async (req, res) => {
+  const validacion = validarMenuFecha(req.params.fecha, req.body);
+  if (validacion.error) return res.status(400).json({ error: validacion.error });
+  try {
+    res.json({ ok: true, ...await db.cambiarMenuCoberturaFecha(validacion.menu) });
+  } catch (err) {
+    console.error('[Cobertura] Error cambiando menú de fecha:', err.message);
+    const respuesta = errorCambiarMenuFecha(err);
+    res.status(respuesta.status).json({ error: respuesta.error });
   }
 });
 
