@@ -27,8 +27,8 @@ test('regular y cobertura conservan identidad y evidencia, pero salen de entrega
   comidas[1].entregado_en=null;
   const reporte=construirReporte(c.fecha,c.fecha,comidas,DateTime.fromISO(c.fecha+'T23:00:00-06:00'));
   assert.equal(reporte.total,68); assert.equal(reporte.no_surtidos,2); assert.equal(reporte.entrega.no_entregados,1);
-  assert.equal(reporte.sin_recoger.reduce((n,p)=>n+p.no_recogidos,0),1);
-  assert.equal(reporte.merma.por_turno.reduce((n,p)=>n+p.no_recogidos,0),1);
+  assert.equal(reporte.sin_confirmacion.length,1);
+  assert.equal(reporte.merma,undefined);
   assert.equal(reporte.rating_elegibles,60);
   assert.equal(reporte.incidencias.length,2);
   const pdf=prepararReporteEntregas(c.fecha,comidas);

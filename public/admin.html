@@ -1329,7 +1329,13 @@
         <div class="row-fin" style="margin-top:16px"><div><label for="rep-turno">Turno</label><select id="rep-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
               <div><label for="rep-zona">Zona</label><select id="rep-zona"><option value="">Todas las zonas</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
               <div><label for="rep-servicio">Servicio</label><select id="rep-servicio"><option value="">Regulares y coberturas</option><option value="regular">Regulares</option><option value="cobertura">Coberturas</option></select></div></div>
-        <p class="reporte-nota">Estos filtros se aplican a los reportes en pantalla y a las tres descargas de Excel.</p>
+        <p class="reporte-nota">Estos filtros se aplican a la pantalla, al PDF del periodo y a las tres descargas de Excel.</p>
+        <div class="row-fin" style="margin-top:16px">
+          <div><label for="rep-elaboro">Elaboró (opcional)</label><input id="rep-elaboro" type="text" maxlength="120" placeholder="Nombre de quien prepara el reporte"></div>
+          <button class="accion sec" id="rep-pdf" type="button" onclick="imprimirReportePeriodo()">Reporte del periodo / PDF</button>
+        </div>
+        <p class="reporte-nota">Un solo documento para acompañar la estimación: resumen y detalle diario de entregas con sus horarios.</p>
+        <p id="rep-pdf-aviso" class="reporte-nota" role="status" aria-live="polite"></p>
         <div id="reportesBox" style="margin-top:18px"></div>
       </div>
 
@@ -1350,7 +1356,7 @@
           <h3>Reporte de operación</h3>
         </div>
         <p style="font-size:.82rem;color:var(--gris-text);margin:-4px 0 12px">
-          Quién no recoge, merma por turno y zona, y tiempos de ruta. Una hoja por tema.
+          Comidas sin confirmación de entrega, calificaciones e incidencias sin cargo. Una hoja por tema.
         </p>
         <div class="row-fin">
           <div><label>Desde</label><input type="date" id="op-ini"></div>
@@ -1903,6 +1909,35 @@
   // ── Reportes del periodo ──
   // Las gráficas van en SVG a mano: el proyecto corre en Railway con recursos
   // limitados y no vale la pena una librería para cuatro vistas.
+  async function imprimirReportePeriodo() {
+    const mensaje = document.getElementById('rep-pdf-aviso');
+    const boton = document.getElementById('rep-pdf');
+    const consultaActual = () => new URLSearchParams({
+      ini: document.getElementById('rep-ini').value, fin: document.getElementById('rep-fin').value,
+      elaboro: document.getElementById('rep-elaboro').value.trim(),
+      ...Object.fromEntries(new URLSearchParams(parametrosServicio()))
+    }).toString();
+    const consulta = consultaActual(), valores = new URLSearchParams(consulta);
+    if (!valores.get('ini') || !valores.get('fin') || valores.get('ini') > valores.get('fin')) {
+      mensaje.textContent = 'Selecciona un periodo válido: Desde debe ser anterior o igual a Hasta.';
+      document.getElementById('rep-ini').focus(); return;
+    }
+    mensaje.textContent = 'Preparando el resumen y las entregas del periodo…';
+    boton.disabled = true;
+    try {
+      const res = await fetch(API_BASE + '/api/reporte-periodo?' + consulta, {
+        headers: { 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO }, cache: 'no-store'
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo generar el reporte.');
+      const html = await res.text();
+      if (consulta !== consultaActual()) { mensaje.textContent = 'La selección cambió. Abre de nuevo el reporte para los filtros actuales.'; return; }
+      boton.disabled = false; boton.focus({ preventScroll:true });
+      ImpresionPanel.abrir(html);
+      mensaje.textContent = 'Reporte listo. Usa Imprimir / Guardar PDF y luego Volver al panel para continuar.';
+    } catch (error) { mensaje.textContent = error.message; }
+    finally { boton.disabled = false; }
+  }
+
   async function verReportes() {
     const ini = document.getElementById('rep-ini').value;
     const fin = document.getElementById('rep-fin').value;
@@ -1972,7 +2007,7 @@
             'La opinión cuelga del pedido, así que un <em>No me gustó</em> puede estar castigando ' +
             'comida fría o una entrega tardía, y eso no se arregla con más respuestas. ' +
             'Úsala para <strong>levantar la mano sobre un platillo</strong> y confírmalo contra lo que ' +
-            'la gente hace y no dice: su <strong>merma</strong> y cuántas porciones se piden cuando ' +
+            'se registra en el servicio y cuántas porciones se piden cuando ' +
             'vuelve a aparecer en el menú.' +
             '</div>' +
             '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">' +
@@ -1989,14 +2024,14 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
         cajita(e.entregados, 'Entregados a tiempo', 'var(--verde)', '#f0f7f0') +
         cajita(e.tardios, 'Tardíos', '#b8860b', '#fff9e6') +
-        cajita(e.no_entregados, 'No entregados', 'var(--rojo)', '#fdecec') +
+        cajita(e.no_entregados, 'Sin confirmación de entrega', 'var(--gris-text)', 'var(--gris-bg)') +
         cajita(d.no_surtidos || 0, 'No surtidos · Sin cargo', 'var(--gris-text)', 'var(--gris-bg)') +
         (e.indeterminados ? cajita(e.indeterminados, 'Entregados sin puntualidad verificable', 'var(--gris-text)', 'var(--gris-bg)') : '') +
         '</div>' +
         (e.pendientes
           ? '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">De los ' +
-            e.no_entregados + ' no entregados, <strong>' + e.pendientes +
-            '</strong> todavía no vencen su hora de entrega: no cuentan como merma.</p>'
+            e.no_entregados + ' sin confirmación, <strong>' + e.pendientes +
+            '</strong> todavía no vencen su hora prevista de entrega.</p>'
           : '') +
         (d.motivos_tardia.length
           ? '<table style="margin-top:14px"><tr><th>Motivo del retraso</th><th>Veces</th></tr>' +
@@ -2005,60 +2040,10 @@
           : ''));
 
       if (d.incidencias?.length) h += bloque('Incidencias sin cargo al empleado',
-        '<p>Fallas de cocina o reparto autorizadas. Se excluyen de entregas, pendientes y no recogidos.</p><table><tr><th>Fecha</th><th>Empleado</th><th>Platillo</th><th>Motivo</th><th>Registró</th></tr>' +
+        '<p>Fallas de cocina o reparto autorizadas. Se contabilizan por separado de entregas y comidas sin confirmación.</p><table><tr><th>Fecha</th><th>Empleado</th><th>Platillo</th><th>Motivo</th><th>Registró</th></tr>' +
         d.incidencias.map(i => '<tr><td>' + escaparHtml(i.fecha) + '</td><td>#' + escaparHtml(i.numero_empleado) + ' · ' + escaparHtml(i.nombre) + '</td><td>' + escaparHtml(i.platillo) + '</td><td>' + escaparHtml(i.motivo) + '</td><td>' + escaparHtml(i.registrado_por) + '</td></tr>').join('') + '</table>');
 
-      // 5 · Quién no recoge. Solo cuenta pedidos cuya hora de entrega ya pasó,
-      // para no acusar a nadie por un pedido que todavía no le toca recoger.
-      h += bloque('Quién no recoge su pedido',
-        d.sin_recoger.length
-          ? '<table><tr><th>Empleado</th><th>No.</th><th>Pedidos</th><th>No recogidos</th><th>%</th></tr>' +
-            d.sin_recoger.map(x =>
-              '<tr><td>' + escaparHtml(x.nombre) + '</td><td>' + escaparHtml(x.numero_empleado) + '</td><td>' + x.pedidos + '</td>' +
-              '<td><strong>' + x.no_recogidos + '</strong></td>' +
-              '<td style="color:' + (x.pct >= 50 ? 'var(--rojo)' : x.pct >= 25 ? '#b8860b' : 'var(--gris-text)') +
-              ';font-weight:700">' + x.pct + '%</td></tr>').join('') +
-            '</table>' +
-            '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">' +
-            'Ordenado por cuántas veces no recogió. Solo aparecen pedidos cuya hora de entrega ya pasó.</p>'
-          : '<div class="vacio">Todos recogieron lo que pidieron en este periodo.</div>');
-
-      // 6 · Merma: comida que se preparó y nadie recogió
-      const filaMerma = (etiqueta, m) =>
-        '<tr><td>' + etiqueta + '</td><td>' + m.evaluables + '</td><td>' + m.entregados + '</td>' +
-        '<td><strong>' + m.no_recogidos + '</strong></td>' +
-        '<td style="color:' + (m.pct_merma >= 10 ? 'var(--rojo)' : 'var(--gris-text)') +
-        ';font-weight:700">' + m.pct_merma + '%</td></tr>';
-      const tablaMerma = (titulo, filas) =>
-        '<table style="margin-bottom:14px"><tr><th>' + titulo + '</th><th>Evaluables</th>' +
-        '<th>Entregados</th><th>No recogidos</th><th>Merma</th></tr>' + filas + '</table>';
-
-      h += bloque('Merma — comida preparada que nadie recogió',
-        d.merma.por_turno.length
-          ? tablaMerma('Turno', d.merma.por_turno.map(m => filaMerma(etiquetaTurno(m.turno), m)).join('')) +
-            tablaMerma('Zona',  d.merma.por_zona.map(m  => filaMerma(etiquetaZona(m.zona), m)).join(''))
-          : '<div class="vacio">Todavía no hay entregas vencidas que evaluar.</div>');
-
-      // 7 · Tiempos de ruta: entre el primer y el último escaneo de cada turno
-      h += bloque('Tiempos de ruta',
-        d.ruta.por_dia.length
-          ? (d.ruta.promedio_por_turno.length
-              ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
-                d.ruta.promedio_por_turno.map(t =>
-                  cajita(t.minutos_promedio + ' min', etiquetaTurno(t.turno) + ' · promedio de ' + (t.tramos ?? t.dias) + ' tramos',
-                         'var(--azul)', '#eef2fa')).join('') +
-                '</div>'
-              : '') +
-            '<div class="reporte-tabla reporte-rutas"><table><tr><th>Fecha</th><th>Turno</th><th>Zona</th><th>Horario</th><th>Entregas</th><th>Primera</th><th>Última</th><th>Duración</th></tr>' +
-            d.ruta.por_dia.map(r =>
-              '<tr><td>' + r.fecha + '</td><td>' + etiquetaTurno(r.turno) + '</td><td>' + etiquetaZona(r.zona) + '</td><td>' + escaparHtml(r.horario) + '</td><td>' + r.entregas + '</td>' +
-              '<td>' + r.primera + '</td><td>' + r.ultima + '</td>' +
-              '<td>' + (r.entregas < 2 ? '—' : r.minutos + ' min') + '</td></tr>').join('') +
-            '</table></div>' +
-            '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">' +
-            'Medido entre la primera y la última marca de entrega de cada zona y horario. Un grupo con una sola entrega no ' +
-            'cuenta como ruta y no entra al promedio.</p>'
-          : '<div class="vacio">Sin entregas escaneadas en este periodo.</div>');
+      h += '<p class="reporte-nota">Una comida sin confirmación de entrega requiere conciliación. La ausencia de un escaneo no demuestra que el empleado no recogió ni que hubo desperdicio.</p>';
 
       box.innerHTML = h;
     } catch(e) {

@@ -95,12 +95,27 @@ test('API admite admin y gerente por header, nunca genera un reporte parcial si 
       assert.match(html, /Regulares entregadas: 61 \+ Coberturas entregadas: 7/);
       assert.doesNotMatch(html, /admin-reporte-prueba|gerente-reporte-prueba/);
     }
+    const semanal = `http://127.0.0.1:${server.address().port}/api/reporte-periodo`;
+    assert.equal((await fetch(semanal + '?ini=' + d.fecha + '&fin=' + d.fecha)).status, 401);
+    for (const clave of [process.env.ADMIN_KEY, process.env.GERENTE_KEY]) {
+      const res = await fetch(semanal + '?ini=' + d.fecha + '&fin=' + d.fecha + '&servicio=cobertura', { headers: { 'x-admin-key': clave } });
+      assert.equal(res.status, 200); assert.equal(res.headers.get('cache-control'), 'no-store');
+      const html = await res.text(); assert.match(html, /Total diario entregado: 7 comidas/);
+      assert.doesNotMatch(html, /Quién no recoge|Merma|Tiempos de ruta|admin-reporte-prueba/);
+    }
+    for (const q of ['ini=' + d.fecha, 'ini=2026-11-08&fin=2026-11-07', 'ini=' + d.fecha + '&fin=' + d.fecha + '&zona=invalida']) {
+      const antes = consultas;
+      assert.equal((await fetch(semanal + '?' + q, { headers: { 'x-admin-key': process.env.ADMIN_KEY } })).status, 400);
+      assert.equal(consultas, antes);
+    }
     const anteriores = consultas;
     for (const ruta of ['2026-02-30', d.fecha + '?elaboro=A&elaboro=B']) {
       assert.equal((await fetch(url + ruta, { headers: { 'x-admin-key': process.env.ADMIN_KEY } })).status, 400);
     }
     assert.equal(consultas, anteriores);
     falla = true;
+    const parcial = await fetch(semanal + '?ini=' + d.fecha + '&fin=' + d.fecha, { headers: { 'x-admin-key': process.env.ADMIN_KEY } });
+    assert.equal(parcial.status, 500); assert.match((await parcial.json()).error, /reporte completo/);
     const res = await fetch(url + d.fecha, { headers: { 'x-admin-key': process.env.ADMIN_KEY } });
     assert.equal(res.status, 500); assert.match((await res.json()).error, /reporte completo/);
   } finally { await new Promise(r => server.close(r)); await new Promise(r => base.close(r)); }

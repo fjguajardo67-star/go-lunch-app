@@ -34,7 +34,7 @@ test('extraordinarias pendientes y puntualidad se evalúan contra su hora autori
  p.entregado_en=d.fecha+'T17:45:01-06:00';assert.equal(tardiaComida(p),true);
  p.entregado_en=null;
  const r=construirReporte(d.fecha,d.fecha,[p],DateTime.fromISO(d.fecha+'T17:20:00-06:00'));
- assert.equal(r.entrega.pendientes,1);assert.equal(r.merma.por_turno.length,0);
+ assert.equal(r.entrega.pendientes,1);assert.equal(r.sin_confirmacion.length,1);
  p.entregado_en=d.fecha+'T17:45:01-06:00';p.entrega_programada_en='invalida';
  assert.equal(construirReporte(d.fecha,d.fecha,[p]).entrega.indeterminados,1);
 });

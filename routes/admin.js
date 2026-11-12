@@ -18,6 +18,7 @@ import { normalizarSeleccionCocina, seleccionarPedidosCocina } from '../services
 import { construirReporte } from '../services/reportes.js';
 import { construirDashboard } from '../services/dashboard.js';
 import { prepararReporteEntregas, htmlReporteEntregas, validarElaboro } from '../services/reporte-entregas.js';
+import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
 import { validarIncidencia, errorIncidencia } from '../services/incidencias.js';
 
 export const adminRouter = express.Router();
@@ -547,6 +548,22 @@ adminRouter.post('/enviar-menu', async (req, res) => {
 });
 
 // ── Dashboard de envíos: estado por empleado para una fecha ──────
+
+adminRouter.get('/reporte-periodo', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const { ini, fin } = req.query;
+    if (!ini || !fin) throw Object.assign(new Error('Selecciona Desde y Hasta para el reporte.'), { status: 400 });
+    validarPeriodo(ini, fin);
+    const elaboro = validarElaboro(req.query.elaboro);
+    const filtros = normalizarSeleccionCocina(req.query);
+    const comidas = await comidasDelPeriodo(ini, fin);
+    res.type('html').send(htmlReportePeriodo(prepararReportePeriodo(ini, fin, comidas, { elaboro, filtros })));
+  } catch (error) {
+    if (!error.status) console.error('[Reporte del periodo]', error.message);
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'No se pudo generar el reporte completo. Vuelve a intentar con conexión.' });
+  }
+});
 
 adminRouter.get('/reporte-entregas/:fecha', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

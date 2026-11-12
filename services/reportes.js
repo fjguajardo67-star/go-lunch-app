@@ -11,17 +11,9 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
     let entregados = 0, tardios = 0, noEntregados = 0, pendientes = 0, indeterminados = 0;
     const motivos = {};
 
-    // Merma y recurrencia solo cuentan pedidos que YA se pudieron recoger. Un
-    // pedido de hoy a las 9 am no es merma: todavía no le toca. Se usa el mismo
-    // límite que marca las entregas tardías (hora del turno + tolerancia).
+    // Un escaneo ausente no acredita que la comida no se recogió ni que hubo desperdicio.
     const hoyISO = ahora.setZone(ZONA_COMEDOR).toISODate();
-    const porEmpleado = {}, mermaTurno = {}, mermaZona = {}, rutas = {};
-
-    const acumula = (mapa, clave, seEntrego) => {
-      const c = mapa[clave] || (mapa[clave] = { evaluables: 0, entregados: 0, no_recogidos: 0 });
-      c.evaluables++;
-      if (seEntrego) c.entregados++; else c.no_recogidos++;
-    };
+    const rutas = {};
 
     for (const p of pedidos) {
       porDia[p.fecha_menu] = (porDia[p.fecha_menu] || 0) + 1;
@@ -57,22 +49,7 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
       const limite = limiteComida(p);
       const yaVencio = limite ? ahora > limite : p.fecha_menu < hoyISO;
 
-      if (yaVencio) {
-        acumula(mermaTurno, p.turno || 'sin_turno', !!p.entregado_en);
-        acumula(mermaZona,  p.zona  || 'sin_zona',  !!p.entregado_en);
-
-        const emp = p.empleados || {};
-        const clave = emp.numero_empleado || p.empleado_telefono;
-        const e = porEmpleado[clave] || (porEmpleado[clave] = {
-          numero_empleado: emp.numero_empleado || '',
-          nombre: emp.nombre || '(empleado dado de baja)',
-          pedidos: 0, no_recogidos: 0
-        });
-        e.pedidos++;
-        if (!p.entregado_en) e.no_recogidos++;
-      } else if (!p.entregado_en) {
-        pendientes++;
-      }
+      if (!yaVencio && !p.entregado_en) pendientes++;
 
       if (!p.entregado_en) { noEntregados++; continue; }
 
@@ -112,10 +89,6 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
 
     const pct = (parte, total) => total ? Math.round((parte / total) * 1000) / 10 : 0;
     const hhmm = d => d.setZone(ZONA_COMEDOR).toFormat('HH:mm');
-
-    const filasMerma = mapa => Object.entries(mapa)
-      .map(([clave, c]) => ({ clave, ...c, pct_merma: pct(c.no_recogidos, c.evaluables) }))
-      .sort((a, b) => b.no_recogidos - a.no_recogidos);
 
     const rutaPorDia = Object.values(rutas)
       .map(r => ({
@@ -196,14 +169,11 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => ({ motivo: MOTIVOS_TARDIA[id] || 'Sin motivo indicado', veces: n })),
 
-      sin_recoger: Object.values(porEmpleado)
-        .filter(e => e.no_recogidos > 0)
-        .map(e => ({ ...e, pct: pct(e.no_recogidos, e.pedidos) }))
-        .sort((a, b) => b.no_recogidos - a.no_recogidos || b.pct - a.pct),
-      merma: {
-        por_turno: filasMerma(mermaTurno).map(f => ({ turno: f.clave, ...f, clave: undefined })),
-        por_zona:  filasMerma(mermaZona).map(f  => ({ zona:  f.clave, ...f, clave: undefined }))
-      },
+      sin_confirmacion: pedidos.filter(p => !noSurtida(p) && !p.entregado_en).map(p => ({
+        fecha: p.fecha_menu, numero_empleado: p.empleados?.numero_empleado || '',
+        nombre: p.empleados?.nombre || '', platillo: p.opcion_texto || p.opcion_id,
+        tipo: p.tipo || 'regular', folio: p.folio || '', turno: p.turno, zona: p.zona, horario: horaComida(p)
+      })),
       ruta: {
         por_dia: rutaPorDia,
         promedio_por_turno: Object.entries(acumTurno)
