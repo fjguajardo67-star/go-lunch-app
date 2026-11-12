@@ -7,7 +7,7 @@ import { noSurtida, entregada } from './incidencias.js';
 
 const logo = archivo => 'data:image/svg+xml;base64,' + readFileSync(new URL('../public/' + archivo, import.meta.url)).toString('base64');
 const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg');
-const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+export const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 const numeros = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
 
@@ -31,8 +31,8 @@ function paginar(grupos) {
   for (const grupo of grupos) {
     let inicio = 0, parte = 0;
     while (inicio < grupo.filas.length) {
-      let pagina = paginas.at(-1), limite = paginas.length === 1 ? 142 : 182;
-      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 182; }
+      let pagina = paginas.at(-1), limite = paginas.length === 1 ? 130 : 165;
+      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 165; }
       const filas = []; let alto = 22;
       while (inicio < grupo.filas.length && (filas.length === 0 || pagina.usado + alto + altoFila(grupo.filas[inicio]) <= limite)) {
         const fila = grupo.filas[inicio++]; alto += altoFila(fila); filas.push(fila);
@@ -84,12 +84,12 @@ export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = 
     pendientes: delDia.length - entregadas.length - noSurtidas.length, grupos: lista, paginas: paginar(lista) };
 }
 
-export function htmlReporteEntregas(datos) {
+export function htmlReporteEntregas(datos, { fragmento = false, paginaInicial = 1, totalPaginas = datos.paginas.length } = {}) {
   const resumen = `<section class="resumen" aria-label="Resumen de comidas solicitadas y entregadas">
     ${[[datos.registradas.regulares, 'Regulares solicitadas'], [datos.registradas.coberturas, 'Coberturas solicitadas'],
-      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Pendientes'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
+      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Sin confirmación'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
       .map(([n, texto]) => `<div class="metrica"><strong>${n}</strong><span>${texto}</span></div>`).join('')}
-    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.</p>`;
+    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + sin confirmación + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.</p>`;
   const paginas = datos.paginas.map((pagina, indice) => `<section class="hoja">
     <header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div>
       <h1>Reporte diario de comidas entregadas</h1><div class="fecha"><strong>Servicio: ${esc(datos.fecha_texto)}</strong><span>Generado: ${esc(datos.generado)}</span></div></header>
@@ -103,10 +103,19 @@ export function htmlReporteEntregas(datos) {
     </section>`).join('')}
     ${datos.entregado.total === 0 ? '<p class="vacio">No hay entregas registradas para esta fecha.</p>' : ''}
     ${indice === datos.paginas.length - 1 ? `<div class="cierre"><strong>Total diario entregado: ${datos.entregado.total} ${datos.entregado.total === 1 ? 'comida' : 'comidas'}</strong><p>Regulares entregadas: ${datos.entregado.regulares} + Coberturas entregadas: ${datos.entregado.coberturas}</p>${datos.elaboro ? `<p>Elaboró: ${esc(datos.elaboro)}</p>` : ''}</div>` : ''}
-    <footer><span>Hora local del comedor · America/Mexico_City</span><span>Página ${indice + 1} de ${datos.paginas.length}</span></footer>
+    <footer><span>Hora local del comedor · America/Mexico_City</span><span>Página ${paginaInicial + indice} de ${totalPaginas}</span></footer>
   </section>`).join('');
+  if (fragmento) return paginas;
+  return documentoReporte({ titulo: 'CICSA_Glovis_Entregas_' + datos.fecha, etiqueta: 'Reporte diario · ' + datos.fecha_texto, paginas });
+}
+
+export function encabezadoReporte(titulo, periodo, generado) {
+  return `<header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div><h1>${esc(titulo)}</h1><div class="fecha"><strong>${esc(periodo)}</strong><span>Generado: ${esc(generado)}</span></div></header>`;
+}
+
+export function documentoReporte({ titulo, etiqueta, paginas }) {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
-<title>CICSA_Glovis_Entregas_${esc(datos.fecha)}</title><style>
+<title>${esc(titulo)}</title><style>
 *{box-sizing:border-box}body{margin:0;color:#14233e;background:#edf0f5;font-family:Arial,sans-serif}
 .barra{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 24px;background:#fff;border-bottom:1px solid #bcc5d3}
 .barra button{font:inherit;font-weight:700;background:#07357f;color:white;border:0;border-radius:6px;padding:12px 18px;cursor:pointer;min-height:44px}.barra button:hover{background:#102957}.barra button:focus-visible{outline:3px solid #1272cf;outline-offset:3px}
@@ -121,7 +130,7 @@ th,td{text-align:left;vertical-align:top;border:1px solid #aeb7c5;padding:1.4mm;
 @page{size:letter portrait;margin:14mm}
 @media screen and (max-width:650px){.documento{overflow-x:auto;margin:12px}.hoja{min-width:188mm}.barra,.ayuda{margin-left:0;margin-right:0}.barra{padding:12px}.ayuda{padding:0 12px}}
 @media print{body{color:#000;background:white}.barra,.ayuda{display:none}.documento{margin:0;max-width:none}.hoja{padding:0;margin:0;break-after:page;page-break-after:always}.hoja:last-child{break-after:auto;page-break-after:auto}th,td,.metrica,.cierre{border-color:#000}thead{display:table-header-group}tr,.subtotal,footer{break-inside:avoid;page-break-inside:avoid}h2{break-after:avoid;page-break-after:avoid}}
-</style></head><body><div class="barra"><b>Reporte diario · ${esc(datos.fecha_texto)}</b><button type="button" onclick="window.print()">Imprimir / Guardar PDF</button></div>
+</style></head><body><div class="barra"><b>${esc(etiqueta)}</b><button type="button" onclick="window.print()">Imprimir / Guardar PDF</button></div>
 <p class="ayuda">Papel carta, orientación vertical y escala 100 %. Desactiva los encabezados y pies del navegador. Para enviar por correo, elige Guardar como PDF. Este reporte no requiere firma. En celular, desliza la hoja horizontalmente para ver todas las columnas.</p>
 <main class="documento">${paginas}</main></body></html>`;
 }

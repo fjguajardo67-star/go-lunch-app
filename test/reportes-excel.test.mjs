@@ -22,6 +22,8 @@ test('los tres Excel conservan 61 regulares + 7 coberturas, folios y números co
  const ultima=filas.find(k=>c.Sheets.Resumen_Cocina[k].v==='TOTAL GENERAL').slice(1);
  assert.equal(c.Sheets.Resumen_Cocina['E'+ultima].v,61);assert.equal(c.Sheets.Resumen_Cocina['F'+ultima].v,7);assert.equal(c.Sheets.Resumen_Cocina['G'+ultima].v,68);
  const o=GoLunchReportesExcel.operacion(X,f,reporte);
+ assert.ok(o.Sheets.Sin_Confirmacion);
+ assert.equal(o.Sheets.Sin_Recoger,undefined);assert.equal(o.Sheets.Merma,undefined);assert.equal(o.Sheets.Tiempos_Ruta,undefined);
  assert.equal(o.Sheets.Resumen.B2.v,61);assert.equal(o.Sheets.Resumen.B3.v,7);assert.equal(o.Sheets.Resumen.B4.v,68);
  assert.ok(Object.values(o.Sheets.Resumen).some(c=>c?.v==='Entregados sin puntualidad verificable'));
  assert.equal(c.Sheets.Filtros.B1.v,d.fecha+' a '+d.fecha);
