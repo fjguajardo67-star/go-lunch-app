@@ -24,12 +24,13 @@ export function graficaOpiniones(rating) {
   const valores = [['Me gustó mucho', rating.si], ['Estuvo bien', rating.tal_vez], ['No me gustó', rating.no]];
   const total = valores.reduce((n, [, v]) => n + v, 0), maximo = Math.max(1, ...valores.map(([, v]) => v));
   const descripcion = valores.map(([t, v]) => `${t}: ${v}`).join('. ');
-  return `<section class="opiniones-grafica"><h2>¿Qué te pareció ese platillo?</h2>
+  return `<section class="opiniones-grafica"><h2>¿Qué te pareció ese platillo?<sup>*</sup></h2>
     ${total ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 140" role="img" aria-label="${esc(descripcion)}">
       <title>${esc(descripcion)}</title>${valores.map(([texto, n], i) => {
         const y = 8 + i * 44, ancho = 350 * n / maximo;
         return `<text x="0" y="${y + 21}" font-size="16" fill="#14233e">${texto}</text><rect x="190" y="${y}" width="${ancho}" height="30" fill="#07357f"/><text x="${200 + ancho}" y="${y + 21}" font-size="18" font-weight="bold" fill="#14233e">${n}</text>`;
       }).join('')}</svg>` : '<p>Aún no hay opiniones registradas para este periodo y selección.</p>'}
+    <p class="nota-interpretacion"><strong>* Resultados de quienes respondieron la encuesta.</strong> No representan necesariamente la experiencia de la totalidad de los comensales. Las respuestas pueden reflejar sabor, temperatura, presentación y condiciones de entrega; deben interpretarse como una señal para mejorar el servicio, no como una evaluación definitiva del platillo.</p>
     <p>${total} opiniones · ${rating.sin_responder} sin responder. Encuesta de pedidos regulares sin incidencia; las coberturas no tienen encuesta.</p>
   </section>`;
 }
@@ -59,8 +60,8 @@ function paginasResumen(d) {
     r.porciones_por_platillo.map(p => [p.platillo, p.regulares, p.coberturas, p.total]));
   // La gráfica es una sola pieza y reserva su altura antes de añadirla.
   let pagina = paginas.at(-1), limite = paginas.length === 1 ? 105 : 150;
-  if (pagina.usado + 65 > limite) { pagina = { partes: [], usado: 0 }; paginas.push(pagina); }
-  pagina.partes.push(graficaOpiniones(r.rating)); pagina.usado += 65;
+  if (pagina.usado + 80 > limite) { pagina = { partes: [], usado: 0 }; paginas.push(pagina); }
+  pagina.partes.push(graficaOpiniones(r.rating)); pagina.usado += 80;
   tabla('Opiniones por platillo', ['Platillo', 'Me gustó', 'Estuvo bien', 'No me gustó', 'Opiniones', 'Aprobación'], [40, 11, 12, 12, 11, 14],
     r.rating_por_platillo.map(p => [p.platillo, p.si, p.tal_vez, p.no, p.respondidos,
       p.aprobacion === null ? 'Sin opiniones' : p.muestra_corta ? 'Muestra corta' : p.aprobacion + '%']),
