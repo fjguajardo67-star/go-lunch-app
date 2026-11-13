@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
 import { validarVigenciaMenu, errorPublicarMenu, guardarPeriodoMenu } from '../services/menu-cobertura.js';
 
 const opciones={opcion_1:'Hamburguesa',opcion_2:'Boneless',opcion_3:'Pescado'};
@@ -40,17 +38,4 @@ test('conflictos avisan que no se modificó ningún día y no se ocultan como é
   assert.equal(respuesta.status,409);assert.match(respuesta.error,/2026-11-09/);
   assert.equal(errorPublicarMenu({message:'vigencia_solapada'}).status,409);
   assert.equal(errorPublicarMenu({code:'PGRST202'}).status,503);
-});
-test('al volver a consultar, el panel recupera la vigencia completa y no la confunde con el día de producción',()=>{
-  const html=readFileSync(new URL('../public/admin.html',import.meta.url),'utf8');
-  const campos=Object.fromEntries(['cov-menu-inicio','cov-menu-final','cov-op1','cov-op2','cov-op3'].map(id=>[id,{}]));
-  const contexto=vm.createContext({document:{getElementById:id=>campos[id]}});
-  const helpers=html.slice(html.indexOf('  let MENU_COBERTURA_PERIODO_ID'),html.indexOf('  function nuevoPeriodoMenuCobertura'));
-  vm.runInContext(helpers,contexto);
-  contexto.menu={periodo_id:'periodo-prueba',vigencia_desde:'2026-11-07',vigencia_hasta:'2026-11-13',...opciones};
-  vm.runInContext("mostrarPeriodoMenuCobertura(menu,'2026-11-10')",contexto);
-  assert.equal(campos['cov-menu-inicio'].value,'2026-11-07');
-  assert.equal(campos['cov-menu-final'].value,'2026-11-13');
-  assert.equal(campos['cov-menu-final'].min,'2026-11-07');
-  assert.equal((html.match(/id="cov-fecha"/g)||[]).length,1);
 });

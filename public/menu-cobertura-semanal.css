@@ -1,0 +1,21 @@
+.cov-semana-navegacion { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:18px; }
+.cov-semana-navegacion label { margin-top:0; }
+.cov-semana-navegacion input { width:190px; min-height:44px; }
+.cov-semana-navegacion p { font-size:.85rem; color:var(--gris-text); margin-top:6px; }
+.cov-menu-dia { display:grid; grid-template-columns:150px minmax(0,1fr) 150px; gap:12px 20px; border-top:1px solid var(--gris-line); padding:18px 0; }
+.cov-dia-cabecera h4 { text-transform:capitalize; font-size:1rem; }
+.cov-dia-cabecera h4 span { display:block; font-size:.85rem; font-weight:500; text-transform:none; margin-top:4px; }
+.cov-dia-cabecera p { font-size:.85rem; color:var(--azul); margin-top:8px; }
+.cov-dia-opciones { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.cov-dia-opciones label { margin-top:0; }
+.cov-dia-opciones input { font-size:1rem; min-height:44px; }
+.cov-dia-accion { align-self:end; }
+.cov-dia-accion button { width:100%; min-height:44px; }
+.cov-dia-accion button:disabled { background:var(--gris-bg); color:var(--gris-text); border-color:var(--gris-line); cursor:default; }
+.cov-dia-nota,.cov-dia-error { grid-column:2 / -1; font-size:.85rem; line-height:1.5; }
+.cov-dia-nota { color:var(--gris-text); }
+.cov-dia-error { color:var(--tinta); }
+.cov-dia-error:empty { display:none; }
+.cov-menu-dia input[readonly] { background:var(--gris-bg); color:var(--gris-text); }
+@media(max-width:1100px) { .cov-menu-dia { grid-template-columns:135px minmax(0,1fr); } .cov-dia-accion { grid-column:2; justify-self:start; } .cov-dia-nota,.cov-dia-error { grid-column:2; } }
+@media(max-width:650px) { .cov-semana-navegacion { align-items:stretch; } .cov-semana-navegacion > div { order:-1; width:100%; } .cov-menu-dia { grid-template-columns:minmax(0,1fr); gap:12px; } .cov-dia-opciones { grid-template-columns:minmax(0,1fr); } .cov-dia-cabecera { display:flex; justify-content:space-between; gap:12px; } .cov-dia-accion,.cov-dia-nota,.cov-dia-error { grid-column:1; } .cov-dia-accion { justify-self:stretch; } }

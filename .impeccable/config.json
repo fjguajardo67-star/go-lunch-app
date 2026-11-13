@@ -73,7 +73,7 @@
           "public/manual.html"
         ],
         "createdAt": "2026-11-05T23:35:34.879Z",
-        "reason": "Agent: el manual conserva instrucciones operativas verificables sobre reintentos, folios iniciados, firma del PDF y entregas pendientes; la repetición de límites no es un eslogan promocional. Se mantiene la excepción existente solo para este archivo."
+        "reason": "Agent: el detector señala instrucciones operativas literales (acceso por QR sin cuenta, estados de entrega, reintentos y límites de edición), no eslóganes. Revisión del 13/nov/2026: conservar estas instrucciones y limitar la excepción a este manual."
       },
       {
         "rule": "overused-font",

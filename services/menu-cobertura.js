@@ -37,25 +37,25 @@ export async function guardarPeriodoMenu(client, menu) {
 }
 
 export function estadoEdicionMenuFecha(menu, solicitudes, fecha, ahora = DateTime.now()) {
-  if (!fecha || fecha <= ahora.setZone('America/Mexico_City').toISODate())
-    return {permitido:false,motivo:'Solo se pueden cambiar fechas futuras; hoy y el historial se conservan.'};
-  if (!menu?.activo) return {permitido:false,motivo:'No hay menú publicado para esta fecha. Usa Publicar menú para el periodo.'};
-  if (solicitudes > 0) return {permitido:false,motivo:'Esta fecha tiene pedidos activos o entregados. No se pueden cambiar sus opciones.'};
-  return {permitido:true,motivo:'Sin pedidos activos. Puedes cambiar las tres opciones únicamente para esta fecha.'};
+  if (!fecha || fecha < ahora.setZone('America/Mexico_City').toISODate())
+    return {permitido:false,motivo:'Fecha pasada: se conserva el historial.'};
+  return {permitido:true,motivo:solicitudes > 0
+    ? `${solicitudes} folio(s) conservarán su menú original. La nueva publicación aplica a pedidos nuevos.`
+    : menu?.activo ? 'Publicado. Puedes actualizar únicamente este día.' : 'Sin menú. Publica tres opciones para este día.'};
 }
 
 export function validarMenuFecha(fecha, body = {}) {
   const validacion=validarVigenciaMenu({...body,fecha_inicio:fecha,fecha_final:fecha,periodo_id:null,activo:true});
   if(validacion.error)return validacion;
   if(!estadoEdicionMenuFecha({activo:true},0,fecha).permitido)
-    return {error:'Solo se pueden cambiar fechas futuras.'};
-  if(typeof body?.version !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(body.version) || !DateTime.fromISO(body.version).isValid)
+    return {error:'No se pueden publicar cambios en fechas pasadas.'};
+  if(!Object.hasOwn(body, 'version') || (body.version !== null && (typeof body.version !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(body.version) || !DateTime.fromISO(body.version).isValid)))
     return {error:'Vuelve a consultar el menú antes de guardar.'};
   return {menu:{...validacion.menu,fecha,version:body.version}};
 }
 
 export async function guardarMenuFecha(client, menu) {
-  const {data,error}=await client.rpc('cambiar_menu_cobertura_fecha',{
+  const {data,error}=await client.rpc('publicar_menu_cobertura_dia',{
     p_fecha:menu.fecha,p_opcion_1:menu.opcion_1,p_opcion_2:menu.opcion_2,
     p_opcion_3:menu.opcion_3,p_version:menu.version
   });
@@ -65,6 +65,7 @@ export async function guardarMenuFecha(client, menu) {
 
 export function errorCambiarMenuFecha(error) {
   const mensajes={
+    menu_fecha_pasada:'No se pueden publicar cambios en fechas pasadas.',
     menu_fecha_no_futura:'Solo se pueden cambiar fechas futuras; hoy y el historial se conservan.',
     menu_fecha_no_publicada:'El menú ya no está publicado. Vuelve a consultar la fecha.',
     menu_fecha_con_pedidos:'Ya hay pedidos activos o entregados para esta fecha. No se cambió el menú.',

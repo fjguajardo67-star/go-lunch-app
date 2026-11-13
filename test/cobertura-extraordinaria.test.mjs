@@ -53,7 +53,7 @@ test('17:30 se envía como tal y un fallo de conexión conserva filas y clave de
  assert.match(f.campos['extra-aviso'].textContent,/Puedes reintentar/);
 });
 
-test('gerente autoriza un folio adicional; la clave de supervisor y la captura pública conservan el corte',async()=>{
+test('gerente autoriza un folio adicional y el formulario legado solicita actualizar la app',async()=>{
  const variables=['SUPABASE_URL','SUPABASE_KEY','ADMIN_KEY','GERENTE_KEY','SUPERVISOR_SESSION_SECRET'];
  const originales=Object.fromEntries(variables.map(k=>[k,process.env[k]]));const reloj=Settings.now;
  Settings.now=()=>Date.parse(fecha+'T16:00:00-06:00');
@@ -103,7 +103,7 @@ test('gerente autoriza un folio adicional; la clave de supervisor y la captura p
   assert.equal(llamadas,1);
   assert.equal((await pedir({...entrada,hora_entrega:'15:00'})).status,409);
   assert.equal((await pedir(entrada,'admin-prueba','admin')).status,200);
-  await assert.rejects(()=>guardarSolicitud(1,{...entrada,ignorar_corte:true}),e=>e.status===409&&e.motivo==='fuera_de_horario');
+  await assert.rejects(()=>guardarSolicitud(1,{...entrada,ignorar_corte:true}),e=>e.status===409&&e.motivo==='menu_cobertura_desactualizado');
   const consulta=await fetch(url+'/api/cobertura/solicitudes/'+fecha+'?turno=turno_b',{headers:{'x-admin-key':'gerente-prueba','x-panel-user':'gerente'}});
   const panel=await consulta.json();assert.equal(panel.total_porciones,5);
   const turno=panel.por_turno.find(t=>t.turno==='turno_b');assert.equal(turno.porciones_corte,4);assert.equal(turno.total_porciones,5);

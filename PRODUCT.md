@@ -40,6 +40,7 @@ El pedido personal no requiere cuenta ni contraseña: localiza al empleado con s
 - El frontend se sirve desde Railway y usa Supabase como base de datos.
 - El QR y las URLs existentes deben seguir funcionando después de los rediseños.
 - Un pedido regular y una cobertura del mismo empleado deben coexistir sin sobrescribirse.
+- Coberturas tiene tres opciones variables por fecha, programadas de lunes a domingo con publicación independiente por día. Cada folio conserva su menú original, aunque se publiquen opciones nuevas para la misma fecha.
 - Cada empleado admite una cobertura por turno y día entre todos los supervisores y zonas; puede tener otra en el otro turno.
 - Los folios conservan historial, identidad y control de versión. Un folio con entregas iniciadas no se modifica ni cancela.
 - La autorización de supervisor siempre parte de un empleado existente en la plantilla oficial.

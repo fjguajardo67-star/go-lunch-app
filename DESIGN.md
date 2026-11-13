@@ -37,7 +37,9 @@ Los demás originales autorizados, incluido el trazo monocromático, viven en
 
 ## Pedidos de cobertura
 
-En Menú especial, el desplegable «Cambiar menú de esta fecha» mantiene separada la edición de un día de la publicación por periodo. Consulta el menú y la elegibilidad antes de habilitar las tres opciones; muestra el motivo cuando hoy, el historial o los pedidos impiden editar. Al guardar, el servidor vuelve a comprobar fecha futura, pedidos no cancelados y versión del menú, y separa el día sin cambiar las opciones vecinas. Un conflicto conserva lo escrito y pide consultar de nuevo. Solo administración guarda; gerente consulta.
+El menú de Coberturas se programa de lunes a domingo, con tres opciones variables por fecha y publicación independiente por día. La vista mantiene la identidad corporativa y usa filas con fecha, estado, tres campos y una acción; en móvil los campos se apilan. Publicado, Cambios sin publicar y Sin menú se expresan con texto. Solo administración publica; gerente consulta. Hoy y futuro admiten una nueva publicación con control de versión; el pasado conserva el historial. Los borradores se conservan ante errores y se confirma antes de descartarlos al consultar otra semana.
+
+Cada folio guarda sus tres opciones originales de forma inmutable. La publicación nueva aplica a nuevas altas, que comprueban la versión del menú dentro de la transacción. La edición de un folio conserva su propio menú, platillos y QR. La anticipación de dos horas, límites de edición, entregas e incidencias se mantienen. Los formularios atrasados deben actualizar; reintentar una confirmación recupera el folio original aunque haya otra publicación. La programación semanal reemplaza los formularios de vigencia y de cambio de un día en el panel; los periodos existentes se muestran por fecha.
 
 La solicitud del supervisor se presenta como una lista de personas y alimentos,
 no como una orden financiera. La pantalla muestra únicamente horario, menú,
