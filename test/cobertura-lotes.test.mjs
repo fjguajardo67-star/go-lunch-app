@@ -25,7 +25,7 @@ test('API de supervisor conserva varios folios propios y deriva la identidad de 
   const empleado={telefono:'qa-super',numero_empleado:'00001',nombre:'Supervisor de prueba',activo:true};
   const supervisor={id:1,empleado_telefono:empleado.telefono,activo:true,vigente_desde:'2026-01-01',vigente_hasta:null,version_sesion:1,empleados:empleado};
   const solicitudes=[
-    {id:10,supervisor_id:1,fecha_servicio:'2026-11-09',origen:'supervisor',estado:'confirmada',turno:'turno_a',zona:'zona_refris',entrega_programada_en:'2026-11-09T17:00:00-06:00',actualizado_en:'2026-11-09T14:00:00-06:00',total_porciones:1},
+    {id:10,supervisor_id:1,fecha_servicio:'2026-11-09',origen:'supervisor',estado:'confirmada',turno:'turno_a',zona:'zona_refris',entrega_programada_en:'2026-11-09T17:00:00-06:00',actualizado_en:'2026-11-09T14:00:00-06:00',total_porciones:1,menu_snapshot:{opcion_1:'Anterior A',opcion_2:'Anterior B',opcion_3:'Anterior C'}},
     {id:11,supervisor_id:1,fecha_servicio:'2026-11-09',origen:'supervisor',estado:'confirmada',turno:'turno_b',zona:'zona_vdc',entrega_programada_en:'2026-11-09T18:30:00-06:00',actualizado_en:'2026-11-09T14:00:00-06:00',total_porciones:1},
     {id:12,supervisor_id:2,fecha_servicio:'2026-11-09',origen:'supervisor',estado:'confirmada',turno:'turno_a',zona:'zona_refris',total_porciones:1}
   ];
@@ -38,7 +38,7 @@ test('API de supervisor conserva varios folios propios y deriva la identidad de 
       res.end(JSON.stringify([{...solicitudes[1],folio:'CE-PRUEBA-11'}]));return;
     }
     lecturas++;
-    let filas=({supervisores_cobertura:[supervisor],menus_cobertura:[{fecha:'2026-11-09',activo:true,opcion_1:'Pollo QA',opcion_2:'Pescado QA',opcion_3:'Ensalada QA'}],solicitudes_cobertura:solicitudes,solicitudes_cobertura_items:[]})[tabla]||[];
+    let filas=({supervisores_cobertura:[supervisor],menus_cobertura:[{fecha:'2026-11-09',activo:true,actualizado_en:'2026-11-09T15:00:00-06:00',opcion_1:'Pollo QA',opcion_2:'Pescado QA',opcion_3:'Ensalada QA'}],solicitudes_cobertura:solicitudes,solicitudes_cobertura_items:[]})[tabla]||[];
     filas=filas.filter(f=>[...u.searchParams].every(([k,v])=>v.startsWith('eq.')?String(f[k])===v.slice(3):v.startsWith('in.(')?v.slice(4,-1).split(',').includes(String(f[k])):true));
     res.end(JSON.stringify(filas));
   });
@@ -49,16 +49,19 @@ test('API de supervisor conserva varios folios propios y deriva la identidad de 
   const app=express();app.use(express.json());app.use('/cobertura',coberturaRouter);const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
   const url=`http://127.0.0.1:${server.address().port}/cobertura`,token=emitirTokenSupervisor(supervisor);
   const headers={authorization:'Bearer '+token,'content-type':'application/json'};
-  const entrada={fecha:'2026-11-09',turno:'turno_b',zona:'zona_vdc',hora_entrega:'18:30',responsable_numero:'00001',items:[{numero_empleado:'00002',opcion_id:'especial_1'}],idempotencia:'00000000-0000-4000-8000-000000000001'};
+  const entrada={fecha:'2026-11-09',turno:'turno_b',zona:'zona_vdc',hora_entrega:'18:30',responsable_numero:'00001',items:[{numero_empleado:'00002',opcion_id:'especial_1'}],idempotencia:'00000000-0000-4000-8000-000000000001',menu_version:'2026-11-09T15:00:00-06:00'};
   try{
     assert.equal((await fetch(url+'/lotes')).status,401);assert.equal(lecturas,0);
     let res=await fetch(url+'/lotes',{headers});assert.equal(res.status,200);
     const estado=await res.json();assert.equal(estado.solicitudes.length,2);assert.equal(estado.abierto,true);assert.equal(estado.hora_minima,'17:00');
+    assert.equal(estado.menu.version,entrada.menu_version);
+    assert.deepEqual(estado.solicitudes[0].menu.opciones.map(o=>o.texto),['Anterior A','Anterior B','Anterior C']);
     assert.deepEqual(estado.solicitudes.map(s=>s.id),[10,11]);
     for(const [ruta,method] of [['/lotes','POST'],['/lotes/11','PUT'],['/lotes/11','DELETE']]){
       res=await fetch(url+ruta,{method,headers,body:JSON.stringify({...entrada,supervisor_id:2,ignorar_anticipacion:true,version:solicitudes[1].actualizado_en})});
       assert.equal(res.status,200,await res.text());assert.equal(rpc.datos.p_supervisor_id,1);assert.equal(rpc.datos.ignorar_anticipacion,undefined);
       if(method==='PUT')assert.equal(rpc.datos.p_solicitud_id,11);
+      if(method==='POST')assert.equal(rpc.datos.p_version,entrada.menu_version);
     }
     rechazo=true;res=await fetch(url+'/lotes',{method:'POST',headers,body:JSON.stringify(entrada)});assert.equal(res.status,409);assert.match((await res.json()).error,/dos horas/);
     for(const cambio of [{fecha:'2026-11-10'},{hora_entrega:'5:30'},{turno:'otro'},{idempotencia:'sin-id'},{items:[...entrada.items,...entrada.items]}])assert.throws(()=>validarEntradaLote({...entrada,...cambio}));

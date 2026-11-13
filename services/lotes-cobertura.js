@@ -21,14 +21,16 @@ export function validarEntradaLote(entrada) {
   if (typeof entrada.hora_entrega !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(entrada.hora_entrega)) throw error('Escribe la hora de entrega en formato de 24 horas, por ejemplo 17:30.');
   if (typeof entrada.idempotencia !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entrada.idempotencia)) throw error('Actualiza tus pedidos y vuelve a intentarlo.');
   if (entrada.version != null && (typeof entrada.version !== 'string' || !DateTime.fromISO(entrada.version).isValid)) throw error('Actualiza el folio antes de modificarlo.');
+  if (entrada.menu_version != null && (typeof entrada.menu_version !== 'string' || !DateTime.fromISO(entrada.menu_version).isValid)) throw error('Actualiza el menú antes de confirmar.');
   return { fecha: entrada.fecha, turno, zona: entrada.zona, responsable_numero: String(entrada.responsable_numero).trim(),
-    items: valida.items, idempotencia: entrada.idempotencia, version: entrada.version || null,
+    items: valida.items, idempotencia: entrada.idempotencia, version: entrada.version || null, menu_version: entrada.menu_version || null,
     entrega_programada_en: DateTime.fromISO(entrada.fecha + 'T' + entrada.hora_entrega, { zone: ZONA }).toISO() };
 }
 
 function traducir(err) {
   if (['PGRST202', '42883'].includes(err.code)) return error('La actualización de coberturas aún no está disponible. Avisa a administración.', 503);
   const casos = [
+    ['menu_cobertura_desactualizado', 'El menú cambió desde que abriste este pedido. Vuelve a Mis pedidos, actualiza y abre un nuevo pedido para elegir entre las opciones vigentes.'],
     ['anticipacion_cobertura_insuficiente', 'Se requieren al menos dos horas antes de la entrega. Para cambiar un folio, debe haber margen tanto en su horario actual como en el nuevo.'],
     ['solicitud_cobertura_no_encontrada', 'No se encontró ese folio entre tus pedidos.'],
     ['version_cobertura_desactualizada', 'Este folio cambió en otra sesión. Actualiza tus pedidos antes de editarlo.'],
@@ -47,14 +49,16 @@ export async function estadoLotesSupervisor(supervisorId) {
     abierto: menu?.activo === true && redondeada.toISODate() === fecha,
     motivo: !menu?.activo ? 'sin_menu_especial' : redondeada.toISODate() !== fecha ? 'sin_ventana_hoy' : null,
     hora_minima: redondeada.toISODate() === fecha ? redondeada.toFormat('HH:mm') : null,
-    menu: menu?.activo ? { opciones: [1, 2, 3].map(i => ({ id: 'especial_' + i, texto: menu['opcion_' + i] })) } : null,
-    solicitudes: solicitudes.map(s => ({ ...s, ...ventanaLoteCobertura(s, ahora) })) };
+    menu: menu?.activo ? { version:menu.actualizado_en, opciones: [1, 2, 3].map(i => ({ id: 'especial_' + i, texto: menu['opcion_' + i] })) } : null,
+    solicitudes: solicitudes.map(s => ({ ...s, ...ventanaLoteCobertura(s, ahora),
+      menu: s.menu_snapshot ? {opciones:[1,2,3].map(i => ({id:'especial_'+i,texto:s.menu_snapshot['opcion_'+i]}))} : null })) };
 }
 
 export async function guardarLoteSupervisor(supervisorId, entrada, solicitudId = null) {
   const datos = validarEntradaLote(entrada);
   try {
     return await db.guardarLoteSupervisor({ ...datos, supervisor_id: supervisorId,
+      version: solicitudId == null ? datos.menu_version : datos.version,
       solicitud_id: solicitudId == null ? null : idLote(solicitudId),
       folio: 'CE-' + datos.fecha.replaceAll('-', '') + '-' + crypto.randomBytes(4).toString('hex').toUpperCase() });
   } catch (err) { throw traducir(err); }

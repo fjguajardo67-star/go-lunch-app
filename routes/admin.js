@@ -298,7 +298,25 @@ adminRouter.post('/cobertura/supervisores/:id/clave', async (req, res) => {
   }
 });
 
+adminRouter.get('/cobertura/menu', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const inicio = DateTime.fromISO(String(req.query.inicio || ''), {zone:ZONA_COMEDOR});
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.inicio || '') || !inicio.isValid || inicio.weekday !== 1)
+    return res.status(400).json({error:'Selecciona una semana válida, de lunes a domingo.'});
+  try {
+    const fin = inicio.plus({days:6}).toISODate();
+    const {menus, solicitudes} = await db.getSemanaMenuCobertura(inicio.toISODate(), fin);
+    res.json({inicio:inicio.toISODate(),fin,dias:Array.from({length:7}, (_, i) => {
+      const fecha = inicio.plus({days:i}).toISODate();
+      const menu = menus.find(m => m.fecha === fecha) || null;
+      const cantidad = solicitudes.filter(s => s.fecha_servicio === fecha).length;
+      return {fecha,menu,edicion:estadoEdicionMenuFecha(menu,cantidad,fecha)};
+    })});
+  } catch (err) {res.status(500).json({error:'No se pudo consultar la semana. Intenta de nuevo.'});}
+});
+
 adminRouter.get('/cobertura/menu/:fecha', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
     const [menu, solicitudes] = await Promise.all([db.getMenuCobertura(req.params.fecha), db.contarSolicitudesCobertura(req.params.fecha)]);
     res.json({ menu, edicion: estadoEdicionMenuFecha(menu, solicitudes, req.params.fecha) });
