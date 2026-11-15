@@ -381,6 +381,28 @@
   tbody tr:hover { background: var(--azul-light); }
   th, td { text-align: left; }
 
+  /* Platillos completos: el ancho se mantiene y la altura sigue al texto. */
+  #tablaMenuBox table { table-layout: fixed; }
+  #tablaMenuBox td { padding-inline: 4px; }
+  #tablaMenuBox .menu-cell {
+    display: block; width: 100%; min-width: 0; max-width: 100%;
+    height: auto; min-height: 4.4rem; padding: 8px;
+    font: inherit; font-size: 1rem; line-height: 1.4;
+    white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: hidden;
+    border-radius: 6px; resize: vertical; field-sizing: content;
+  }
+  @supports not (field-sizing: content) {
+    .menu-celda { display: grid; min-width: 0; }
+    .menu-celda::after, #tablaMenuBox .menu-celda > .menu-cell { grid-area: 1 / 1 / 2 / 2; }
+    .menu-celda::after {
+      content: attr(data-valor) " "; visibility: hidden;
+      box-sizing: border-box; min-height: 4.4rem; padding: 8px;
+      border: 1.5px solid transparent;
+      font: inherit; font-size: 1rem; line-height: 1.4;
+      white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+  }
+
   /* ── Badge ── */
   .badge {
     font-size: .75rem; padding: 3px 9px;
@@ -3083,6 +3105,9 @@
 
 
   // ── Programar menú semanal ──
+  function ajustarCeldaMenu(celda) {
+    if (!CSS.supports('field-sizing', 'content')) celda.parentElement.dataset.valor = celda.value;
+  }
   // Refleja en la tabla semanal un menú recién guardado desde el formulario
   // de arriba. Actualiza solo esa fila en lugar de regenerar la tabla, para
   // no borrar lo que se haya escrito en los otros días sin guardar todavía.
@@ -3094,6 +3119,7 @@
     tr.style.background = '#f0f7f0';
     tr.querySelectorAll('.menu-cell').forEach(inp => {
       inp.value = menu[inp.dataset.campo] || '';
+      ajustarCeldaMenu(inp);
       inp.setAttribute('readonly', '');
       inp.style.background = '#e8f5e9';
       inp.style.cursor = 'default';
@@ -3146,8 +3172,8 @@
     }));
     av.textContent = '';
 
-    let htmlTabla = '<div style="overflow-x:auto"><table style="min-width:700px">';
-    htmlTabla += '<thead><tr><th style="min-width:120px">Fecha</th>';
+    let htmlTabla = '<div style="overflow-x:auto"><table style="min-width:950px">';
+    htmlTabla += '<thead><tr><th style="width:170px">Fecha</th>';
     htmlTabla += '<th>Opcion A</th><th>Opcion B</th><th>Opcion C</th>';
     htmlTabla += '<th>Variable 1</th><th>Variable 2</th><th>Variable 3</th></tr></thead><tbody>';
 
@@ -3173,13 +3199,11 @@
       }
       htmlTabla += '</td>';
 
-      ['fija_a','fija_b','fija_c','var_1','var_2','var_3'].forEach(campo => {
-        const val = datos ? (datos[campo] || '') : '';
-        if (datos) {
-          htmlTabla += '<td><input type="text" class="menu-cell" data-campo="' + campo + '" value="' + val.replace(/"/g,'&quot;') + '" placeholder="&#8212;" readonly style="padding:6px 8px;font-size:.82rem;border-radius:6px;width:100%;min-width:90px;background:#e8f5e9;cursor:default"></td>';
-        } else {
-          htmlTabla += '<td><input type="text" class="menu-cell" data-campo="' + campo + '" value="' + val + '" placeholder="&#8212;" style="padding:6px 8px;font-size:.82rem;border-radius:6px;width:100%;min-width:90px"></td>';
-        }
+      ['fija_a','fija_b','fija_c','var_1','var_2','var_3'].forEach((campo, indice) => {
+        const texto = escaparHtml(datos ? (datos[campo] || '') : '');
+        const etiqueta = ['Opción A','Opción B','Opción C','Variable 1','Variable 2','Variable 3'][indice] + ' · ' + label;
+        htmlTabla += '<td><div class="menu-celda" data-valor="' + texto + '"><textarea class="menu-cell" data-campo="' + campo + '" aria-label="' + escaparHtml(etiqueta) + '" rows="3" oninput="ajustarCeldaMenu(this)"' +
+          (datos ? ' readonly style="background:#e8f5e9;cursor:default"' : '') + '>' + texto + '</textarea></div></td>';
       });
       htmlTabla += '</tr>';
     }
