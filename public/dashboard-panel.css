@@ -1,0 +1,52 @@
+.dash-vistas { display:flex; gap:8px; overflow-x:auto; padding:4px 4px 0; border-bottom:1px solid var(--gris-line); }
+.dash-vistas button { flex:none; position:relative; min-height:48px; padding:12px 16px; border:0; background:transparent; color:var(--gris-text); font:inherit; font-weight:700; cursor:pointer; }
+.dash-vistas button[aria-selected=true] { color:var(--azul); }
+.dash-vistas button[aria-selected=true]::after { content:""; position:absolute; inset:auto 0 0; border-bottom:3px solid var(--azul); }
+#dashboardBox [hidden] { display:none!important; }
+.dash-contenido { padding-block:20px; min-width:0; }
+.dash-total { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+.dash-total > strong { font-size:2.5rem; line-height:1.15; color:var(--azul); font-variant-numeric:tabular-nums; }
+.dash-total h4 { font-size:1.1rem; }
+.dash-total p { color:var(--gris-text); font-size:.95rem; margin-top:3px; }
+.dash-filtros { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.dash-filtros button { display:flex; align-items:center; gap:12px; min-height:48px; padding:10px 14px; border:1.5px solid var(--control-line); border-radius:8px; background:var(--blanco); color:var(--tinta); font:inherit; cursor:pointer; }
+.dash-filtros button strong { font-size:1.15rem; font-variant-numeric:tabular-nums; }
+.dash-filtros button[aria-pressed=true] { border-color:var(--azul); background:var(--azul-light); text-decoration:underline; text-underline-offset:4px; }
+.dash-filtros button:disabled { cursor:default; color:var(--gris-text); border-color:var(--gris-line); }
+.dash-nota { font-size:.9rem; line-height:1.55; color:var(--gris-text); margin-top:12px; }
+.dash-listado-titulo { margin:24px 0 10px; font-size:1rem; }
+.dash-desglose { padding:16px 0; margin-top:16px; border-block:1px solid var(--gris-line); }
+.dash-desglose h4 { font-size:1rem; }
+.dash-meta { display:block; margin-top:4px; font-size:.85rem; font-weight:400; color:var(--gris-text); overflow-wrap:anywhere; }
+.dash-tabla { container:dashboard / inline-size; max-width:100%; overflow:auto; max-height:640px; }
+.dash-tabla table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; }
+.dash-tabla caption { text-align:left; font-size:.9rem; color:var(--gris-text); padding-bottom:10px; }
+.dash-tabla thead { position:sticky; top:0; z-index:2; }
+.dash-tabla th, .dash-tabla td { padding:12px 10px; font-size:.9rem; line-height:1.5; vertical-align:top; overflow-wrap:anywhere; }
+.dash-tabla thead th { text-transform:none; letter-spacing:0; font-size:.85rem; }
+.dash-celda-valor { min-width:0; }
+.dash-tabla tbody th { position:sticky; left:0; background:var(--blanco); font-weight:600; border-bottom:1px solid var(--gris-line); }
+.dash-tabla tr { background:var(--blanco); }
+.dash-tabla tr[data-estado=pendiente] { background:#fff9e6; }
+.dash-tabla tr[data-estado=no_surtido] { background:var(--gris-bg); }
+.dash-tabla tr[data-estado=pendiente] th { background:#fff9e6; }
+.dash-tabla tr[data-estado=no_surtido] th { background:var(--gris-bg); }
+.dash-incidencia { display:block; min-height:44px; margin-top:8px; padding:8px; background:var(--blanco); border:1px solid var(--control-line); border-radius:6px; color:var(--azul); font:inherit; font-size:.85rem; cursor:pointer; }
+.dash-frescura { font-size:.8rem; color:var(--gris-text); margin-top:12px; text-align:right; }
+.dash-vacio, .dash-aviso { padding:16px 0; font-size:1rem; line-height:1.6; }
+@container dashboard (max-width:640px) {
+  .dash-tabla caption { display:block; width:100%; }
+  .dash-tabla table, .dash-tabla tbody, .dash-tabla tr, .dash-tabla th, .dash-tabla td { display:block; width:100%; }
+  .dash-tabla thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .dash-tabla tbody tr { border-bottom:1px solid var(--gris-line); margin-bottom:14px; }
+  .dash-tabla tbody th { position:static; border:0; padding:12px 10px; font-size:1rem; }
+  .dash-tabla td { display:grid; grid-template-columns:minmax(90px,35%) minmax(0,1fr); gap:10px; border:0; padding:8px 10px; }
+  .dash-tabla td::before { content:attr(data-label); font-weight:600; color:var(--gris-text); }
+}
+@media (max-width:640px) {
+  .dash-vistas { gap:0; padding-inline:0; }
+  .dash-vistas button { padding-inline:6px; font-size:.9rem; }
+  .dash-filtros button { flex:1 1 130px; justify-content:space-between; }
+  .dash-total > strong { font-size:2rem; }
+  .dash-tabla { max-height:none; }
+}

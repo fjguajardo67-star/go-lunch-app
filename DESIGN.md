@@ -77,7 +77,11 @@ también a `PRECARGA`.
 
 El total de comidas muestra el desglose de regulares y coberturas, incluidas extraordinarias vigentes. Los indicadores de empleados activos cuentan personas únicas; los de entrega cuentan comidas. Cada comida ocupa una fila que identifica empleado, servicio, folio y horario, de modo que una cobertura no sobrescriba un pedido regular. Se excluyen coberturas canceladas, se conserva el historial de empleados desactivados y las extraordinarias se califican contra su hora autorizada. El refresco de 30 segundos se mantiene.
 
-Los indicadores se presentan en dos bloques con unidades explícitas: Comidas primero, con tarjetas Regulares, Coberturas, Total de comidas, Entregadas, Pendientes y No surtidas · Sin cargo; Empleados después, con Activos, Con pedido, Vieron sin pedir y No abrieron. Las tardías se muestran como subconjunto de las entregadas. En móvil, Regulares y Coberturas comparten fila, Total ocupa el ancho y Entregadas/Pendientes quedan juntas debajo.
+Las vistas «Comidas y entregas» y «Empleados» se seleccionan con pestañas subrayadas y navegación por teclado. La primera es la entrada predeterminada y contiene únicamente comidas, con filtros Todas, Por entregar, Entregadas y No surtidas · Sin cargo. El desglose regular/cobertura permanece junto al total solicitado; las tardías son un subconjunto de entregadas. La acción de incidencia conserva la identidad original de la comida al filtrar.
+
+Empleados contiene únicamente la plantilla activa: Activos = Con pedido + Sin pedido. Dentro de Sin pedido aparecen Ingresaron y Sin ingreso registrado como subgrupos, nunca como cifras paralelas a su total. La vista se abre en Sin pedido y cuenta cada persona una sola vez. Si no hay datos de accesos, los subgrupos quedan desactivados y sus cifras son desconocidas; no se atribuye una ausencia de ingreso. Las comidas históricas de personas inactivas permanecen en Comidas y entregas.
+
+En escritorio, las tablas semánticas permiten desplazamiento con encabezados visibles y texto completo. En móvil, las filas se apilan y cada celda conserva su etiqueta. Los filtros ofrecen áreas de al menos 48 px. El refresco conserva la selección y el desplazamiento; el reporte diario continúa generando toda la fecha de servicio, independientemente del filtro de pantalla.
 
 ## Etiquetas de reparto
 

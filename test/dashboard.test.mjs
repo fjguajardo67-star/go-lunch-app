@@ -79,6 +79,7 @@ test('API integra ambas fuentes para gerente y admin; no oculta fallos de cobert
     for(const [usuario,clave] of [['admin',process.env.ADMIN_KEY],['gerente',process.env.GERENTE_KEY]]){
       const r=await fetch(url+d.fecha,{headers:{'x-panel-user':usuario,'x-admin-key':clave}});assert.equal(r.status,200);
       const b=await r.json();assert.equal(b.resumen.total_comidas,65);assert.equal(b.resumen.ordenaron,62);assert.equal(b.resumen.coberturas,4);
+      assert.equal(b.personas.length,131);assert.equal(b.personas.filter(p=>p.comidas>0).length,62);
     }
     assert.equal((await fetch(url+d.fecha)).status,401);
     const otro=await fetch(url+'2026-11-08',{headers:{'x-admin-key':process.env.ADMIN_KEY}});assert.equal((await otro.json()).resumen.total_comidas,0);

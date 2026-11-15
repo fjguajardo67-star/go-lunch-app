@@ -301,12 +301,6 @@
   #cov-extra-form input, #cov-extra-form select, #cov-extra-form textarea { scroll-margin-top: 120px; }
   #cov-extra-form [aria-invalid="true"] { border-color: var(--rojo); }
   #cov-extra-form .extra-error { color: var(--rojo); font-size: .8rem; margin-top: 5px; }
-  .dashboard-bloque { margin-bottom: 24px; }
-  .dashboard-grupo-titulo { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; }
-  .dashboard-grupo-titulo h4 { font-size: 1rem; }
-  .dashboard-grupo-titulo p, .dashboard-nota { font-size: .8rem; color: var(--gris-text); }
-  .dashboard-metricas { display: grid; gap: 10px; }
-  .dashboard-comidas { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .incidencia-dialog { color:var(--tinta); background:#fff; border:1px solid var(--gris-line); border-radius:12px; padding:24px; width:min(560px,calc(100% - 32px)); max-height:90dvh; overflow:auto; margin:auto; }
   .incidencia-dialog::backdrop { background:rgba(12,27,53,.55); }
   .incidencia-dialog h2 { font-size:1.25rem; margin:0 0 16px; }
@@ -317,23 +311,6 @@
   .incidencia-dialog .confirmacion input { width:20px; height:20px; flex-shrink:0; }
   .incidencia-dialog .acciones { display:flex; gap:12px; justify-content:flex-end; flex-wrap:wrap; }
   .incidencia-detalle { display:block; white-space:normal; max-width:32ch; font-size:.8rem; line-height:1.4; margin:5px 0; overflow-wrap:anywhere; }
-  .dashboard-empleados { grid-template-columns: repeat(4, minmax(0,1fr)); }
-  .dashboard-metrica {
-    min-width: 0; padding: 14px 10px; border-radius: 9px;
-    background: var(--gris-bg); color: var(--tinta); text-align: center;
-  }
-  .dashboard-metrica strong { display: block; font-size: 1.75rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
-  .dashboard-metrica span { display: block; margin-top: 5px; font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
-  .dashboard-metrica.azul { background: var(--azul-light); color: var(--azul); }
-  .dashboard-metrica.total { background: var(--azul); color: var(--blanco); }
-  .dashboard-metrica.verde { background: #f0f7f0; color: var(--verde); }
-  .dashboard-metrica.ambar { background: #fff9e6; color: #7d5b12; }
-  .dashboard-empleados .dashboard-metrica strong { font-size: 1.5rem; }
-  .dashboard-nota { margin-top: 10px; }
-  .dashboard-tardias { margin-top: 10px; font-size: .85rem; color: var(--gris-text); }
-  .dashboard-tardias.con-retrasos { color: var(--rojo); }
-  .dashboard-servicio { font-size: .8rem; color: var(--gris-text); }
-  .dashboard-servicio { display: block; overflow-wrap: anywhere; }
 
   /* ── Buttons ── */
   button.accion {
@@ -662,8 +639,6 @@
   
   @media (max-width: 640px) {
     .grid2, .grid3 { grid-template-columns: 1fr; }
-    .dashboard-comidas, .dashboard-empleados { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .dashboard-comidas .total { grid-column: 1 / -1; }
     .header-title { display: none; }
     .wrap { padding: 16px; }
     .cocina-encabezado { align-items: flex-start; flex-direction: column; }
@@ -703,6 +678,7 @@
   }
 </style>
 <link rel="stylesheet" href="/menu-cobertura-semanal.css?v=73">
+<link rel="stylesheet" href="/dashboard-panel.css?v=76">
 </head>
 <body>
 
@@ -865,7 +841,7 @@
              nunca consultó esa tabla, así que el panel prometía un dato que no
              existía y esos dos estados no podían aparecer nunca. -->
         <p style="font-size:.85rem;color:var(--gris-text);margin-bottom:14px">
-          Pedidos regulares y coberturas de la fecha seleccionada. Cada comida conserva su estado de entrega; un empleado puede tener más de una fila.
+          Consulta las comidas y sus entregas, o revisa qué empleados tienen pedido para la fecha seleccionada.
         </p>
         <div class="row-fin">
           <div><label for="db-fecha">Fecha de servicio</label><input type="date" id="db-fecha" style="max-width:180px"></div>
@@ -876,13 +852,6 @@
           <button class="accion sec" id="db-reporte" type="button" onclick="imprimirReporteEntregas()">Reporte diario / PDF</button>
         </div>
         <p id="db-reporte-aviso" role="status" aria-live="polite"></p>
-        <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:.8rem;color:var(--gris-text)">
-          <span>✅ Entregado</span>
-          <span>⏱️ Tardía</span>
-          <span>⬜ Pendiente — pidió, falta entregarle</span>
-          <span>👀 Vio el menú, no pidió</span>
-          <span>— No abrió la app</span>
-        </div>
         <div id="dashboardBox" style="margin-top:18px"></div>
       </div>
     </section>
@@ -1423,6 +1392,7 @@
 <script src="/bitacora-rutas.js"></script>
 <script src="/reportes-excel.js"></script>
 <script src="/incidencias-panel.js"></script>
+<script src="/dashboard-panel.js"></script>
 <script>
 
   // ⚙️ La URL pública del backend en Railway; en local usa el mismo origen
@@ -1718,10 +1688,10 @@
   //   · solo con la ventana al frente — un panel olvidado en una tablet no
   //     debe seguir consultando toda la noche contra el plan Free de Supabase.
   const REFRESCO_MS = 30000;
-  let temporizadorDash = null, ultimoDash = null, filasDashboard = [], fechaDashboard = null, consultaDashboard = 0;
+  let temporizadorDash = null, ultimoDash = null, filasDashboard = [], fechaDashboard = null, consultaDashboard = 0, dashboardPanel = null;
   document.getElementById('db-fecha').addEventListener('change', () => {
     consultaDashboard++; filasDashboard = []; fechaDashboard = null;
-    document.getElementById('dashboardBox').textContent = 'La fecha cambió. Pulsa Consultar para cargar sus comidas.';
+    document.getElementById('dashboardBox').textContent = 'La fecha cambió. Pulsa Consultar para cargar el dashboard de esa fecha.';
   });
   function registrarIncidencia(indice) {
     const fila = filasDashboard[indice];
@@ -1778,100 +1748,21 @@
     try {
       const data = await api('/api/dashboard/' + fecha);
       if (consulta !== consultaDashboard || fecha !== document.getElementById('db-fecha').value) return;
-      const r = data.resumen, filas = data.filas || [];
-      filasDashboard = filas; fechaDashboard = fecha;
-      if (!filas.length) { box.innerHTML = '<div class="vacio">No hay empleados activos.</div>'; return; }
-
-      const tarjeta = (n, etiqueta, variante = '') =>
-        '<div class="dashboard-metrica ' + variante + '"><strong>' + (n ?? '—') + '</strong><span>' + etiqueta + '</span></div>';
-
-      let h = '<section class="dashboard-bloque" aria-labelledby="dash-comidas-titulo">' +
-        '<div class="dashboard-grupo-titulo"><h4 id="dash-comidas-titulo">Comidas</h4><p>Regulares + coberturas = total</p></div>' +
-        '<div class="dashboard-metricas dashboard-comidas">';
-      h += tarjeta(r.regulares, 'Regulares');
-      h += tarjeta(r.coberturas, 'Coberturas', 'azul');
-      h += tarjeta(r.total_comidas, 'Total de comidas', 'total');
-      h += tarjeta(r.entregados, 'Entregadas', 'verde');
-      h += tarjeta(r.pendientes, 'Pendientes', 'ambar');
-      h += tarjeta(r.no_surtidos || 0, 'No surtidas · Sin cargo');
-      h += '</div><p class="dashboard-nota">Entregadas + pendientes + no surtidas = total de comidas. Las no surtidas se excluyen del descuento al empleado.</p><p class="dashboard-tardias' + (r.tardias > 0 ? ' con-retrasos' : '') + '"><strong>' +
-        r.tardias + (r.tardias === 1 ? ' entrega tardía' : ' entregas tardías') + '</strong> · Incluidas en las entregadas.</p></section>';
-
-      h += '<section class="dashboard-bloque" aria-labelledby="dash-empleados-titulo">' +
-        '<div class="dashboard-grupo-titulo"><h4 id="dash-empleados-titulo">Empleados</h4></div>' +
-        '<div class="dashboard-metricas dashboard-empleados">';
-      h += tarjeta(r.activos, 'Activos', 'azul');
-      h += tarjeta(r.ordenaron, 'Con pedido', 'verde');
-      h += tarjeta(r.vieron_no_ordenaron ?? 0, 'Vieron, no pidieron', 'ambar');
-      h += tarjeta(r.no_abrieron ?? r.no_ordenaron, 'No abrieron la app');
-      h += '</div><p class="dashboard-nota">Se cuenta cada empleado activo una sola vez, aunque tenga pedido regular y cobertura.</p></section>';
-
-      // Si la bitácora de accesos no se pudo leer, decirlo. Las dos cifras de
-      // arriba dejan de significar algo y hay que advertirlo antes de que
-      // alguien tome una decisión con ellas.
-      if (r.accesos_ok === false) {
-        h += '<div style="background:#fdecec;border-left:4px solid var(--rojo);border-radius:6px;' +
-             'padding:11px 14px;margin-bottom:16px;font-size:.83rem;color:var(--gris-text)">' +
-             '<strong style="color:var(--rojo)">No se pudo leer quién abrió la app.</strong> ' +
-             'Los ' + (r.sin_dato ?? 0) + ' marcados «Sin dato» pudieron haber entrado o no — ' +
-             'no lo sabemos. «Vieron, no pidieron» y «No abrieron la app» no son confiables ' +
-             'en esta consulta. Los pedidos y las entregas sí.' +
-             '</div>';
-      }
-
-      const ESTADO = {
-        entregado: ['✅ Entregado',  '#f0f7f0'],
-        tardia:    ['⏱️ Tardía',     '#fff9e6'],
-        pendiente:     ['⬜ Pendiente',        ''],
-        no_surtido:    ['No surtido · Sin cargo', '#eef2f7'],
-        vio_no_ordeno: ['👀 Vio, no pidió',   '#fff9e6'],
-        no_abrio:      ['— No abrió la app',  'var(--gris-bg)'],
-        // Cuando la bitácora de accesos falla no se puede saber si entró o no.
-        // Decirlo es lo correcto: afirmar "no abrió la app" sobre alguien que
-        // quizá sí entró manda a arreglar el problema equivocado.
-        sin_dato:      ['❓ Sin dato',         'var(--gris-bg)'],
-        // Se conserva por si la tabla de accesos aún no existe en la base:
-        // entonces el servidor sigue devolviendo el estado de antes.
-        no_ordeno:     ['— No ordenó',        'var(--gris-bg)']
-      };
-
-      h += '<div style="overflow-x:auto"><table style="min-width:850px"><tr>' +
-           '<th>Empleado</th><th>Servicio</th><th>Platillo</th><th>Zona</th><th>Turno y horario</th>' +
-           '<th>Hora de entrega</th><th>Estado</th></tr>';
-      filas.forEach((f, indice) => {
-        const [txt, bg] = ESTADO[f.estado] || ['—', ''];
-        const vacio = '<span style="color:#aaa">—</span>';
-        const servicio = f.tipo === 'cobertura' ? (f.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : f.platillo ? 'Regular' : '';
-        const horario = f.entrega_programada_en
-          ? (f.turno === 'turno_a' ? 'Turno A' : 'Turno B') + ' — ' + horaTxt(f.entrega_programada_en)
-          : f.turno ? turnoTxt(f.turno, f.zona, fecha) : '';
-        h += '<tr style="background:' + bg + '">' +
-             '<td>' + escaparHtml(f.nombre) + (f.numero_empleado ? '<span class="dashboard-servicio">#' + escaparHtml(f.numero_empleado) + '</span>' : '') + '</td>' +
-             '<td>' + (servicio ? escaparHtml(servicio) : vacio) + (f.folio ? '<span class="dashboard-servicio">' + escaparHtml(f.folio) + '</span>' : '') + '</td>' +
-             '<td>' + (f.platillo ? escaparHtml(f.platillo) : vacio) + '</td>' +
-             '<td style="font-size:.82rem">' + (f.zona ? zonaTxt(f.zona) : vacio) + '</td>' +
-             '<td style="font-size:.82rem">' + (horario || vacio) + '</td>' +
-             '<td style="font-size:.82rem;font-variant-numeric:tabular-nums">' + (f.no_surtido_en ? '—' + (f.entregado_en ? '<span class="incidencia-detalle">Marca previa rectificada: ' + horaTxt(f.entregado_en) + '</span>' : '') : horaTxt(f.entregado_en)) + '</td>' +
-             '<td style="font-size:.82rem">' + txt +
-               (f.no_surtido_en ? '<span class="incidencia-detalle">' + escaparHtml(f.no_surtido_motivo) + '</span><span class="incidencia-detalle">Registró: ' + escaparHtml(f.no_surtido_por) + ' · ' + escaparHtml(new Date(f.no_surtido_en).toLocaleString('es-MX',{timeZone:'America/Mexico_City'})) + '</span>' :
-                f.id && fecha <= fechaComedor() ? '<button type="button" class="accion sec" style="margin-top:8px;white-space:normal" onclick="registrarIncidencia(' + indice + ')">Registrar no surtido</button>' : '') +
-               (f.estado === 'tardia'
-                 ? '<div style="font-size:.75rem;color:var(--gris-text)">' +
-                   (f.motivo_tardia ? MOTIVO_TXT(f.motivo_tardia) : '⚠ sin motivo') + '</div>'
-                 : '') +
-             '</td></tr>';
+      filasDashboard = data.filas || []; fechaDashboard = fecha;
+      dashboardPanel ||= GoLunchDashboard.montar({
+        raiz: box,
+        hora: valor => valor ? horaTxt(valor) : '—',
+        registro: valor => new Date(valor).toLocaleString('es-MX', {timeZone: ZONA_COMEDOR}),
+        horario: (f, fechaServicio) => f.entrega_programada_en
+          ? (f.turno === 'turno_a' ? 'Turno A' : 'Turno B') + ' · ' + horaTxt(f.entrega_programada_en)
+          : f.turno ? turnoTxt(f.turno, f.zona, fechaServicio) : 'Sin horario',
+        zona: zonaTxt,
+        motivo: MOTIVO_TXT,
+        puedeIncidencia: fechaServicio => fechaServicio <= fechaComedor(),
+        alIncidencia: registrarIncidencia
       });
-      h += '</table></div>';
-
-      // Sello de frescura. Sin él, una pantalla que se actualiza sola y una
-      // congelada se ven idénticas, y la segunda engaña más que no tener nada.
       ultimoDash = Date.now();
-      const vivo = esHoy();
-      h += '<p style="margin-top:12px;font-size:.75rem;color:var(--gris-text);text-align:right">' +
-           (vivo ? '<span style="color:var(--verde)">●</span> Se actualiza solo cada 30 s · '
-                 : 'Consulta histórica · ') +
-           'actualizado <span id="dashDesde">hace un momento</span></p>';
-      box.innerHTML = h;
+      dashboardPanel.actualizar({...data, enVivo: esHoy()});
       programarRefresco();
     } catch(e) {
       // En refresco automático NO se borra la tabla: un parpadeo de red dejaría
@@ -1879,7 +1770,7 @@
       // válido. El sello de "actualizado hace X" se encarga de delatar que la
       // información se está quedando vieja.
       if (silencioso || consulta !== consultaDashboard || fecha !== document.getElementById('db-fecha').value) return;
-      box.innerHTML = '<p class="aviso err">Error: ' + e.message + '</p>';
+      box.innerHTML = '<p class="aviso err">Error: ' + escaparHtml(e.message) + '</p>';
     }
   }
 
