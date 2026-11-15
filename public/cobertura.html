@@ -6,8 +6,9 @@
 <meta name="theme-color" content="#061b44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Coberturas">
 <title>Cobertura · Go Lunch</title>
-<link rel="manifest" href="/app-pedido.webmanifest">
+<link rel="manifest" href="/app-cobertura.webmanifest">
 <link rel="icon" type="image/png" href="/icono-32.png">
 <link rel="apple-touch-icon" href="/icono-180.png">
 <style>
@@ -34,6 +35,9 @@
   .pedido{padding:16px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.pedido h3{font-size:.9rem;margin:0 0 6px}.pedido p{font-size:.82rem;line-height:1.5;margin:4px 0}.pedido small{display:block;font-size:.76rem;line-height:1.5;color:var(--muted)}.pedido details{margin-top:10px;font-size:.8rem}.pedido summary{cursor:pointer;padding:8px 0;min-height:40px}.pedido ul{padding-left:20px;line-height:1.6}.pedido-acciones{display:flex;gap:8px;flex-wrap:wrap}.pedido-acciones .btn{width:auto;min-height:44px;margin-top:10px;padding:8px 14px}.sesion-acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.sesion-acciones .btn{width:auto;flex:1;margin:0;padding:12px}.enlace-volver{margin-bottom:12px;min-height:44px}.hora-ayuda{font-size:.8rem;line-height:1.5;color:var(--muted);margin:6px 0}button:focus-visible,summary:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
   @media(max-width:400px){.brand-copy{display:none}.logos{margin:auto}.lead h1{font-size:1.55rem}.timing b{font-size:.75rem}.timing span{font-size:.75rem}.receipt-actions{grid-template-columns:1fr}}
   @media(prefers-reduced-motion:no-preference){.panel{animation:in .3s cubic-bezier(.16,1,.3,1)}@keyframes in{from{transform:translateY(8px);opacity:.5}to{transform:none;opacity:1}}}
+  .instalacion{margin:0 18px 16px;color:var(--ink);font-size:.9rem;line-height:1.55}
+  .instalacion summary{cursor:pointer;min-height:48px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:3px}
+  .instalacion p{margin:8px 0}
 </style>
 </head>
 <body>
@@ -107,6 +111,12 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
     </section>
   </main>
+<details class="instalacion">
+  <summary>Guardar acceso de supervisores</summary>
+  <p>Guarda esta página como <b>Coberturas</b> para abrir directamente el acceso de supervisor.</p>
+  <p><b>iPhone:</b> en Safari, toca Compartir y Añadir a pantalla de inicio. <b>Android:</b> abre el menú de Chrome y elige Instalar aplicación o Añadir a pantalla de inicio.</p>
+  <p>Si tu acceso anterior abre Pedidos, vuelve a añadirlo desde esta página. Ingresa con tu número de empleado y tu clave personal de supervisor.</p>
+</details>
   <footer class="footer"><a href="/pedido.html">Volver al pedido personal</a></footer>
 </div>
 

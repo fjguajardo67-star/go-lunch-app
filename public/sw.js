@@ -41,6 +41,7 @@ const PRECARGA = [
   '/cobertura.html',
   '/app-entrega.webmanifest',
   '/app-pedido.webmanifest',
+  '/app-cobertura.webmanifest',
   '/app-admin.webmanifest',
   '/icono-16.png',
   '/icono-32.png',
