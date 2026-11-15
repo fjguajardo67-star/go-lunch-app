@@ -27,6 +27,7 @@
     --blanco:     #ffffff;
     --gris-bg:    #f4f6fb;
     --gris-line:  #dde3ef;
+    --control-line: #7b879c;
     --gris-text:  #5a6480;
     --tinta:      #0d1b3e;
     --rojo:       #c0392b;
@@ -87,7 +88,7 @@
     width: 100%; padding: 11px 13px;
     border: 1.5px solid var(--gris-line);
     border-radius: 8px;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-family: inherit;
     background: var(--gris-bg);
     color: var(--tinta);
@@ -259,15 +260,15 @@
   .card h3 { font-size: .95rem; font-weight: 700; color: var(--tinta); }
 
   /* ── Form ── */
-  label {
+  label, .zonas-repartidor legend {
     display: block; font-size: .75rem; font-weight: 700;
     color: var(--gris-text); margin: 12px 0 4px;
     text-transform: uppercase; letter-spacing: .04em;
   }
-  input[type=text], input[type=password], input[type=date], input[type=number], select {
-    width: 100%; padding: 9px 12px;
-    border: 1.5px solid var(--gris-line); border-radius: 8px;
-    font-size: .9rem; font-family: inherit;
+  input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]), select, textarea {
+    width: 100%; min-width: 0; max-width: 100%; min-height: 48px; padding: 10px 12px;
+    border: 1.5px solid var(--control-line); border-radius: 8px;
+    font: inherit; font-size: 1rem;
     background: var(--gris-bg); color: var(--tinta);
     transition: border-color .15s, background .15s;
   }
@@ -275,6 +276,17 @@
     outline: none; border-color: var(--azul); background: #fff;
     box-shadow: 0 0 0 3px var(--azul-light);
   }
+  :is(input, select, textarea, button, summary, a):focus-visible {
+    outline: 3px solid var(--azul); outline-offset: 3px;
+  }
+  input[aria-invalid=true] { border-color: var(--rojo); }
+  .gate input.login-input { padding: 13px 14px 13px 38px; border-radius: 10px; margin: 0; }
+  .gate input:focus-visible { outline: 3px solid var(--azul); outline-offset: 3px; }
+  .gate .btn-entrar { min-height: 48px; font-size: 1rem; }
+  #empleado-form button[type=submit] { min-height: 48px; }
+  .zonas-repartidor { border: 0; padding: 0; min-width: 0; }
+  .zonas-repartidor label { min-height: 48px; }
+  .grid2 > div, .grid3 > div { min-width: 0; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
   #cov-extra-form .grid2 > div, #cov-extra-form .grid3 > div { min-width: 0; }
@@ -674,30 +686,32 @@
 
 <!-- ── Puerta de acceso ── -->
 <div id="gate" class="gate-wrap">
-  <div class="gate">
+  <form class="gate" id="panel-login" aria-labelledby="panel-login-titulo" onsubmit="event.preventDefault(); entrar()">
     <div style="text-align:center;margin-bottom:24px">
       <img src="/go-lunch.svg" alt="CICSA Go Lunch" width="1254" height="627" style="width:auto;height:auto;max-height:150px;max-width:300px">
     </div>
-    <h2 style="font-size:1.2rem;font-weight:700;color:var(--azul);margin-bottom:20px;text-align:left">Iniciar Sesión</h2>
+    <h2 id="panel-login-titulo" style="font-size:1.2rem;font-weight:700;color:var(--azul);margin-bottom:20px;text-align:left">Iniciar Sesión</h2>
+    <label for="adminUser">Usuario</label>
     <div style="position:relative;margin-bottom:14px">
       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#8b95ad;line-height:0" aria-hidden="true">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="8" cy="5.2" r="2.6"/><path d="M2.9 13.3c0-2.5 2.3-4 5.1-4s5.1 1.5 5.1 4"/>
         </svg>
       </span>
-      <input type="text" id="adminUser" placeholder="Usuario" style="padding:13px 14px 13px 38px;border:1.5px solid var(--gris-line);border-radius:10px;width:100%;font-size:.95rem;box-sizing:border-box;outline:none" />
+      <input class="login-input" type="text" id="adminUser" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="admin o gerente" />
     </div>
+    <label for="adminKey">Contraseña</label>
     <div style="position:relative;margin-bottom:22px">
       <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#8b95ad;line-height:0" aria-hidden="true">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3.3" y="7" width="9.4" height="6.3" rx="1.6"/><path d="M5.7 7V5.3a2.3 2.3 0 0 1 4.6 0V7"/>
         </svg>
       </span>
-      <input type="password" id="adminKey" placeholder="Password" style="padding:13px 14px 13px 38px;border:1.5px solid var(--gris-line);border-radius:10px;width:100%;font-size:.95rem;box-sizing:border-box;outline:none" />
+      <input class="login-input" type="password" id="adminKey" name="password" autocomplete="current-password" required aria-describedby="gateErr" />
     </div>
-    <button class="btn-entrar" onclick="entrar()" style="width:100%;padding:14px;font-size:1rem;border-radius:10px">Ingresar</button>
-    <div id="gateErr" class="gate-err"></div>
-  </div>
+    <button id="btn-panel-entrar" type="submit" class="btn-entrar" style="width:100%;padding:14px;font-size:1rem;border-radius:10px">Ingresar</button>
+    <div id="gateErr" class="gate-err" role="alert"></div>
+  </form>
   <!-- La firma blanca recortada conserva únicamente el dibujo: sin lienzo,
        sin padding del archivo y directamente sobre el azul corporativo. -->
   <img class="gate-client-logo" src="/glovis-white.svg" alt="Hyundai Glovis"
@@ -764,17 +778,17 @@
           <div class="card-icon">📋</div>
           <h3>Publicar menú del día</h3>
         </div>
-        <label>Fecha del menú</label>
+        <label for="m-fecha">Fecha del menú</label>
         <input type="date" id="m-fecha" style="max-width:200px"/>
         <div class="grid3" style="margin-top:4px">
-          <div><label>Opción A — Fija</label><input id="m-fija_a" placeholder="Ej. Pechuga a la plancha"></div>
-          <div><label>Opción B — Fija</label><input id="m-fija_b" placeholder="Ej. Ensalada César"></div>
-          <div><label>Opción C — Fija</label><input id="m-fija_c" placeholder="Ej. Bajo en calorías"></div>
+          <div><label for="m-fija_a">Opción A — Fija</label><input type="text" id="m-fija_a" placeholder="Ej. Pechuga a la plancha"></div>
+          <div><label for="m-fija_b">Opción B — Fija</label><input type="text" id="m-fija_b" placeholder="Ej. Ensalada César"></div>
+          <div><label for="m-fija_c">Opción C — Fija</label><input type="text" id="m-fija_c" placeholder="Ej. Bajo en calorías"></div>
         </div>
         <div class="grid3">
-          <div><label>Variable 1</label><input id="m-var_1" placeholder="Platillo del día"></div>
-          <div><label>Variable 2</label><input id="m-var_2" placeholder="Platillo del día"></div>
-          <div><label>Variable 3</label><input id="m-var_3" placeholder="Platillo del día"></div>
+          <div><label for="m-var_1">Variable 1</label><input type="text" id="m-var_1" placeholder="Platillo del día"></div>
+          <div><label for="m-var_2">Variable 2</label><input type="text" id="m-var_2" placeholder="Platillo del día"></div>
+          <div><label for="m-var_3">Variable 3</label><input type="text" id="m-var_3" placeholder="Platillo del día"></div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="accion" onclick="guardarMenu()">Guardar menú</button>
@@ -793,11 +807,11 @@
         </div>
         <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px">
           <div style="flex:0 0 160px">
-            <label>Fecha de inicio</label>
+            <label for="per-inicio">Fecha de inicio</label>
             <input type="date" id="per-inicio" style="width:160px">
           </div>
           <div style="flex:0 0 200px">
-            <label>Periodo</label>
+            <label for="per-dias">Periodo</label>
             <select id="per-dias" style="width:200px">
               <option value="5">5 días (semana)</option>
               <option value="7">7 días</option>
@@ -832,7 +846,7 @@
           Pedidos regulares y coberturas de la fecha seleccionada. Cada comida conserva su estado de entrega; un empleado puede tener más de una fila.
         </p>
         <div class="row-fin">
-          <div><label>Fecha de servicio</label><input type="date" id="db-fecha" style="max-width:180px"></div>
+          <div><label for="db-fecha">Fecha de servicio</label><input type="date" id="db-fecha" style="max-width:180px"></div>
           <button class="accion" onclick="verDashboard()">Consultar</button>
         </div>
         <div class="row-fin" style="margin-top:14px">
@@ -859,7 +873,7 @@
           <h3>Pedidos del día</h3>
         </div>
         <div class="row-fin">
-          <div><label>Fecha</label><input type="date" id="pe-fecha" style="max-width:180px"></div>
+          <div><label for="pe-fecha">Fecha</label><input type="date" id="pe-fecha" style="max-width:180px"></div>
           <button class="accion" onclick="verPedidos()">Consultar pedidos</button>
         </div>
         <div id="pedidosBox" style="margin-top:18px"></div>
@@ -868,19 +882,19 @@
 
     <!-- EMPLEADOS -->
     <section id="p-empleados" class="panel">
-      <div class="card">
+      <form class="card" id="empleado-form" aria-labelledby="empleado-form-titulo" onsubmit="event.preventDefault(); guardarEmpleado()">
         <div class="card-header">
           <div class="card-icon">👤</div>
-          <h3>Registrar empleado</h3>
+          <h3 id="empleado-form-titulo">Registrar empleado</h3>
         </div>
         <div class="grid3">
-          <div><label>Nombre completo</label><input id="e-nombre" placeholder="Nombre del empleado"></div>
-          <div><label>No. empleado</label><input id="e-num" placeholder="EMP001"></div>
-          <div><label>Teléfono (opcional)</label><input id="e-tel" placeholder="10 dígitos, si está disponible"></div>
+          <div><label for="e-nombre">Nombre completo (obligatorio)</label><input type="text" id="e-nombre" name="nombre" autocomplete="off" required aria-describedby="empAviso"></div>
+          <div><label for="e-num">No. empleado (obligatorio)</label><input type="text" id="e-num" name="numero_empleado" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" required aria-describedby="empAviso"></div>
+          <div><label for="e-tel">Teléfono (opcional)</label><input type="tel" id="e-tel" name="telefono" autocomplete="off" placeholder="10 dígitos, si está disponible"></div>
         </div>
         <div class="grid3">
           <div>
-            <label>Zona habitual <span style="font-weight:400;color:var(--gris-text)">(según RRHH)</span></label>
+            <label for="e-zona">Zona habitual <span style="font-weight:400;color:var(--gris-text)">(según RRHH)</span></label>
             <select id="e-zona">
               <option value="">— Sin asignar —</option>
               <option value="zona_vdc">ASLA (LZCA)</option>
@@ -888,7 +902,7 @@
             </select>
           </div>
           <div>
-            <label>Turno habitual <span style="font-weight:400;color:var(--gris-text)">(según RRHH)</span></label>
+            <label for="e-turno">Turno habitual <span style="font-weight:400;color:var(--gris-text)">(según RRHH)</span></label>
             <select id="e-turno">
               <option value="">— Sin asignar —</option>
               <option value="turno_a">Turno A (10:00 am)</option>
@@ -901,9 +915,9 @@
             </p>
           </div>
         </div>
-        <button class="accion verde" onclick="guardarEmpleado()">Guardar empleado</button>
-        <div id="empAviso" class="aviso"></div>
-      </div>
+        <button id="btn-guardar-empleado" type="submit" class="accion verde">Guardar empleado</button>
+        <div id="empAviso" class="aviso" role="status" aria-live="polite"></div>
+      </form>
       <!-- Carga masiva desde el archivo que manda RRHH -->
       <div class="card">
         <div class="card-header">
@@ -916,6 +930,7 @@
           Solo se requieren <b>Nombre</b> y <b>No. empleado</b>. <b>Teléfono</b>, <b>Zona</b> y <b>Turno</b> son opcionales.
           Al volver a cargar un número de empleado existente, se actualiza su nombre y se conservan el teléfono, la zona y el turno que no incluyas.
         </p>
+        <label for="imp-archivo">Archivo de RRHH (.xlsx o .csv)</label>
         <input type="file" id="imp-archivo" accept=".xlsx,.xls,.csv" onchange="leerArchivo(this)"
                style="padding:10px;border:1.5px dashed var(--azul-line);border-radius:9px;width:100%;background:var(--gris-bg);cursor:pointer">
         <div id="impAviso" class="aviso"></div>
@@ -958,13 +973,13 @@
             <h3>Supervisores autorizados</h3>
           </div>
           <p style="font-size:.8rem;color:var(--gris-text)">Selecciona únicamente empleados incluidos en la lista oficial de Glovis. La clave se muestra una sola vez.</p>
-          <label>Empleado de la plantilla</label>
+          <label for="cov-supervisor">Empleado de la plantilla</label>
           <select id="cov-supervisor"><option value="">— Seleccionar empleado —</option></select>
           <div class="grid2">
-            <div><label>Vigente desde</label><input type="date" id="cov-vig-desde"></div>
-            <div><label>Vigente hasta <span style="font-weight:400">(opcional)</span></label><input type="date" id="cov-vig-hasta"></div>
+            <div><label for="cov-vig-desde">Vigente desde</label><input type="date" id="cov-vig-desde"></div>
+            <div><label for="cov-vig-hasta">Vigente hasta <span style="font-weight:400">(opcional)</span></label><input type="date" id="cov-vig-hasta"></div>
           </div>
-          <label>Clave personal <span style="font-weight:400">(vacía = generar)</span></label>
+          <label for="cov-clave">Clave personal <span style="font-weight:400">(vacía = generar)</span></label>
           <input type="password" id="cov-clave" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
           <button class="accion verde" onclick="autorizarSupervisorCobertura()">Autorizar supervisor</button>
           <div id="covSupAviso" class="aviso"></div>
@@ -1070,7 +1085,7 @@
               <div><h3>Producción</h3><p>Totales por platillo, turno y zona.</p></div>
             </div>
             <div class="row-fin">
-              <div><label>Fecha de producción</label><input type="date" id="co-fecha" style="max-width:180px"></div>
+              <div><label for="co-fecha">Fecha de producción</label><input type="date" id="co-fecha" style="max-width:180px"></div>
               <div><label for="co-turno">Turno</label><select id="co-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
               <div><label for="co-zona">Zona</label><select id="co-zona"><option value="">Todas las zonas</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select></div>
               <div><label for="co-servicio">Servicio</label><select id="co-servicio"><option value="">Regulares y coberturas</option><option value="regular">Regulares</option><option value="cobertura">Coberturas</option></select></div>
@@ -1160,7 +1175,7 @@
             <p>Salida del comedor, visitas y regreso de cada repartidor.</p>
           </div></div>
           <form class="bitacora-filtros" onsubmit="event.preventDefault(); consultarBitacora()">
-            <label>Fecha de reparto <input id="bitacora-fecha" type="date" required></label>
+            <label for="bitacora-fecha">Fecha de reparto <input id="bitacora-fecha" type="date" required></label>
             <button class="accion sec" type="submit" id="bitacora-consultar">Consultar rutas</button>
           </form>
           <p class="puntos-estado" id="bitacora-panel-estado" role="status" aria-live="polite"></p>
@@ -1180,17 +1195,17 @@
             resguardo cifrado y ya no se puede consultar.
           </p>
           <div class="row-fin">
-            <div><label>Nombre completo</label><input type="text" id="rp-nombre" placeholder="Luis Hernández"></div>
-            <div>
-              <label>Zonas que atiende</label>
+            <div><label for="rp-nombre">Nombre completo</label><input type="text" id="rp-nombre" placeholder="Luis Hernández"></div>
+            <fieldset class="zonas-repartidor">
+              <legend>Zonas que atiende</legend>
               <div style="display:flex;gap:14px;align-items:center;padding-top:6px">
-                <label style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.88rem">
+                <label for="rp-vdc" style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.88rem">
                   <input type="checkbox" id="rp-vdc" style="width:18px;height:18px"> ASLA (LZCA)</label>
-                <label style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.88rem">
+                <label for="rp-refris" style="display:flex;gap:6px;align-items:center;font-weight:600;font-size:.88rem">
                   <input type="checkbox" id="rp-refris" style="width:18px;height:18px"> REFIS (LZCR)</label>
               </div>
-            </div>
-            <div><label>Clave (opcional)</label><input type="text" id="rp-clave" placeholder="Se genera sola"></div>
+            </fieldset>
+            <div><label for="rp-clave">Clave (opcional)</label><input type="text" id="rp-clave" placeholder="Se genera sola"></div>
             <button class="accion" onclick="crearRepartidor()">Dar de alta</button>
           </div>
           <div id="rpAviso" class="aviso"></div>
@@ -1290,8 +1305,8 @@
           <h3>Reportes y Estimaciones del Periodo</h3>
         </div>
         <div class="row-fin">
-          <div><label>Desde</label><input type="date" id="rep-ini"></div>
-          <div><label>Hasta</label><input type="date" id="rep-fin"></div>
+          <div><label for="rep-ini">Desde</label><input type="date" id="rep-ini"></div>
+          <div><label for="rep-fin">Hasta</label><input type="date" id="rep-fin"></div>
           <button class="accion" onclick="verReportes()">Ver reportes</button>
         </div>
         <div class="row-fin" style="margin-top:16px"><div><label for="rep-turno">Turno</label><select id="rep-turno"><option value="">Todos los turnos</option><option value="turno_a">Turno A</option><option value="turno_b">Turno B</option></select></div>
@@ -1322,7 +1337,7 @@
           <h3>Reporte de cocina y etiquetas</h3>
         </div>
         <div class="row-fin">
-          <div><label>Fecha de servicio</label><input type="date" id="r-fecha" style="max-width:180px"></div>
+          <div><label for="r-fecha">Fecha de servicio</label><input type="date" id="r-fecha" style="max-width:180px"></div>
           <button class="accion" onclick="excelCocina()">Descargar Excel</button>
         </div>
         <div id="repCocinaAviso" class="aviso"></div>
@@ -1336,8 +1351,8 @@
           Comidas sin confirmación de entrega, calificaciones e incidencias sin cargo. Una hoja por tema.
         </p>
         <div class="row-fin">
-          <div><label>Desde</label><input type="date" id="op-ini"></div>
-          <div><label>Hasta</label><input type="date" id="op-fin"></div>
+          <div><label for="op-ini">Desde</label><input type="date" id="op-ini"></div>
+          <div><label for="op-fin">Hasta</label><input type="date" id="op-fin"></div>
           <button class="accion" onclick="excelOperacion()">Descargar Excel</button>
         </div>
         <div id="repOpAviso" class="aviso"></div>
@@ -1348,9 +1363,9 @@
           <h3>Reporte de facturación</h3>
         </div>
         <div class="row-fin">
-          <div><label>Desde</label><input type="date" id="r-ini"></div>
-          <div><label>Hasta</label><input type="date" id="r-fin"></div>
-          <div><label>Costo unitario ($)</label><input type="number" id="r-costo" placeholder="0.00" step="0.01"></div>
+          <div><label for="r-ini">Desde</label><input type="date" id="r-ini"></div>
+          <div><label for="r-fin">Hasta</label><input type="date" id="r-fin"></div>
+          <div><label for="r-costo">Costo unitario ($)</label><input type="number" id="r-costo" placeholder="0.00" step="0.01"></div>
           <button class="accion" onclick="excelFacturacion()">Descargar Excel</button>
         </div>
         <div id="repFactAviso" class="aviso"></div>
@@ -1381,6 +1396,7 @@
 <iframe id="cov-print-frame" class="cov-print-frame" title="Impresión automática de comanda de cobertura"></iframe>
 
 <script src="/operacion.js"></script>
+<script src="/fechas-comedor.js"></script>
 <script src="/menu-cobertura-semanal.js"></script>
 <script src="/bitacora-rutas.js"></script>
 <script src="/reportes-excel.js"></script>
@@ -1405,24 +1421,14 @@
   // el panel ofrecía imprimir la comanda del día equivocado.
   // Se ancla a la zona del comedor y no a la del equipo, para que el panel dé
   // la misma fecha desde cualquier computadora.
-  const ZONA_COMEDOR = 'America/Mexico_City';
-  const fechaComedor = (d = new Date()) => new Intl.DateTimeFormat('en-CA', {
-    timeZone: ZONA_COMEDOR, year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(d);
-
-  // Aritmética sobre la fecha civil (YYYY-MM-DD), sin husos de por medio.
-  function sumarDias(iso, n) {
-    const [a, m, d] = iso.split('-').map(Number);
-    const x = new Date(a, m - 1, d + n);
-    const p = v => String(v).padStart(2, '0');
-    return x.getFullYear() + '-' + p(x.getMonth() + 1) + '-' + p(x.getDate());
-  }
+  const { ZONA: ZONA_COMEDOR, fechaComedor, sumarDias } = GoLunchFechas;
   // En reportes los pedidos viejos sin asignar se agrupan bajo una clave
   // propia, que hay que nombrar en español y no mostrar tal cual.
   const etiquetaTurno = t => t === 'sin_turno' ? 'Sin turno' : turnoTxt(t);
   const etiquetaZona  = z => z === 'sin_zona'  ? 'Sin zona'  : zonaTxt(z);
 
   let ADMIN_KEY = '';
+  let ingresoEnCurso = false;
   let PANEL_USUARIO = '';
   let PANEL_ROL = 'admin';
   const COBERTURA_MONITOR_MS = 30000;
@@ -1434,8 +1440,13 @@
   let coberturaImpresionIntentada = '';
 
   function entrar() {
+    if (ingresoEnCurso) return;
     const k = document.getElementById('adminKey').value.trim();
     if (!k) return;
+    ingresoEnCurso = true;
+    const boton = document.getElementById('btn-panel-entrar');
+    boton.disabled = true; boton.textContent = 'Ingresando…';
+    document.getElementById('gateErr').textContent = '';
     prepararAudioCobertura();
     ADMIN_KEY = k;
     PANEL_USUARIO = document.getElementById('adminUser').value.trim().toLowerCase();
@@ -1454,6 +1465,9 @@
     }).catch(() => {
       const e = document.getElementById('gateErr');
       e.className = 'aviso err'; e.textContent = 'Clave incorrecta o servidor no disponible.';
+    }).finally(() => {
+      ingresoEnCurso = false;
+      boton.disabled = false; boton.textContent = 'Ingresar';
     });
   }
 
@@ -1509,6 +1523,7 @@
     }
     document.querySelectorAll('#p-menu input:not([type="date"]), #p-menu .menu-cell, #p-coberturas .cov-dia-opciones input').forEach(e => { e.readOnly = true; });
     document.querySelectorAll('#p-empleados input, #p-empleados select').forEach(e => { e.disabled = true; });
+    document.getElementById('btn-guardar-empleado').disabled = true;
     document.querySelectorAll('button[onclick]').forEach(b => {
       const accion = b.getAttribute('onclick');
       const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura)\(/.test(accion);
@@ -2452,7 +2467,9 @@
         `<option value="${id}"${valor === id ? ' selected' : ''}>${txt}</option>`))
       .join('');
     const alerta = valor ? '' : 'border-color:var(--dorado);background:#fdf5e6;';
-    return `<select style="font-size:.78rem;padding:5px 6px;min-width:130px;${alerta}"
+    const empleado = EMPLEADOS[telefono];
+    const etiqueta = (campo === 'zona_default' ? 'Zona habitual' : 'Turno habitual') + ' de ' + empleado.nombre + ' #' + empleado.numero_empleado;
+    return `<select aria-label="${escaparHtml(etiqueta)}" style="font-size:1rem;padding:5px 6px;min-width:130px;${alerta}"
               onchange="asignar('${telParaAtributo(telefono)}','${campo}',this.value)">${opts}</select>`;
   }
 
@@ -2477,18 +2494,30 @@
   }
 
   async function guardarEmpleado() {
+    const boton = document.getElementById('btn-guardar-empleado');
+    if (boton.disabled || PANEL_ROL !== 'admin') return;
     const body = {
       nombre: val('e-nombre'), numero_empleado: val('e-num'), telefono: val('e-tel'),
       zona_default:  val('e-zona')  || null,
       turno_default: val('e-turno') || null
     };
-    if (!body.nombre || !body.numero_empleado) return aviso('empAviso','Completa nombre y número de empleado', false);
+    if (!body.nombre || !body.numero_empleado) {
+      aviso('empAviso','Completa nombre y número de empleado', false);
+      document.getElementById(!body.nombre ? 'e-nombre' : 'e-num').focus();
+      return;
+    }
+    boton.disabled = true; boton.textContent = 'Guardando…';
     try {
       await api('/api/empleados', { method:'POST', body: JSON.stringify(body) });
       aviso('empAviso', 'Empleado guardado');
       ['e-nombre','e-num','e-tel','e-zona','e-turno'].forEach(id => document.getElementById(id).value='');
       cargarEmpleados();
-    } catch(e) { aviso('empAviso', 'Error: ' + e.message, false); }
+    } catch(e) {
+      aviso('empAviso', /^\d+$/.test(e.message)
+        ? 'No se pudo guardar. Los datos siguen en el formulario; revisa la conexión y vuelve a intentar.'
+        : 'No se pudo guardar: ' + e.message, false);
+    }
+    finally { boton.disabled = PANEL_ROL !== 'admin'; boton.textContent = 'Guardar empleado'; }
   }
 
   async function cargarEmpleados() {
@@ -2510,7 +2539,7 @@
       for (const e of empleados) {
         h += `<tr>
           <td>${escaparHtml(e.nombre)}</td><td>${escaparHtml(e.numero_empleado)}</td>
-          <td>${escaparHtml(telefonoVisible(e.telefono)) || 'Sin teléfono'}<button onclick="editarTel('${telParaAtributo(e.telefono)}')" style="background:none;border:1px solid #003087;color:#003087;border-radius:4px;font-size:.75rem;padding:1px 5px;cursor:pointer;margin-left:6px">${esClaveInterna(e.telefono) ? 'Agregar' : 'Editar'}</button></td>
+          <td>${escaparHtml(telefonoVisible(e.telefono)) || 'Sin teléfono'}<button type="button" aria-label="${esClaveInterna(e.telefono) ? 'Agregar' : 'Editar'} teléfono de ${escaparHtml(e.nombre)}" onclick="editarTel('${telParaAtributo(e.telefono)}')" style="background:none;border:1px solid #003087;color:#003087;border-radius:4px;font-size:1rem;padding:8px;min-height:48px;cursor:pointer;margin-left:6px">${esClaveInterna(e.telefono) ? 'Agregar' : 'Editar'}</button></td>
           <td>${selectAsignacion(e.telefono, 'zona_default', e.zona_default, ZONA_TXT)}</td>
           <td>${selectAsignacion(e.telefono, 'turno_default', e.turno_default, TURNO_TXT)}</td>
           <td><span class="badge ${e.activo?'on':'off'}">${e.activo?'Activo':'Inactivo'}</span></td>
@@ -3147,9 +3176,9 @@
       ['fija_a','fija_b','fija_c','var_1','var_2','var_3'].forEach(campo => {
         const val = datos ? (datos[campo] || '') : '';
         if (datos) {
-          htmlTabla += '<td><input class="menu-cell" data-campo="' + campo + '" value="' + val.replace(/"/g,'&quot;') + '" placeholder="&#8212;" readonly style="padding:6px 8px;font-size:.82rem;border-radius:6px;width:100%;min-width:90px;background:#e8f5e9;cursor:default"></td>';
+          htmlTabla += '<td><input type="text" class="menu-cell" data-campo="' + campo + '" value="' + val.replace(/"/g,'&quot;') + '" placeholder="&#8212;" readonly style="padding:6px 8px;font-size:.82rem;border-radius:6px;width:100%;min-width:90px;background:#e8f5e9;cursor:default"></td>';
         } else {
-          htmlTabla += '<td><input class="menu-cell" data-campo="' + campo + '" value="' + val + '" placeholder="&#8212;" style="padding:6px 8px;font-size:.82rem;border-radius:6px;width:100%;min-width:90px"></td>';
+          htmlTabla += '<td><input type="text" class="menu-cell" data-campo="' + campo + '" value="' + val + '" placeholder="&#8212;" style="padding:6px 8px;font-size:.82rem;border-radius:6px;width:100%;min-width:90px"></td>';
         }
       });
       htmlTabla += '</tr>';
@@ -3657,7 +3686,6 @@
   }
 
   // Permitir Enter en la puerta
-  document.getElementById('adminKey').addEventListener('keydown', e => { if(e.key==='Enter') entrar(); });
 
 </script>
 </body>

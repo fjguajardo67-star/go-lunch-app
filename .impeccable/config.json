@@ -10,7 +10,7 @@
           "public/pedido.html"
         ],
         "createdAt": "2026-11-04T02:40:53.093Z",
-        "reason": "Agent: both findings are offset shadows (0 14px 28px and 0 9px 24px) providing depth, not zero-offset glow; preserve current design."
+        "reason": "Agent: revisión 15/nov/2026. Las sombras existentes desplazadas 0 14px 28px y 0 9px 24px dan elevación al diseño aprobado; el cambio de fechas no agrega sombras. Se conserva la excepción previa limitada a esta página."
       },
       {
         "rule": "dark-glow",
@@ -19,7 +19,7 @@
           "public/cobertura.html"
         ],
         "createdAt": "2026-11-04T02:40:53.108Z",
-        "reason": "Agent: el hallazgo corresponde al resumen operativo existente con sombra desplazada 0 14px 30px; se conserva la elevación del diseño corporativo durante la extensión de folios, sin agregar resplandores decorativos."
+        "reason": "Agent: revisión 15/nov/2026. El aviso señala el resumen operativo existente con sombra desplazada 0 14px 30px rgba(6,27,68,.25) sobre página clara, no un resplandor agregado. Se conserva esta excepción previa y solo este archivo al separar su manifest."
       },
       {
         "rule": "dark-glow",
