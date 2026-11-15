@@ -25,6 +25,7 @@ export function validarExtraordinaria(entrada, rol) {
     fecha: ahora.toISODate(), turno, zona: entrada.zona,
     responsable_numero: String(entrada.responsable_numero).trim(), items: valida.items,
     motivo, autorizado_por: rol, idempotencia: entrada.idempotencia,
+    menu_version: typeof entrada.menu_version === 'string' && DateTime.fromISO(entrada.menu_version).isValid ? entrada.menu_version : null,
     entrega_programada_en: DateTime.fromISO(entrada.fecha + 'T' + entrada.hora_entrega, { zone: ZONA }).toISO()
   };
 }
@@ -32,7 +33,7 @@ export function validarExtraordinaria(entrada, rol) {
 export async function estadoExtraordinaria() {
   const ahora = ahoraCobertura();
   const menu = await db.getMenuCobertura(ahora.toISODate());
-  return { fecha: ahora.toISODate(), ahora: ahora.toISO(), opciones: menu?.activo
+  return { fecha: ahora.toISODate(), ahora: ahora.toISO(), menu_version:menu?.activo ? menu.actualizado_en : null, opciones: menu?.activo
     ? [1, 2, 3].map(i => ({ id: 'especial_' + i, texto: menu['opcion_' + i] })) : [] };
 }
 

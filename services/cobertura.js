@@ -4,7 +4,6 @@
 // mismo día, lo hace un supervisor para varias personas y cada recipiente
 // necesita su propio QR aunque el empleado ya tenga una comida regular.
 
-import crypto from 'node:crypto';
 import { DateTime } from 'luxon';
 import * as db from './supabase.js';
 import { ZONA, ZONAS_VALIDAS, horaTexto } from './menu.js';
@@ -94,39 +93,8 @@ export function validarSolicitudEntrada({ responsable_numero, zona, items }) {
 }
 
 export async function guardarSolicitud(supervisorId, entrada) {
-  const horario = horarioCobertura(entrada.turno);
-  if (!horario.abierto) {
-    const e = new Error("Las solicitudes de este turno cerraron a las " + horario.corte_texto + ".");
-    e.status = 409; e.motivo = 'fuera_de_horario'; throw e;
-  }
-  const valida = validarSolicitudEntrada(entrada);
-  if (valida.error) {
-    const e = new Error(valida.error); e.status = 400; e.motivo = 'datos_invalidos'; throw e;
-  }
-  const folio = 'CE-' + horario.fecha.replaceAll('-', '') + '-' +
-    crypto.randomBytes(3).toString('hex').toUpperCase();
-  try {
-    await db.guardarSolicitudCobertura({
-      fecha: horario.fecha,
-      turno: horario.turno,
-      supervisor_id: supervisorId,
-      folio,
-      responsable_numero: String(entrada.responsable_numero).trim(),
-      zona: entrada.zona,
-      items: valida.items
-    });
-    return db.getSolicitudCobertura(supervisorId, horario.fecha, horario.turno);
-  } catch (err) {
-    const traducido = traducirErrorBD(err);
-    if (traducido.motivo === 'error_servidor') {
-      console.error('[Cobertura] Error inesperado guardando solicitud:', {
-        code: err?.code,
-        message: err?.message,
-        hint: err?.hint
-      });
-    }
-    throw traducido;
-  }
+  // Los clientes anteriores no pueden confirmar opciones sin versión.
+  throw Object.assign(new Error('Actualiza la aplicación y usa Nuevo pedido para consultar el menú vigente.'), {status:409,motivo:'menu_cobertura_desactualizado'});
 }
 
 export async function cancelarSolicitud(supervisorId, turno = "turno_b") {
@@ -166,6 +134,7 @@ export function traducirErrorBD(err) {
     ['supervisor_no_autorizado', 403, 'no_autorizado', 'Tu autorización de supervisor no está activa.'],
     ['responsable_no_encontrado', 404, 'responsable_no_encontrado', 'No encontramos al responsable en la plantilla activa.'],
     ['menu_cobertura_no_disponible', 409, 'sin_menu_especial', 'CICSA todavía no ha publicado el menú especial de hoy.'],
+    ['menu_cobertura_desactualizado', 409, 'menu_cobertura_desactualizado', 'El menú cambió. Actualiza el formulario y elige nuevamente los platillos antes de confirmar.'],
     ['sin_alimentos', 400, 'sin_alimentos', 'Agrega al menos un alimento.'],
     ['opcion_especial_invalida', 400, 'opcion_invalida', 'Uno de los platillos ya no está disponible. Actualiza la pantalla.'],
     ['empleados_repetidos:', 409, 'empleados_repetidos', 'Un empleado aparece más de una vez.'],

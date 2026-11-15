@@ -818,6 +818,14 @@ export async function getMenuCobertura(fecha) {
   return data?.[0] || null;
 }
 
+export async function getSemanaMenuCobertura(inicio, fin) {
+  const [menus, solicitudes] = await Promise.all([
+    leerPaginas(() => supabase.from('menus_cobertura').select('*').gte('fecha', inicio).lte('fecha', fin).order('fecha')),
+    leerPaginas(() => supabase.from('solicitudes_cobertura').select('id,fecha_servicio').gte('fecha_servicio', inicio).lte('fecha_servicio', fin).neq('estado', 'cancelada').order('id'))
+  ]);
+  return {menus, solicitudes};
+}
+
 export async function upsertMenuCobertura(menu) {
   const { data, error } = await supabase
     .from('menus_cobertura')
@@ -899,7 +907,8 @@ export async function guardarExtraordinariaCobertura(datos) {
     p_fecha: datos.fecha, p_turno: datos.turno, p_zona: datos.zona,
     p_folio: datos.folio, p_responsable_numero: datos.responsable_numero, p_items: datos.items,
     p_autorizado_por: datos.autorizado_por, p_motivo: datos.motivo,
-    p_entrega_programada_en: datos.entrega_programada_en, p_idempotencia: datos.idempotencia
+    p_entrega_programada_en: datos.entrega_programada_en, p_idempotencia: datos.idempotencia,
+    p_menu_version: datos.menu_version
   });
   if (error) throw error;
   const solicitud = data?.[0];

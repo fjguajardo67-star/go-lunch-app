@@ -668,6 +668,7 @@
     .reporte-tabla:not(.reporte-rutas) td { font-size: .82rem; }
   }
 </style>
+<link rel="stylesheet" href="/menu-cobertura-semanal.css?v=73">
 </head>
 <body>
 
@@ -945,46 +946,13 @@
       </div>
 
       <div class="cov-grid">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M6 10h12M8 14h8M10 18h4" stroke-linecap="round"/></svg></div>
-            <h3>Menú especial</h3>
-          </div>
-          <p style="font-size:.8rem;color:var(--gris-text);margin-bottom:12px">Tres opciones de preparación rápida disponibles únicamente para supervisores autorizados.</p>
-          <div class="grid2">
-            <div><label for="cov-menu-inicio">Fecha de inicio</label><input type="date" id="cov-menu-inicio" required onchange="ajustarFechasMenuCobertura()" aria-describedby="cov-menu-ayuda"></div>
-            <div><label for="cov-menu-final">Fecha final</label><input type="date" id="cov-menu-final" required aria-describedby="cov-menu-ayuda"></div>
-          </div>
-          <p id="cov-menu-ayuda" style="font-size:.8rem;color:var(--gris-text);margin:4px 0 12px">Las tres opciones estarán disponibles todos los días del periodo, incluidas ambas fechas. Las solicitudes se registran por día.</p>
-          <div class="cov-menu-options">
-            <div><label>Opción 1</label><input type="text" id="cov-op1" placeholder="Hamburguesa"></div>
-            <div><label>Opción 2</label><input type="text" id="cov-op2" placeholder="Boneless"></div>
-            <div><label>Opción 3</label><input type="text" id="cov-op3" placeholder="Pescado empanizado"></div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button class="accion" id="cov-menu-guardar" onclick="guardarMenuCobertura()">Publicar menú para el periodo</button>
-            <button class="accion sec" onclick="nuevoPeriodoMenuCobertura()">Nuevo periodo</button>
-          </div>
-          <div id="covMenuAviso" class="aviso"></div>
-          <details id="cov-menu-dia" style="margin-top:16px;border-top:1px solid var(--gris-line);padding-top:16px" ontoggle="if(this.open && !MENU_DIA_CARGADO)cargarMenuDiaCobertura()">
-            <summary style="font-weight:700;cursor:pointer;padding:8px 0">Cambiar menú de esta fecha</summary>
-            <p style="margin:12px 0;font-size:.9rem;line-height:1.5">Cambia únicamente un día futuro sin pedidos activos. Los demás días conservan sus opciones.</p>
-            <div class="row-fin">
-              <div><label for="cov-dia-fecha">Fecha a cambiar</label><input type="date" id="cov-dia-fecha" onchange="cargarMenuDiaCobertura()"></div>
-              <button class="accion sec" type="button" id="cov-dia-consultar" onclick="cargarMenuDiaCobertura()">Consultar menú</button>
-            </div>
-            <p id="cov-dia-estado" role="status" aria-live="polite" style="margin:12px 0;line-height:1.5"></p>
-            <div class="cov-menu-options">
-              <div><label for="cov-dia-op1">Opción 1</label><input id="cov-dia-op1" type="text" readonly></div>
-              <div><label for="cov-dia-op2">Opción 2</label><input id="cov-dia-op2" type="text" readonly></div>
-              <div><label for="cov-dia-op3">Opción 3</label><input id="cov-dia-op3" type="text" readonly></div>
-            </div>
-            <button class="accion" type="button" id="cov-dia-guardar" onclick="guardarMenuDiaCobertura()" disabled>Guardar cambios de esta fecha</button>
-            <div id="covDiaAviso" class="aviso" role="status" aria-live="polite"></div>
-          </details>
+        <div class="card cov-full">
+          <div class="card-header"><h3>Menú semanal de coberturas</h3></div>
+          <p>Tres opciones variables por día, compartidas por los turnos A y B y las horas extras. Publica cada fecha por separado.</p>
+          <div id="cov-menu-semanal"></div>
         </div>
 
-        <div class="card">
+        <div class="card cov-full">
           <div class="card-header">
             <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 8h5M18.5 5.5v5" stroke-linecap="round"/></svg></div>
             <h3>Supervisores autorizados</h3>
@@ -1413,6 +1381,7 @@
 <iframe id="cov-print-frame" class="cov-print-frame" title="Impresión automática de comanda de cobertura"></iframe>
 
 <script src="/operacion.js"></script>
+<script src="/menu-cobertura-semanal.js"></script>
 <script src="/bitacora-rutas.js"></script>
 <script src="/reportes-excel.js"></script>
 <script src="/incidencias-panel.js"></script>
@@ -1476,7 +1445,7 @@
       document.getElementById('gate').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       const hoy = fechaComedor();
-      ['m-fecha','pe-fecha','co-fecha','r-fecha','r-ini','r-fin','cov-fecha','cov-vig-desde','cov-menu-inicio','cov-menu-final'].forEach(id => document.getElementById(id).value = hoy);
+      ['m-fecha','pe-fecha','co-fecha','r-fecha','r-ini','r-fin','cov-fecha','cov-vig-desde'].forEach(id => document.getElementById(id).value = hoy);
       // Los impresos casi siempre son del día de servicio (mañana)
       document.getElementById('im-fecha').value = sumarDias(hoy, 1);
       cargarEmpleados();
@@ -1538,11 +1507,11 @@
       const observer = new MutationObserver(() => aplicarPermisosPanel());
       observer.observe(document.getElementById('app'), { childList: true, subtree: true });
     }
-    document.querySelectorAll('#p-menu input:not([type="date"]), #p-menu .menu-cell, #p-coberturas .cov-menu-options input').forEach(e => { e.readOnly = true; });
+    document.querySelectorAll('#p-menu input:not([type="date"]), #p-menu .menu-cell, #p-coberturas .cov-dia-opciones input').forEach(e => { e.readOnly = true; });
     document.querySelectorAll('#p-empleados input, #p-empleados select').forEach(e => { e.disabled = true; });
     document.querySelectorAll('button[onclick]').forEach(b => {
       const accion = b.getAttribute('onclick');
-      const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura|guardarMenuDiaCobertura)\(/.test(accion);
+      const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura)\(/.test(accion);
       const mutaEmpleado = b.closest('#p-empleados') && !/^(imprimirEmpleadosVisibles|cargarEmpleados|descargarFormato|descargarPlantilla)/.test(accion);
       if (mutaMenu || mutaEmpleado) {
         b.disabled = true;
@@ -3522,7 +3491,7 @@
     if (motivo.length < 5 || motivo.length > 500) { errorCampoExtraordinaria('extra-motivo','Indica un motivo de entre 5 y 500 caracteres.'); return; }
     document.getElementById('extra-hora').value = hora;
     const entrada = {fecha:EXTRA_CONFIG.fecha, turno, zona, hora_entrega:hora,
-      responsable_numero:responsable, motivo, items:EXTRA_FILAS.map(f=>({...f}))};
+      responsable_numero:responsable, motivo, menu_version:EXTRA_CONFIG.menu_version, items:EXTRA_FILAS.map(f=>({...f}))};
     const huella = JSON.stringify(entrada);
     if (EXTRA_INTENTO?.huella !== huella) EXTRA_INTENTO = {huella,id:crypto.randomUUID()};
     boton.disabled = true; boton.textContent = 'Registrando autorización…';
@@ -3539,155 +3508,24 @@
       document.getElementById('extra-motivo').value = '';
       document.getElementById('cov-fecha').value = s.fecha_servicio; document.getElementById('cov-turno').value = s.turno;
       await cargarSolicitudesCobertura(s.fecha_servicio);
-    } catch(e) { avisoExtraordinaria(e.message + ' Puedes reintentar con los mismos datos.', 'err'); }
+    } catch(e) {
+      if(e.message.includes('El menú cambió')) { EXTRA_CONFIG=null; avisoExtraordinaria(e.message+' Cierra y vuelve a abrir Pedido extraordinario para consultar las opciones vigentes.', 'err'); }
+      else avisoExtraordinaria(e.message + ' Puedes reintentar con los mismos datos.', 'err');
+    }
     finally { boton.disabled = false; boton.textContent = 'Autorizar y registrar pedido'; }
   }
 
-  let MENU_DIA_CARGADO = null;
-  let MENU_DIA_CONSULTA = 0;
-  let MENU_DIA_GUARDANDO = false;
-
-  async function cargarMenuDiaCobertura() {
-    if (MENU_DIA_GUARDANDO) return;
-    const campo = document.getElementById('cov-dia-fecha');
-    if (!campo.value) {
-      const manana = new Date(fechaComedor() + 'T12:00:00Z');
-      manana.setUTCDate(manana.getUTCDate() + 1);
-      campo.value = manana.toISOString().slice(0,10);
-    }
-    const fecha = campo.value;
-    const consulta = ++MENU_DIA_CONSULTA;
-    MENU_DIA_CARGADO = null;
-    document.getElementById('cov-dia-guardar').disabled = true;
-    document.getElementById('cov-dia-estado').textContent = 'Consultando menú y pedidos…';
-    document.getElementById('covDiaAviso').className = 'aviso';
-    for (let i=1;i<=3;i++) {
-      const input=document.getElementById('cov-dia-op'+i);
-      input.value=''; input.readOnly=true;
-    }
-    try {
-      const r = await api('/api/cobertura/menu/' + encodeURIComponent(fecha), {cache:'no-store'});
-      if (consulta !== MENU_DIA_CONSULTA || campo.value !== fecha) return;
-      MENU_DIA_CARGADO = {fecha,menu:r.menu,permitido:r.edicion?.permitido === true};
-      document.getElementById('cov-dia-estado').textContent = r.edicion?.motivo || 'No se pudo verificar si esta fecha admite cambios.';
-      for (let i=1;i<=3;i++) {
-        const input=document.getElementById('cov-dia-op'+i);
-        input.value=r.menu?.['opcion_'+i] || '';
-        input.readOnly=!MENU_DIA_CARGADO.permitido || PANEL_ROL !== 'admin';
-      }
-      document.getElementById('cov-dia-guardar').disabled = !MENU_DIA_CARGADO.permitido || PANEL_ROL !== 'admin';
-    } catch (e) {
-      if (consulta === MENU_DIA_CONSULTA) document.getElementById('cov-dia-estado').textContent = 'No se pudo consultar: ' + e.message;
-    }
-  }
-
-  async function guardarMenuDiaCobertura() {
-    const cargado=MENU_DIA_CARGADO;
-    if (MENU_DIA_GUARDANDO || PANEL_ROL !== 'admin' || !cargado?.permitido) return;
-    if (document.getElementById('cov-dia-fecha').value !== cargado.fecha)
-      return aviso('covDiaAviso','Consulta la fecha seleccionada antes de guardar.',false);
-    const body={version:cargado.menu.actualizado_en};
-    for(let i=1;i<=3;i++) body['opcion_'+i]=document.getElementById('cov-dia-op'+i).value.trim();
-    const opciones=[body.opcion_1,body.opcion_2,body.opcion_3];
-    if(opciones.some(op=>!op) || new Set(opciones.map(op=>op.toLocaleUpperCase('es-MX'))).size!==3)
-      return aviso('covDiaAviso','Completa tres opciones distintas.',false);
-    const boton=document.getElementById('cov-dia-guardar');
-    MENU_DIA_GUARDANDO=true; boton.disabled=true; boton.textContent='Guardando…';
-    document.getElementById('cov-dia-fecha').disabled=true;
-    document.getElementById('cov-dia-consultar').disabled=true;
-    for(let i=1;i<=3;i++) document.getElementById('cov-dia-op'+i).readOnly=true;
-    try {
-      const r=await api('/api/cobertura/menu/'+encodeURIComponent(cargado.fecha),{method:'POST',body:JSON.stringify(body)});
-      MENU_DIA_CARGADO={fecha:cargado.fecha,menu:r.menu,permitido:true};
-      mostrarPeriodoMenuCobertura(r.menu,cargado.fecha);
-      aviso('covMenuAviso','El formulario de periodo muestra ahora el día actualizado: '+cargado.fecha+'.');
-      aviso('covDiaAviso','Menú actualizado únicamente para '+cargado.fecha+'. Los demás días conservan sus opciones.');
-    } catch(e) {
-      MENU_DIA_CARGADO=null;
-      aviso('covDiaAviso',e.message,false);
-      document.getElementById('cov-dia-estado').textContent='Pulsa Consultar menú para revisar el estado antes de volver a editar.';
-    } finally {
-      MENU_DIA_GUARDANDO=false; boton.textContent='Guardar cambios de esta fecha';
-      const habilitado=MENU_DIA_CARGADO?.permitido === true && PANEL_ROL === 'admin';
-      boton.disabled=!habilitado;
-      document.getElementById('cov-dia-fecha').disabled=false;
-      document.getElementById('cov-dia-consultar').disabled=false;
-      for(let i=1;i<=3;i++) document.getElementById('cov-dia-op'+i).readOnly=!habilitado;
-    }
-  }
-
-  let MENU_COBERTURA_PERIODO_ID = null;
-
-  function ajustarFechasMenuCobertura() {
-    const inicio = document.getElementById('cov-menu-inicio').value;
-    document.getElementById('cov-menu-final').min = inicio;
-  }
-
-  function mostrarPeriodoMenuCobertura(m, fecha) {
-    MENU_COBERTURA_PERIODO_ID = m?.periodo_id || null;
-    document.getElementById('cov-menu-inicio').value = m?.vigencia_desde || fecha;
-    document.getElementById('cov-menu-final').value = m?.vigencia_hasta || fecha;
-    ajustarFechasMenuCobertura();
-    for (let i = 1; i <= 3; i++) document.getElementById('cov-op' + i).value = m?.['opcion_' + i] || '';
-  }
-
-  function nuevoPeriodoMenuCobertura() {
-    MENU_COBERTURA_PERIODO_ID = null;
-    document.getElementById('cov-menu-inicio').value = fechaComedor();
-    document.getElementById('cov-menu-final').value = fechaComedor();
-    ajustarFechasMenuCobertura();
-    const av = document.getElementById('covMenuAviso');
-    av.className = 'aviso info';
-    av.textContent = 'Nuevo periodo. Elige inicio y final; puedes conservar estas opciones o capturar otras.';
-    document.getElementById('cov-menu-inicio').focus();
-  }
-
+  let MENU_COBERTURA_SEMANAL = null;
   async function cargarMenuCobertura(fecha) {
-    const av = document.getElementById('covMenuAviso');
-    try {
-      const r = await api('/api/cobertura/menu/' + fecha);
-      const m = r.menu;
-      mostrarPeriodoMenuCobertura(m, fecha);
-      av.className = m?.activo ? 'aviso ok' : 'aviso info';
-      av.textContent = m?.activo
-        ? 'Menú publicado del ' + (m.vigencia_desde || fecha) + ' al ' + (m.vigencia_hasta || fecha) + ', ambas fechas incluidas.'
-        : 'No hay menú especial activo para el día consultado. Puedes publicar un periodo nuevo.';
-    } catch (e) {
-      av.className = 'aviso err'; av.textContent = e.message;
-    }
-  }
-
-  async function guardarMenuCobertura() {
-    const body = {
-      fecha_inicio: document.getElementById('cov-menu-inicio').value,
-      fecha_final: document.getElementById('cov-menu-final').value,
-      periodo_id: MENU_COBERTURA_PERIODO_ID,
-      opcion_1: document.getElementById('cov-op1').value.trim(),
-      opcion_2: document.getElementById('cov-op2').value.trim(),
-      opcion_3: document.getElementById('cov-op3').value.trim(),
-      activo: true
-    };
-    const av = document.getElementById('covMenuAviso');
-    if (!body.fecha_inicio || !body.fecha_final || !body.opcion_1 || !body.opcion_2 || !body.opcion_3) {
-      av.className = 'aviso err'; av.textContent = 'Completa inicio, final y las tres opciones.'; return;
-    }
-    if (body.fecha_final < body.fecha_inicio) {
-      av.className = 'aviso err'; av.textContent = 'La fecha final no puede ser anterior a la fecha de inicio.'; return;
-    }
-    const boton = document.getElementById('cov-menu-guardar');
-    if (boton.disabled) return;
-    boton.disabled = true; boton.textContent = 'Publicando periodo…';
-    try {
-      const r = await api('/api/cobertura/menu', { method: 'POST', body: JSON.stringify(body) });
-      mostrarPeriodoMenuCobertura(r.menu, r.fecha_inicio);
-      av.className = 'aviso ok';
-      av.textContent = 'Menú publicado del ' + r.fecha_inicio + ' al ' + r.fecha_final + ' (' + r.dias + ' día(s), ambas fechas incluidas). Los supervisores tendrán estas opciones en esas fechas.';
-      await cargarSolicitudesCobertura(document.getElementById('cov-fecha').value || fechaComedor());
-    } catch (e) {
-      av.className = 'aviso err'; av.textContent = e.message;
-    } finally {
-      boton.disabled = PANEL_ROL === 'gerente'; boton.textContent = 'Publicar menú para el periodo';
-    }
+    if (!MENU_COBERTURA_SEMANAL) MENU_COBERTURA_SEMANAL = MenuCoberturaSemanal.montar({
+      raiz:document.getElementById('cov-menu-semanal'), api, fechaHoy:fechaComedor,
+      puedeEditar:()=>PANEL_ROL === 'admin',
+      alPublicar:async()=>{
+        EXTRA_CONFIG=null;
+        await cargarSolicitudesCobertura(document.getElementById('cov-fecha').value || fechaComedor());
+      }
+    });
+    await MENU_COBERTURA_SEMANAL.cargar(fecha);
   }
 
   function llenarSelectorSupervisores() {
