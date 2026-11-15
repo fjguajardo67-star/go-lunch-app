@@ -1381,6 +1381,7 @@
 <iframe id="cov-print-frame" class="cov-print-frame" title="Impresión automática de comanda de cobertura"></iframe>
 
 <script src="/operacion.js"></script>
+<script src="/fechas-comedor.js"></script>
 <script src="/menu-cobertura-semanal.js"></script>
 <script src="/bitacora-rutas.js"></script>
 <script src="/reportes-excel.js"></script>
@@ -1405,18 +1406,7 @@
   // el panel ofrecía imprimir la comanda del día equivocado.
   // Se ancla a la zona del comedor y no a la del equipo, para que el panel dé
   // la misma fecha desde cualquier computadora.
-  const ZONA_COMEDOR = 'America/Mexico_City';
-  const fechaComedor = (d = new Date()) => new Intl.DateTimeFormat('en-CA', {
-    timeZone: ZONA_COMEDOR, year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(d);
-
-  // Aritmética sobre la fecha civil (YYYY-MM-DD), sin husos de por medio.
-  function sumarDias(iso, n) {
-    const [a, m, d] = iso.split('-').map(Number);
-    const x = new Date(a, m - 1, d + n);
-    const p = v => String(v).padStart(2, '0');
-    return x.getFullYear() + '-' + p(x.getMonth() + 1) + '-' + p(x.getDate());
-  }
+  const { ZONA: ZONA_COMEDOR, fechaComedor, sumarDias } = GoLunchFechas;
   // En reportes los pedidos viejos sin asignar se agrupan bajo una clave
   // propia, que hay que nombrar en español y no mostrar tal cual.
   const etiquetaTurno = t => t === 'sin_turno' ? 'Sin turno' : turnoTxt(t);

@@ -2344,6 +2344,7 @@
 <footer>Comedores Industriales de Cuauhtémoc · CICSA</footer>
 
 <script src="/operacion.js"></script>
+<script src="/fechas-comedor.js"></script>
 <script>
   // Servida desde GitHub Pages apunta a Railway; servida por el propio
   // backend (o en local) usa su mismo origen.
@@ -2475,7 +2476,7 @@
 
   function formatearHoraActual() {
     return new Intl.DateTimeFormat('es-MX', {
-      hour: 'numeric', minute: '2-digit'
+      timeZone: GoLunchFechas.ZONA, hour: 'numeric', minute: '2-digit'
     }).format(new Date());
   }
 
@@ -2490,13 +2491,10 @@
     $('fechabar').classList.toggle('cerrado', !estado.abierto);
     $('fecha-lbl').textContent = MODO_PRUEBA ? 'Menú real para' : (estado.abierto ? 'Tu pedido es para' : 'Pedidos cerrados para');
 
-    // Si el servicio no es literalmente mañana, decirlo en vez de asumirlo
-    const manana = new Date(); manana.setDate(manana.getDate() + 1);
-    const esManana = estado.fecha === manana.toISOString().slice(0, 10);
-    if (!esManana && estado.abierto) {
-      $('fecha-nota').textContent = '↷ Mañana no hay servicio en el comedor.';
-      $('fecha-nota').style.display = 'block';
-    }
+    // La fecha del servidor manda; el aviso solo explica saltos de calendario.
+    const nota = GoLunchFechas.notaServicio(estado.fecha, estado.abierto);
+    $('fecha-nota').textContent = nota;
+    $('fecha-nota').style.display = nota ? 'block' : 'none';
   }
 
   // ── Identificación ──────────────────────────────────────────
