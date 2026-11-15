@@ -361,10 +361,12 @@
   /* Platillos completos: el ancho se mantiene y la altura sigue al texto. */
   #tablaMenuBox table { table-layout: fixed; }
   #tablaMenuBox td { padding-inline: 4px; }
+  :root { --menu-platillo-size: .875rem; }
+  #p-menu input[type="text"] { font-size: var(--menu-platillo-size); }
   #tablaMenuBox .menu-cell {
     display: block; width: 100%; min-width: 0; max-width: 100%;
     height: auto; min-height: 4.4rem; padding: 8px;
-    font: inherit; font-size: 1rem; line-height: 1.4;
+    font: inherit; font-size: var(--menu-platillo-size); line-height: 1.4;
     white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: hidden;
     border-radius: 6px; resize: vertical; field-sizing: content;
   }
@@ -375,9 +377,12 @@
       content: attr(data-valor) " "; visibility: hidden;
       box-sizing: border-box; min-height: 4.4rem; padding: 8px;
       border: 1.5px solid transparent;
-      font: inherit; font-size: 1rem; line-height: 1.4;
+      font: inherit; font-size: var(--menu-platillo-size); line-height: 1.4;
       white-space: pre-wrap; overflow-wrap: anywhere;
     }
+  }
+  @media (max-width: 640px), (pointer: coarse) {
+    :root { --menu-platillo-size: 1rem; }
   }
 
   /* ── Badge ── */
@@ -677,8 +682,8 @@
     .reporte-tabla:not(.reporte-rutas) td { font-size: .82rem; }
   }
 </style>
-<link rel="stylesheet" href="/menu-cobertura-semanal.css?v=73">
-<link rel="stylesheet" href="/dashboard-panel.css?v=76">
+<link rel="stylesheet" href="/menu-cobertura-semanal.css?v=77">
+<link rel="stylesheet" href="/dashboard-panel.css?v=77">
 </head>
 <body>
 

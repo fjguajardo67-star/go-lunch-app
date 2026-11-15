@@ -37,6 +37,8 @@ Los demás originales autorizados, incluido el trazo monocromático, viven en
 
 ## Pedidos de cobertura
 
+Los campos de platillos del panel comparten una escala: 0.875 rem (14 px con la configuración predeterminada) en computadora para menú regular diario, tabla semanal y opciones diarias de coberturas. En pantallas pequeñas o con puntero táctil conservan 1 rem (16 px). Se mantienen las áreas de interacción y el crecimiento del texto en varias líneas del menú regular, incluida su alternativa sin `field-sizing`. La escala de los documentos impresos es independiente.
+
 El menú de Coberturas se programa de lunes a domingo, con tres opciones variables por fecha y publicación independiente por día. La vista mantiene la identidad corporativa y usa filas con fecha, estado, tres campos y una acción; en móvil los campos se apilan. Publicado, Cambios sin publicar y Sin menú se expresan con texto. Solo administración publica; gerente consulta. Hoy y futuro admiten una nueva publicación con control de versión; el pasado conserva el historial. Los borradores se conservan ante errores y se confirma antes de descartarlos al consultar otra semana.
 
 Cada folio guarda sus tres opciones originales de forma inmutable. La publicación nueva aplica a nuevas altas, que comprueban la versión del menú dentro de la transacción. La edición de un folio conserva su propio menú, platillos y QR. La anticipación de dos horas, límites de edición, entregas e incidencias se mantienen. Los formularios atrasados deben actualizar; reintentar una confirmación recupera el folio original aunque haya otra publicación. La programación semanal reemplaza los formularios de vigencia y de cambio de un día en el panel; los periodos existentes se muestran por fecha.
