@@ -9,6 +9,7 @@
 .cov-dia-opciones { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .cov-dia-opciones label { margin-top:0; }
 .cov-dia-opciones input { font-size:1rem; min-height:44px; }
+#cov-menu-semanal .cov-dia-opciones input { font-size:var(--menu-platillo-size,1rem); }
 .cov-dia-accion { align-self:end; }
 .cov-dia-accion button { width:100%; min-height:44px; }
 .cov-dia-accion button:disabled { background:var(--gris-bg); color:var(--gris-text); border-color:var(--gris-line); cursor:default; }

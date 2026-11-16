@@ -12,6 +12,14 @@ test('61 regulares y 4 coberturas suman 65 comidas de 62 empleados, sin sobrescr
   assert.equal(r.filas.length,134);
   for(const numero of ['00001','00002','00003'])assert.deepEqual(r.filas.filter(f=>f.numero_empleado===numero).map(f=>f.tipo),['regular','cobertura']);
   assert.equal(r.filas.filter(f=>f.numero_empleado==='00062').length,1);
+  assert.equal(r.personas.length,131);
+  assert.equal(r.personas.filter(p=>p.comidas>0).length,62);
+  const sinPedido=r.personas.filter(p=>!p.comidas);
+  assert.equal(sinPedido.length,69);
+  assert.equal(sinPedido.filter(p=>p.ingreso==='registrado').length,12);
+  assert.equal(sinPedido.filter(p=>p.ingreso==='sin_registro').length,57);
+  assert.equal(r.personas.find(p=>p.numero_empleado==='00001').comidas,2);
+  assert.equal(r.personas.find(p=>p.numero_empleado==='00062').comidas,1);
 });
 
 test('cada servicio conserva estado propio y las canceladas no cuentan',()=>{
@@ -39,6 +47,9 @@ test('las comidas históricas siguen aunque la persona esté inactiva; los acces
   assert.equal(r.resumen.activos,130);assert.equal(r.resumen.ordenaron,61);assert.equal(r.resumen.total_comidas,65);
   assert.equal(r.filas.filter(f=>f.numero_empleado==='00001').length,2);
   assert.equal(r.resumen.no_abrieron,0);assert.equal(r.resumen.sin_dato,69);assert.equal(r.resumen.accesos_ok,false);
+  assert.equal(r.personas.length,130);
+  assert.equal(r.personas.some(p=>p.numero_empleado==='00001'),false);
+  assert.equal(r.personas.filter(p=>!p.comidas).every(p=>p.ingreso==='sin_dato'),true);
   const sinActivos=construirDashboard({...d,empleados:[]});assert.equal(sinActivos.resumen.total_comidas,65);assert.equal(sinActivos.filas.length,65);
 });
 
@@ -47,6 +58,7 @@ test('variantes telefónicas y coberturas sin teléfono se unen al empleado corr
   const r=construirDashboard({fecha,empleados:[emp],pedidos:[{empleado_telefono:'525512345678',empleados:emp,turno:'turno_a',zona:'zona_refris'}],
     coberturas:[{empleado_numero_snapshot:'00001',empleado_nombre_snapshot:'Persona',turno:'turno_b',zona:'zona_refris'}]});
   assert.equal(r.resumen.ordenaron,1);assert.equal(r.resumen.total_comidas,2);assert.equal(r.filas.length,2);
+  assert.equal(r.personas.length,1);assert.equal(r.personas[0].comidas,2);
 });
 
 test('API integra ambas fuentes para gerente y admin; no oculta fallos de coberturas',async()=>{
@@ -67,6 +79,7 @@ test('API integra ambas fuentes para gerente y admin; no oculta fallos de cobert
     for(const [usuario,clave] of [['admin',process.env.ADMIN_KEY],['gerente',process.env.GERENTE_KEY]]){
       const r=await fetch(url+d.fecha,{headers:{'x-panel-user':usuario,'x-admin-key':clave}});assert.equal(r.status,200);
       const b=await r.json();assert.equal(b.resumen.total_comidas,65);assert.equal(b.resumen.ordenaron,62);assert.equal(b.resumen.coberturas,4);
+      assert.equal(b.personas.length,131);assert.equal(b.personas.filter(p=>p.comidas>0).length,62);
     }
     assert.equal((await fetch(url+d.fecha)).status,401);
     const otro=await fetch(url+'2026-11-08',{headers:{'x-admin-key':process.env.ADMIN_KEY}});assert.equal((await otro.json()).resumen.total_comidas,0);

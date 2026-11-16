@@ -212,7 +212,7 @@
       <li><b>Publicar menú del día:</b> fecha + las 6 opciones (3 fijas, 3 variables) → Guardar.</li>
       <li><b>Imprimir menú del día:</b> prepara la fecha y los platillos que aparecen en el formulario. <b>Imprimir periodo</b> toma la tabla semanal que hayas generado; cada día comienza en una página nueva. La vista previa permite imprimir o guardar como PDF en tamaño carta. Incluye lo que está en pantalla, incluso cambios sin guardar; imprimir no guarda ni publica el menú. Usa <b>Volver al panel</b> para continuar trabajando.</li>
       <li><b>Programar menú semanal:</b> genera la tabla de la semana y captura varios días de una vez. Lo recomendable es publicar <b>toda la semana el viernes anterior</b> — así un olvido diario no deja a nadie sin comer.</li>
-      <li><b>Leer platillos completos:</b> las celdas del menú semanal muestran varias líneas y aumentan de altura según el nombre del platillo, sin reducir la letra. Las filas ya publicadas siguen protegidas; toca <b>Editar</b> para cambiar una fecha. Ajustar el texto o imprimir el periodo no publica los cambios: usa <b>Guardar días de menú</b> para guardarlos.</li>
+      <li><b>Leer platillos completos:</b> las celdas del menú semanal muestran varias líneas y aumentan de altura según el nombre del platillo. Los nombres de platillos del menú regular y de coberturas usan una letra más compacta en computadora; en celular conservan el tamaño de lectura. Las filas ya publicadas siguen protegidas; toca <b>Editar</b> para cambiar una fecha. Ajustar el texto o imprimir el periodo no publica los cambios: usa <b>Guardar días de menú</b> para guardarlos.</li>
       <li>Si aparece la alerta de que <b>mañana no tiene menú</b>, resuélvelo antes de las 9:00 PM de hoy.</li>
     </ul>
 
@@ -230,13 +230,17 @@
       <li><b>Desactivar</b> (baja temporal, conserva historial) vs <b>Eliminar</b> (borra el registro y sus pedidos). Ante la duda, desactiva.</li>
     </ul>
 
-    <h3>📊 Dashboard — quién pidió y quién no</h3>
-    <p>Elige la fecha de servicio. El bloque <b>Comidas</b> muestra <b>Regulares + Coberturas = Total de comidas</b>, además de Entregadas, Pendientes y <b>No surtidas · Sin cargo</b>. Por ejemplo, 61 regulares y 7 coberturas suman 68 comidas solicitadas. <b>Entregadas + Pendientes + No surtidas = Total de comidas</b>. Las entregas tardías se indican debajo y ya están incluidas en las entregadas.</p>
-    <p><b>Reporte diario para el cliente:</b> selecciona la fecha en Dashboard, escribe opcionalmente el nombre de quien lo elaboró y presiona <b>Reporte diario / PDF</b>. Se abre un documento con logos CICSA y Glovis, resumen de regulares y coberturas solicitadas, total, entregadas, sin confirmación y no surtidas sin cargo. La lista de entregas contiene únicamente comidas con entrega registrada y sin incidencia, separadas por turno y zona, con número de empleado, nombre, platillo, servicio, folio cuando corresponde, hora prevista y hora registrada. Incluye subtotales y total diario; las extraordinarias conservan su horario autorizado. Un empleado puede aparecer varias veces si recibió más de una comida. La sección <b>Incidencias sin cargo</b> se separa por turno y zona e identifica empleado, platillo, servicio, folio cuando corresponde, motivo, rol autorizador y hora del registro; si hubo una marca de entrega previa, la muestra como rectificada.</p>
+    <h3>📊 Dashboard — comidas, entregas y empleados</h3>
+    <p>Elige la <b>fecha de servicio</b> y presiona <b>Consultar</b>. Hay dos vistas: <b>Comidas y entregas</b> y <b>Empleados</b>. La primera cuenta comidas; la segunda cuenta personas activas, una sola vez por empleado.</p>
+    <p><b>Comidas y entregas</b> muestra <b>Regulares + Coberturas = Comidas solicitadas</b>. Por ejemplo, 61 regulares y 7 coberturas suman 68 comidas. Presiona <b>Todas</b>, <b>Por entregar</b>, <b>Entregadas</b> o <b>No surtidas · Sin cargo</b> para ver las comidas de ese grupo. <b>Entregadas + Por entregar + No surtidas = Total solicitado</b>; las tardías ya están incluidas en Entregadas. Cada fila conserva empleado, número, platillo, servicio, folio, zona, horario y estado. Un empleado puede tener varias comidas; las extraordinarias conservan su hora autorizada y las canceladas se excluyen. Las comidas históricas siguen visibles aunque el empleado haya sido desactivado.</p>
+    <p><b>Empleados</b> muestra <b>Activos</b>, <b>Con pedido</b> y <b>Sin pedido</b>. Con pedido + Sin pedido = Activos. Una persona con pedido regular y cobertura cuenta una vez aquí, aunque represente dos comidas. Selecciona <b>Sin pedido</b> para ver su desglose: <b>Ingresaron</b> y <b>Sin ingreso registrado</b>. Ambos grupos forman parte de Sin pedido; presiona cada uno para consultar su lista. La tabla identifica al empleado y muestra su ingreso para la fecha de servicio consultada.</p>
+    <p>El ingreso se registra cuando el empleado escribe su número para consultar esa fecha. <b>Sin ingreso registrado</b> significa que no existe ese registro; no indica el motivo por el que la persona no pidió. Si falla la consulta de ingresos, los dos subgrupos quedan desactivados y se muestra <b>Sin dato disponible</b>. El total sin pedido, los pedidos y las entregas siguen disponibles.</p>
+    <p>Al consultar el día de hoy, los datos se actualizan cada 30 segundos mientras Dashboard está visible. Se conserva la vista y el filtro seleccionados. En celular, cada fila se acomoda en un bloque con sus etiquetas para poder leer los nombres y platillos completos.</p>
+    <p><b>Reporte diario para el cliente:</b> incluye toda la fecha consultada, independientemente de la vista o filtro seleccionado en Dashboard. Selecciona la fecha, escribe opcionalmente el nombre de quien lo elaboró y presiona <b>Reporte diario / PDF</b>. Se abre un documento con logos CICSA y Glovis, resumen de regulares y coberturas solicitadas, total, entregadas, sin confirmación y no surtidas sin cargo. La lista de entregas contiene únicamente comidas con entrega registrada y sin incidencia, separadas por turno y zona, con número de empleado, nombre, platillo, servicio, folio cuando corresponde, hora prevista y hora registrada. Incluye subtotales y total diario; las extraordinarias conservan su horario autorizado. Un empleado puede aparecer varias veces si recibió más de una comida. La sección <b>Incidencias sin cargo</b> se separa por turno y zona e identifica empleado, platillo, servicio, folio cuando corresponde, motivo, rol autorizador y hora del registro; si hubo una marca de entrega previa, la muestra como rectificada.</p>
     <p>El reporte se abre dentro del panel, tanto en computadora como en la app instalada en el celular. El botón <b>Volver al panel</b> permanece arriba mientras revisas la hoja y te devuelve al dashboard con la misma sesión, fecha y posición de consulta. Después de imprimir o cancelar la impresión, usa ese botón para continuar trabajando.</p>
     <p>El reporte es una fotografía de los registros al momento de generarlo; si faltan escaneos por sincronizar, conecta primero el equipo de reparto y vuelve a generarlo. No cambia estados de entrega ni requiere firma. Para enviarlo por correo, presiona <b>Imprimir / Guardar PDF</b> y elige <b>Guardar como PDF</b> en Safari para Mac, o la impresora PDF del equipo. Usa papel <b>carta vertical</b>, márgenes de <b>14 mm</b>, escala <b>100 %</b> y desactiva los encabezados y pies del navegador. Las páginas ya llevan fecha, hora local de generación y numeración; la clave del panel no se incorpora al documento. El botón de regreso queda fuera del documento impreso. Guarda el archivo y adjúntalo al correo. Si ya habías enviado el PDF y después registras una incidencia, <b>regenera el reporte y envía el archivo corregido a RRHH para reemplazar el anterior</b>. La app no modifica la nómina externa ni reemplaza archivos ya enviados.</p>
     <h3>Registrar una comida no surtida</h3>
-    <p>Si cocina o reparto no surtió una comida, entra como <b>administrador o gerente</b>, selecciona la fecha en Dashboard y ubica la fila de esa comida regular o de cobertura. La incidencia corresponde a una comida específica, no a todos los pedidos de la persona.</p>
+    <p>Si cocina o reparto no surtió una comida, entra como <b>administrador o gerente</b>, selecciona la fecha en Dashboard, abre <b>Comidas y entregas</b> y ubica la fila de esa comida regular o de cobertura. La incidencia corresponde a una comida específica, no a todos los pedidos de la persona.</p>
     <ol>
       <li>Presiona <b>Registrar no surtido</b> y revisa fecha, empleado, platillo y folio, si corresponde.</li>
       <li>Escribe un <b>motivo obligatorio de 5 a 500 caracteres, en una sola línea</b>. Marca la confirmación de que esa comida no fue surtida por cocina o reparto.</li>
@@ -245,31 +249,6 @@
     <p>Se registra el rol <b>admin o gerente de la sesión</b> y la <b>hora del servidor</b>; no se captura el nombre de otro autorizador. Solo admite servicios de hoy o anteriores. Si el estado de entrega cambió, actualiza Dashboard y revisa la comida antes de volver a autorizar. Un error conserva el motivo para reintentar.</p>
     <div class="caja importante"><b>No surtido · Sin cargo al empleado:</b> queda separado de entregadas y pendientes; tampoco cuenta como no recogido, merma atribuida al empleado, encuesta ni puntualidad. La solicitud original permanece en las estadísticas de producción. Esta acción no cambia la regla de cobro de quien sí tuvo disponible su comida y realmente no la recogió; tampoco requiere OTP ni activa WhatsApp.</div>
     <p>Reparto deja de ofrecer la comida con incidencia. Si un equipo sin señal intenta sincronizar después un escaneo atrasado, el servidor lo rechaza sin revertir la incidencia: conecta el equipo, actualiza y verifica el caso antes de entregar. Un folio de cobertura que contiene una incidencia no se puede modificar ni cancelar.</p>
-    <p>El bloque <b>Empleados</b> muestra activos, con pedido, quienes vieron sin pedir y quienes no abrieron la app. <b>Con pedido</b> cuenta cada empleado activo una sola vez, aunque tenga ambos servicios; por eso la cifra de personas puede ser menor que la de comidas.</p>
-    <p>La tabla presenta cada comida en su propia fila, con número de empleado, servicio, folio de cobertura y horario. Un empleado puede aparecer varias veces; cada entrega conserva su hora y estado. Las extraordinarias usan la hora autorizada. Las coberturas canceladas se excluyen y los pedidos históricos siguen visibles aunque el empleado haya sido desactivado. Quien no tenga pedido aparece una sola vez con su estado de acceso:</p>
-    <ul>
-      <li><b>✅ Entregado</b> — pidió y ya se le entregó, a tiempo.</li>
-      <li><b>⏱️ Tardía</b> — se le entregó después de la hora de su turno.</li>
-      <li><b>⬜ Pendiente</b> — pidió, falta entregarle.</li>
-      <li><b>No surtido · Sin cargo</b> — cocina o reparto no surtió la comida; se conserva el pedido y no se cobra al empleado.</li>
-      <li><b>👀 Vio el menú, no pidió</b> — abrió la app ese día y decidió no pedir.</li>
-      <li><b>— No abrió la app</b> — nunca la consultó para esa fecha.</li>
-    </ul>
-    <div class="caja tip">
-      <b>Los dos últimos son la misma cifra en el papel y dos problemas opuestos.</b>
-      Quien vio el menú y no pidió tomó una decisión: eso se atiende en la
-      cocina, revisando qué se ofreció ese día. Quien no abrió la app ni se
-      enteró: eso se atiende con el QR, con el supervisor o recordándoselo.
-      Antes los dos aparecían como "no ordenó" y llevaban a arreglar lo que no
-      estaba roto. La tarjeta de arriba te da el desglose, y en cada renglón se
-      ve <b>a qué hora miró</b> y cuántas veces volvió.
-    </div>
-    <p style="font-size:.86rem;color:var(--gris-text)">
-      El registro se hace cuando el empleado escribe su número en la página. Si
-      la consulta falla, <b>nunca impide pedir</b>: la bitácora es secundaria,
-      el pedido no.
-    </p>
-
     <p>Si no se pueden descargar las coberturas, reparto avisa que la lista no está completa. Conserva su última descarga y vuelve a intentar con conexión antes de cerrar la entrega.</p>
 
     <h3>🍽️ Pedidos</h3>

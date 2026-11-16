@@ -22,12 +22,17 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
   }
   const claveActiva = emp => identidad(emp.telefono, emp.numero_empleado);
   const conPedido = new Set();
+  const comidasPorEmpleado = new Map();
 
   function filaPedido(p, tipo) {
     const especial = tipo === 'cobertura';
     const nro = especial ? p.empleado_numero_snapshot : p.empleados?.numero_empleado;
     const emp = porTel.get(claveEmpleado(p.empleado_telefono)) || porNumero.get(numero(nro));
-    if (emp) conPedido.add(claveActiva(emp));
+    if (emp) {
+      const clave = claveActiva(emp);
+      conPedido.add(clave);
+      comidasPorEmpleado.set(clave, (comidasPorEmpleado.get(clave) || 0) + 1);
+    }
     const acc = accesosPorTel.get(claveEmpleado(emp?.telefono || p.empleado_telefono));
     const programada = especial ? p.entrega_programada_en || null : null;
     const entregada = p.entregado_en || null;
@@ -74,8 +79,21 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
     String(a.turno || '').localeCompare(String(b.turno || '')) ||
     (a.tipo === 'regular' ? 0 : 1) - (b.tipo === 'regular' ? 0 : 1));
   const cuenta = estado => filas.filter(f => f.estado === estado).length;
+  // El detalle de personas usa exclusivamente la plantilla activa. Las
+  // comidas históricas y sus nombres originales siguen en filas.
+  const personas = empleados.map(emp => {
+    const acceso = accesosPorTel.get(claveEmpleado(emp.telefono));
+    return {
+      nombre:emp.nombre, numero_empleado:emp.numero_empleado,
+      comidas:comidasPorEmpleado.get(claveActiva(emp)) || 0,
+      ingreso:acceso ? 'registrado' : accesosOk ? 'sin_registro' : 'sin_dato',
+      visto_en:acceso?.visto_en || null
+    };
+  }).sort((a,b) => a.nombre.localeCompare(b.nombre,'es',{sensitivity:'base'}) ||
+    numero(a.numero_empleado).localeCompare(numero(b.numero_empleado),'es',{numeric:true}));
   return {
     fecha,
+    personas,
     resumen: {
       activos:empleados.length, ordenaron:conPedido.size, no_ordenaron:sinPedido.length,
       total_comidas:comidas.length, regulares:pedidos.length, coberturas:especiales.length,
