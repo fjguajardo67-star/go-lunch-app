@@ -192,6 +192,9 @@
   .lateral .marca img { width: 100%; height: auto; max-width: 186px; display: block; margin: 0 auto; }
   .contenido { flex: 1; min-width: 0; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 28px 24px; }
+  .wrap:has(#p-menu.activo, #p-coberturas.activo) { max-width:1240px; padding:20px 16px; }
+  :is(#p-menu, #p-coberturas) > .card { padding:16px; }
+  #p-menu > .card > .card-header { margin-bottom:12px; padding-bottom:10px; }
 
   /* ── Navegación lateral ── */
   .tabs { display: flex; flex-direction: column; gap: 3px; }
@@ -358,14 +361,21 @@
   tbody tr:hover { background: var(--azul-light); }
   th, td { text-align: left; }
 
-  /* Platillos completos: el ancho se mantiene y la altura sigue al texto. */
-  #tablaMenuBox table { table-layout: fixed; }
-  #tablaMenuBox td { padding-inline: 4px; }
-  :root { --menu-platillo-size: .875rem; }
+  /* Seis opciones dentro del ancho disponible; la altura sigue al texto. */
+  #tablaMenuBox .menu-tabla-region { container:menu-semana / inline-size; max-inline-size:100%; overflow:auto; padding:4px; }
+  #tablaMenuBox .menu-tabla-region:focus-visible { outline:3px solid var(--azul); outline-offset:2px; }
+  #tablaMenuBox table { table-layout:fixed; inline-size:100%; min-inline-size:0; }
+  #tablaMenuBox thead th { padding:6px 4px; letter-spacing:0; }
+  #tablaMenuBox thead th:first-child { inline-size:108px; }
+  #tablaMenuBox td, #tablaMenuBox .menu-fecha { padding:4px; vertical-align:middle; }
+  #tablaMenuBox .menu-fecha { font-size:.8rem; font-weight:700; border-bottom:1px solid var(--gris-line); }
+  .menu-fecha-dia { display:block; white-space:nowrap; }
+  .menu-editar { display:block; min-height:28px; padding:3px 8px; margin-top:4px; background:var(--blanco); border:1px solid var(--azul); color:var(--azul); border-radius:4px; font:inherit; font-size:.75rem; cursor:pointer; }
+  :root { --menu-platillo-size: .8125rem; }
   #p-menu input[type="text"] { font-size: var(--menu-platillo-size); }
   #tablaMenuBox .menu-cell {
     display: block; width: 100%; min-width: 0; max-width: 100%;
-    height: auto; min-height: 4.4rem; padding: 8px;
+    height: auto; min-height: 3rem; padding: 6px;
     font: inherit; font-size: var(--menu-platillo-size); line-height: 1.4;
     white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: hidden;
     border-radius: 6px; resize: vertical; field-sizing: content;
@@ -375,14 +385,18 @@
     .menu-celda::after, #tablaMenuBox .menu-celda > .menu-cell { grid-area: 1 / 1 / 2 / 2; }
     .menu-celda::after {
       content: attr(data-valor) " "; visibility: hidden;
-      box-sizing: border-box; min-height: 4.4rem; padding: 8px;
+      box-sizing: border-box; min-height: 3rem; padding: 6px;
       border: 1.5px solid transparent;
       font: inherit; font-size: var(--menu-platillo-size); line-height: 1.4;
       white-space: pre-wrap; overflow-wrap: anywhere;
     }
   }
+  @container menu-semana (inline-size < 640px) {
+    #tablaMenuBox table { min-inline-size:720px; }
+  }
   @media (max-width: 640px), (pointer: coarse) {
     :root { --menu-platillo-size: 1rem; }
+    .menu-editar { min-height:44px; min-width:44px; }
   }
 
   /* ── Badge ── */
@@ -682,8 +696,8 @@
     .reporte-tabla:not(.reporte-rutas) td { font-size: .82rem; }
   }
 </style>
-<link rel="stylesheet" href="/menu-cobertura-semanal.css?v=77">
-<link rel="stylesheet" href="/dashboard-panel.css?v=77">
+<link rel="stylesheet" href="/menu-cobertura-semanal.css?v=78">
+<link rel="stylesheet" href="/dashboard-panel.css?v=78">
 </head>
 <body>
 
@@ -808,7 +822,7 @@
           <div class="card-icon">📅</div>
           <h3>Programar menú semanal</h3>
         </div>
-        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px">
           <div style="flex:0 0 160px">
             <label for="per-inicio">Fecha de inicio</label>
             <input type="date" id="per-inicio" style="width:160px">
@@ -3022,11 +3036,12 @@
     });
 
     // Marca de "ya programado" con su botón de Editar, si aún no la tiene
-    const celdaFecha = tr.querySelector('td');
+    const celdaFecha = tr.querySelector('.menu-fecha');
     if (celdaFecha && !celdaFecha.querySelector('button')) {
+      celdaFecha.querySelector('.menu-fecha-dia').insertAdjacentHTML('beforeend',
+        ' <span style="color:var(--verde);font-size:.75rem">&#9679;</span>');
       celdaFecha.insertAdjacentHTML('beforeend',
-        ' <span style="color:var(--verde);font-size:.75rem">&#9679;</span>' +
-        ' <button onclick="desbloquearFila(this)" style="background:none;border:1px solid #003087;color:#003087;border-radius:4px;font-size:.75rem;padding:1px 5px;cursor:pointer;margin-left:2px">Editar</button>');
+        '<button type="button" class="menu-editar" aria-label="Editar menú del ' + fecha + '" onclick="desbloquearFila(this)">Editar</button>');
     }
   }
 
@@ -3068,10 +3083,10 @@
     }));
     av.textContent = '';
 
-    let htmlTabla = '<div style="overflow-x:auto"><table style="min-width:950px">';
-    htmlTabla += '<thead><tr><th style="width:170px">Fecha</th>';
-    htmlTabla += '<th>Opcion A</th><th>Opcion B</th><th>Opcion C</th>';
-    htmlTabla += '<th>Variable 1</th><th>Variable 2</th><th>Variable 3</th></tr></thead><tbody>';
+    let htmlTabla = '<div class="menu-tabla-region" tabindex="0" role="region" aria-label="Tabla de programación semanal"><table aria-label="Menú semanal por fecha y opción">';
+    htmlTabla += '<thead><tr><th scope="col">Fecha</th>';
+    htmlTabla += '<th scope="col">Opcion A</th><th scope="col">Opcion B</th><th scope="col">Opcion C</th>';
+    htmlTabla += '<th scope="col">Variable 1</th><th scope="col">Variable 2</th><th scope="col">Variable 3</th></tr></thead><tbody>';
 
     let diasConMenu = 0;
     for (let i = 0; i < dias; i++) {
@@ -3088,17 +3103,18 @@
       const colorFecha = esFinde && !datos ? 'var(--gris-text)' : 'var(--tinta)';
 
       htmlTabla += '<tr style="' + bgRow + '" data-fecha="' + fecha + '" data-bloqueado="' + (datos ? 'true' : 'false') + '">';
-      htmlTabla += '<td style="font-size:.8rem;font-weight:700;white-space:nowrap;color:' + colorFecha + '">' + label;
+      htmlTabla += '<th scope="row" class="menu-fecha" style="color:' + colorFecha + '"><span class="menu-fecha-dia">' + label;
       if (datos) {
         htmlTabla += ' <span style="color:var(--verde);font-size:.75rem">&#9679;</span>';
-        htmlTabla += ' <button onclick="desbloquearFila(this)" style="background:none;border:1px solid #003087;color:#003087;border-radius:4px;font-size:.75rem;padding:1px 5px;cursor:pointer;margin-left:2px">Editar</button>';
       }
-      htmlTabla += '</td>';
+      htmlTabla += '</span>';
+      if (datos) htmlTabla += '<button type="button" class="menu-editar" aria-label="Editar menú del ' + fecha + '" onclick="desbloquearFila(this)">Editar</button>';
+      htmlTabla += '</th>';
 
       ['fija_a','fija_b','fija_c','var_1','var_2','var_3'].forEach((campo, indice) => {
         const texto = escaparHtml(datos ? (datos[campo] || '') : '');
         const etiqueta = ['Opción A','Opción B','Opción C','Variable 1','Variable 2','Variable 3'][indice] + ' · ' + label;
-        htmlTabla += '<td><div class="menu-celda" data-valor="' + texto + '"><textarea class="menu-cell" data-campo="' + campo + '" aria-label="' + escaparHtml(etiqueta) + '" rows="3" oninput="ajustarCeldaMenu(this)"' +
+        htmlTabla += '<td><div class="menu-celda" data-valor="' + texto + '"><textarea class="menu-cell" data-campo="' + campo + '" aria-label="' + escaparHtml(etiqueta) + '" rows="2" oninput="ajustarCeldaMenu(this)"' +
           (datos ? ' readonly style="background:#e8f5e9;cursor:default"' : '') + '>' + texto + '</textarea></div></td>';
       });
       htmlTabla += '</tr>';
