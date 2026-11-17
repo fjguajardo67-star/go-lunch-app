@@ -20,6 +20,7 @@ import { construirDashboard } from '../services/dashboard.js';
 import { prepararReporteEntregas, htmlReporteEntregas, validarElaboro } from '../services/reporte-entregas.js';
 import { validarEstimacion } from '../services/caratula-estimacion.js';
 import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
+import { crearExcelOperacion } from '../services/reporte-operacion-excel.js';
 import { validarIncidencia, errorIncidencia } from '../services/incidencias.js';
 
 export const adminRouter = express.Router();
@@ -480,6 +481,25 @@ adminRouter.get('/resumen-cocina/:fecha', async (req, res) => {
 });
 
 // Reportes consolidados: cada comida conserva servicio, estado y horario.
+adminRouter.get('/reportes/operacion.xlsx', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const { ini, fin } = req.query;
+    if (!ini || !fin) throw Object.assign(new Error('Selecciona Desde y Hasta para el reporte.'), { status: 400 });
+    validarPeriodo(ini, fin);
+    const filtros = normalizarSeleccionCocina(req.query);
+    const comidas = await comidasDelPeriodo(ini, fin);
+    const excel = await crearExcelOperacion(ini, fin, comidas, { filtros });
+    res.setHeader('X-Comidas-Entregadas', String(excel.entregadas));
+    res.setHeader('X-Comidas-Solicitadas', String(excel.total));
+    res.attachment(`CICSA_Operacion_${ini}_a_${fin}.xlsx`);
+    res.send(excel.buffer);
+  } catch (error) {
+    if (!error.status) console.error('[Excel de operación]', error.message);
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'No se pudo generar el Excel completo. Vuelve a intentar con conexión.' });
+  }
+});
+
 adminRouter.get('/reportes', async (req, res) => {
   try {
     const { ini, fin } = req.query;

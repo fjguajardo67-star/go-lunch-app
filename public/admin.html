@@ -1358,12 +1358,12 @@
           <h3>Reporte de operación</h3>
         </div>
         <p style="font-size:.82rem;color:var(--gris-text);margin:-4px 0 12px">
-          Comidas sin confirmación de entrega, calificaciones e incidencias sin cargo. Una hoja por tema.
+          Entregas con nombre y número de empleado, resumen del periodo, comidas sin confirmación e incidencias sin cargo. Incluye título y logos.
         </p>
         <div class="row-fin">
           <div><label for="op-ini">Desde</label><input type="date" id="op-ini"></div>
           <div><label for="op-fin">Hasta</label><input type="date" id="op-fin"></div>
-          <button class="accion" onclick="excelOperacion()">Descargar Excel</button>
+          <button class="accion" onclick="excelOperacion(this)">Descargar Excel</button>
         </div>
         <div id="repOpAviso" class="aviso"></div>
       </div>
@@ -2982,19 +2982,30 @@
     } catch (e) { aviso('repCocinaAviso', 'Error: ' + e.message, false); }
   }
 
-  async function excelOperacion() {
+  async function excelOperacion(boton) {
     const ini = val('op-ini'), fin = val('op-fin');
     if (!ini || !fin) return aviso('repOpAviso', 'Selecciona el rango de fechas', false);
+    if (boton?.disabled) return;
+    if (boton) { boton.disabled = true; boton.setAttribute('aria-busy', 'true'); }
     try {
-      const d = await api('/api/reportes?ini=' + ini + '&fin=' + fin + '&' + parametrosServicio());
-      if (!d.total) return aviso('repOpAviso', 'Sin pedidos en ese rango', false);
-      XLSX.writeFile(buildWorkbookOperacion(d), `CICSA_Operacion_${ini}_a_${fin}.xlsx`);
-      aviso('repOpAviso', `Reporte generado: ${d.regulares} regulares + ${d.coberturas} coberturas = ${d.total} comidas del periodo`);
+      aviso('repOpAviso', 'Preparando el Excel con las entregas actualizadas…');
+      const consulta = new URLSearchParams({ ini, fin });
+      const res = await fetch(API_BASE + '/api/reportes/operacion.xlsx?' + consulta + '&' + parametrosServicio(), {
+        cache: 'no-store', headers: { 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO }
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'No se pudo descargar el Excel.');
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const enlace = document.createElement('a');
+      enlace.href = url; enlace.download = `CICSA_Operacion_${ini}_a_${fin}.xlsx`;
+      document.body.appendChild(enlace); enlace.click(); enlace.remove();
+      // Safari necesita conservar la URL mientras inicia la descarga.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      aviso('repOpAviso', `Excel generado: ${res.headers.get('X-Comidas-Entregadas')} comidas entregadas de ${res.headers.get('X-Comidas-Solicitadas')} solicitadas.`);
     } catch (e) { aviso('repOpAviso', 'Error: ' + e.message, false); }
-  }
-
-  function buildWorkbookOperacion(d) {
-    return GoLunchReportesExcel.operacion(XLSX, formatosExcel(), d);
+    finally { if (boton) { boton.disabled = false; boton.removeAttribute('aria-busy'); } }
   }
 
   async function excelFacturacion() {
