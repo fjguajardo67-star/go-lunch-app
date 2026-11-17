@@ -715,7 +715,7 @@
           <circle cx="8" cy="5.2" r="2.6"/><path d="M2.9 13.3c0-2.5 2.3-4 5.1-4s5.1 1.5 5.1 4"/>
         </svg>
       </span>
-      <input class="login-input" type="text" id="adminUser" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="admin o gerente" />
+      <input class="login-input" type="text" id="adminUser" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="admin, gerente o monitoreo" />
     </div>
     <label for="adminKey">Contraseña</label>
     <div style="position:relative;margin-bottom:22px">
@@ -1473,8 +1473,15 @@
       ['m-fecha','pe-fecha','co-fecha','r-fecha','r-ini','r-fin','cov-fecha','cov-vig-desde'].forEach(id => document.getElementById(id).value = hoy);
       // Los impresos casi siempre son del día de servicio (mañana)
       document.getElementById('im-fecha').value = sumarDias(hoy, 1);
-      cargarEmpleados();
-      cargarSemana();
+      if (PANEL_ROL === 'monitoreo') {
+        document.getElementById('db-fecha').value = hoy;
+        document.getElementById('pe-fecha').value = hoy;
+        tab('dashboard');
+        verDashboard();
+      } else {
+        cargarEmpleados();
+        cargarSemana();
+      }
       iniciarMonitorCobertura();
     }).catch(() => {
       const e = document.getElementById('gateErr');
@@ -1493,6 +1500,7 @@
   }
 
   function tab(p) {
+    if (PANEL_ROL === 'monitoreo' && !['dashboard','pedidos','coberturas','cocina','reportes'].includes(p)) return;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('activo', t.dataset.p === p));
     document.querySelectorAll('.panel').forEach(s => s.classList.toggle('activo', s.id === 'p-'+p));
     // Al abrir el Dashboard, precargar la fecha de mañana
@@ -1503,11 +1511,12 @@
     // Cocina abre siempre en el trabajo diario. Usuarios, claves y coordenadas
     // se consultan solo cuando se entra a Reparto y puntos: son configuración
     // ocasional y ya no bloquean ni ensucian la vista de producción.
-    if (p === 'cocina') cocinaVista('diaria');
+    if (p === 'cocina') cocinaVista(PANEL_ROL === 'monitoreo' ? 'reparto' : 'diaria');
     if (p === 'coberturas') cargarCobertura();
   }
 
   function cocinaVista(nombre) {
+    if (PANEL_ROL === 'monitoreo' && nombre !== 'reparto') return;
     document.querySelectorAll('.cocina-subtab').forEach(b => {
       b.setAttribute('aria-pressed', b.dataset.cocinaVista === nombre ? 'true' : 'false');
     });
@@ -1515,8 +1524,7 @@
       v.hidden = v.dataset.cocinaPanel !== nombre;
     });
     if (nombre === 'reparto') {
-      cargarRepartidores();
-      cargarPropuestasPunto();
+      if (PANEL_ROL !== 'monitoreo') { cargarRepartidores(); cargarPropuestasPunto(); }
       const fecha = document.getElementById('bitacora-fecha');
       if (!fecha.value) fecha.value = fechaComedor();
       consultarBitacora();
@@ -1525,6 +1533,7 @@
 
   // Las restricciones visuales acompañan la autorización obligatoria del servidor.
   function aplicarPermisosPanel() {
+    if (PANEL_ROL === 'monitoreo') return aplicarPermisosMonitoreo();
     if (PANEL_ROL !== 'gerente') return;
     if (!document.getElementById('aviso-rol-gerente')) {
       const aviso = document.createElement('p');
@@ -1549,7 +1558,34 @@
     });
   }
 
+  function aplicarPermisosMonitoreo() {
+    if (!document.getElementById('aviso-rol-monitoreo')) {
+      const aviso = document.createElement('p');
+      aviso.id = 'aviso-rol-monitoreo'; aviso.className = 'aviso info';
+      aviso.textContent = 'Sesión: monitoreo · Solo lectura. Puedes consultar y descargar reportes. Los cambios y las entregas corresponden al personal autorizado.';
+      document.querySelector('.wrap').prepend(aviso);
+      new MutationObserver(aplicarPermisosMonitoreo).observe(document.getElementById('app'), { childList: true, subtree: true });
+    }
+    const ocultar = e => { if (e) e.style.display = 'none'; };
+    for (const selector of ['.tab[data-p="menu"]', '.tab[data-p="empleados"]', '#cov-extra',
+      '.puntos-panel', '.cocina-subnav', '.cocina-link', '[data-cocina-panel="pruebas"]']) {
+      document.querySelectorAll(selector).forEach(ocultar);
+    }
+    for (const id of ['cov-menu-semanal','cov-supervisor','rp-nombre']) ocultar(document.getElementById(id)?.closest('.card'));
+    const rutas = document.querySelector('.tab[data-p="cocina"]');
+    if (rutas && rutas.textContent !== 'Recorridos') rutas.textContent = 'Recorridos';
+    // Lista explícita de consultas e impresos; los controles nuevos no obtienen
+    // permiso por defecto. La API vuelve a comprobar todas las escrituras.
+    const consultas = /^(tab|cocinaVista|verDashboard|verPedidos|cargarCobertura|imprimirCobertura|imprimirFolioCobertura|verReportes|alternarEstimacion|imprimirReportePeriodo|imprimirReporteEntregas|excelCocina|excelOperacion|excelFacturacion|salir)\(/;
+    document.querySelectorAll('#app button[onclick]').forEach(b => {
+      if (!consultas.test(b.getAttribute('onclick'))) { b.disabled = true; ocultar(b); }
+    });
+  }
+
   async function api(path, opts = {}) {
+    if (PANEL_ROL === 'monitoreo' && !['GET','HEAD','OPTIONS'].includes((opts.method || 'GET').toUpperCase())) {
+      throw new Error('Monitoreo es de solo lectura.');
+    }
     const res = await fetch(API_BASE + path, {
       ...opts,
       headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO, ...(opts.headers||{}) }
@@ -1780,7 +1816,7 @@
           : f.turno ? turnoTxt(f.turno, f.zona, fechaServicio) : 'Sin horario',
         zona: zonaTxt,
         motivo: MOTIVO_TXT,
-        puedeIncidencia: fechaServicio => fechaServicio <= fechaComedor(),
+        puedeIncidencia: fechaServicio => PANEL_ROL !== 'monitoreo' && fechaServicio <= fechaComedor(),
         alIncidencia: registrarIncidencia
       });
       ultimoDash = Date.now();
@@ -3308,6 +3344,7 @@
   }
 
   function evaluarCorteCobertura(datos, fecha) {
+    if (PANEL_ROL === 'monitoreo') { actualizarBadgeCobertura(datos); return; }
     if (fecha !== fechaComedor()) return;
     if (datos.por_turno) {
       actualizarBadgeCobertura({total_porciones: datos.por_turno.reduce((n,s)=>n+s.total_porciones,0)});
@@ -3370,7 +3407,7 @@
   async function cargarCobertura() {
     const fecha = document.getElementById('cov-fecha').value || fechaComedor();
     document.getElementById('cov-fecha').value = fecha;
-    if (!Object.keys(EMPLEADOS).length) await cargarEmpleados();
+    if (PANEL_ROL !== 'monitoreo' && !Object.keys(EMPLEADOS).length) await cargarEmpleados();
     await Promise.all([
       cargarMenuCobertura(fecha),
       cargarSupervisoresCobertura(),
@@ -3414,7 +3451,7 @@
     const boton = document.getElementById('extra-guardar'); boton.disabled = true;
     try {
       const config = await api('/api/cobertura/extraordinarias');
-      if (!Object.keys(EMPLEADOS).length) await cargarEmpleados();
+      if (PANEL_ROL !== 'monitoreo' && !Object.keys(EMPLEADOS).length) await cargarEmpleados();
       document.getElementById('extra-fecha').value = config.fecha;
       document.getElementById('extra-empleados').innerHTML = Object.values(EMPLEADOS)
         .filter(e => e.activo !== false).map(e => '<option value="' + escaparHtml(e.numero_empleado) + '">' + escaparHtml(e.nombre) + '</option>').join('');

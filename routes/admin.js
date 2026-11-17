@@ -29,7 +29,8 @@ export const adminRouter = express.Router();
 // El servidor aplica permisos aunque se intente llamar directamente a la API.
 adminRouter.use(autorizarPanel);
 adminRouter.get('/sesion', (req, res) => {
-  res.json({ usuario: req.rolPanel === 'gerente' ? 'gerente' : 'admin', rol: req.rolPanel });
+  res.set('Cache-Control', 'no-store');
+  res.json({ usuario: req.rolPanel, rol: req.rolPanel });
 });
 
 // ── Empleados ───────────────────────────────────────────────────

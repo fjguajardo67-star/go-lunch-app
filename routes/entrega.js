@@ -190,7 +190,17 @@ entregaRouter.use(async (req, res, next) => {
   }
 
   const clave = req.headers['x-admin-key'];
-  if (rolPanel(clave)) {
+  const rol = rolPanel(clave);
+  if (rol === 'monitoreo') {
+    // La clave de consulta nunca se convierte en una clave de repartidor.
+    if (req.method !== 'GET' || req.path !== '/bitacora' ||
+        String(req.headers['x-panel-user'] || '').trim().toLowerCase() !== 'monitoreo') {
+      return res.status(403).json({ error: 'Monitoreo solo puede consultar la bitácora de rutas.' });
+    }
+    req.esAdmin = true;
+    return next();
+  }
+  if (rol) {
     req.esAdmin = true;
     return next();
   }
