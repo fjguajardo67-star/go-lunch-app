@@ -20,6 +20,13 @@ accesos instalados y el Dock de macOS. La versión maestra del Dock es de
 Los demás originales autorizados, incluido el trazo monocromático, viven en
 `assets/brand/` y no deben redibujarse desde CSS.
 
+El Excel de operación requiere imágenes PNG incrustadas para conservar los logos
+en Excel de Mac y Windows. Las copias de `assets/reportes/` derivan de los SVG
+aprobados de Go Lunch, Alefer y Glovis; se usan en el archivo descargado y no
+reemplazan las marcas SVG de la interfaz. La descarga presenta Resumen, Entregas,
+Sin_Confirmacion e Incidencias_Sin_Cargo, con encabezados de fecha y selección,
+nombres y números de empleado, filas ajustadas al texto y encabezados congelados.
+
 ## Principios
 
 - Una pantalla, una tarea principal. Las funciones administrativas se agrupan
