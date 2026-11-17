@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { DateTime } from 'luxon';
 import { validarPeriodo, contarServicios, horarioComida } from './comidas.js';
 import { ZONA, ZONAS, TURNOS } from './menu.js';
-import { noSurtida, entregada } from './incidencias.js';
+import { noSurtida, entregada, sinHoraEntrega } from './incidencias.js';
 
 const logo = archivo => 'data:image/svg+xml;base64,' + readFileSync(new URL('../public/' + archivo, import.meta.url)).toString('base64');
 const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg'), LOGO_ALEFER = logo('alefer.svg');
@@ -67,7 +67,7 @@ export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = 
       folio: p.folio || null, horario: horarioComida(p, fecha),
       incidencia, motivo:p.no_surtido_motivo || '', autor:p.no_surtido_por || '',
       incidencia_fecha: registrada.isValid ? registrada.toFormat('dd/MM/yyyy HH:mm') : '',
-      hora_registrada: hora.isValid ? hora.setZone(ZONA).toFormat('HH:mm') : 'Sin hora válida',
+      hora_registrada: sinHoraEntrega(p) ? 'Conciliada' : hora.isValid ? hora.setZone(ZONA).toFormat('HH:mm') : 'Sin hora válida',
       fecha_registrada: hora.isValid && hora.setZone(ZONA).toISODate() !== fecha ? hora.setZone(ZONA).toFormat('dd/MM/yyyy') : null
     });
   }
@@ -89,7 +89,7 @@ export function htmlReporteEntregas(datos, { fragmento = false, paginaInicial = 
     ${[[datos.registradas.regulares, 'Regulares solicitadas'], [datos.registradas.coberturas, 'Coberturas solicitadas'],
       [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Sin confirmación'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
       .map(([n, texto]) => `<div class="metrica"><strong>${n}</strong><span>${texto}</span></div>`).join('')}
-    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + sin confirmación + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.</p>`;
+    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + sin confirmación + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.${datos.grupos.some(g => g.filas.some(f => f.hora_registrada === 'Conciliada')) ? ' Conciliada: entrega confirmada por administración, sin hora real registrada ni puntualidad verificable.' : ''}</p>`;
   const paginas = datos.paginas.map((pagina, indice) => `<section class="hoja">
     <header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div>
       <h1>Reporte diario de comidas entregadas</h1><div class="fecha"><strong>Servicio: ${esc(datos.fecha_texto)}</strong><span>Generado: ${esc(datos.generado)}</span></div></header>

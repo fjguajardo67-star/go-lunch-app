@@ -45,13 +45,14 @@
       const filas = elegidas.map(({fila:f,indice}) => {
         const servicio = f.tipo === 'cobertura' ? (f.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : 'Regular';
         let estado = escapar(ESTADOS[f.estado] || 'Sin estado');
+        if (f.entrega_conciliada_en && !f.no_surtido_en) estado += meta('Confirmación administrativa') + meta('Confirmó: ' + f.entrega_conciliada_por + ' · ' + registro(f.entrega_conciliada_en)) + meta(f.entrega_conciliacion_motivo);
         if (f.no_surtido_en) estado += meta(f.no_surtido_motivo) + meta('Registró: ' + f.no_surtido_por + ' · ' + registro(f.no_surtido_en));
         else if (f.id && puedeIncidencia(datos.fecha)) estado += '<button class="dash-incidencia" id="dash-incidencia-' + indice + '" type="button" data-incidencia="' + indice + '">Registrar no surtido</button>';
         if (f.estado === 'tardia') estado += meta(f.motivo_tardia ? motivo(f.motivo_tardia) : 'Sin motivo registrado');
         return '<tr role="row" data-estado="' + escapar(f.estado) + '"><th scope="row" role="rowheader">' + tituloPersona(f) + '</th>' +
           celda('Platillo',escapar(f.platillo)) + celda('Servicio',servicio + (f.folio ? meta(f.folio) : '')) +
           celda('Zona y horario',escapar(zona(f.zona)) + meta(horario(f,datos.fecha))) +
-          celda('Hora de entrega',f.no_surtido_en ? '—' + (f.entregado_en ? meta('Marca previa rectificada: ' + hora(f.entregado_en)) : '') : escapar(hora(f.entregado_en))) +
+          celda('Hora de entrega',f.no_surtido_en ? '—' + (f.entregado_en ? meta('Marca previa rectificada: ' + hora(f.entregado_en)) : '') : f.entrega_conciliada_en && !f.entregado_en ? 'Sin hora registrada' : escapar(hora(f.entregado_en))) +
           celda('Estado',estado) + '</tr>';
       }).join('');
       return html + tabla('dash-caption-comidas','Detalle de comidas',['Empleado','Platillo','Servicio','Zona y horario','Hora de entrega','Estado'],filas,

@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { claveEmpleado } from './telefono.js';
 import { esEntregaTardia, TOLERANCIA_TARDIA_MIN, ZONA } from './menu.js';
-import { noSurtida } from './incidencias.js';
+import { noSurtida, entregada as entregaConfirmada } from './incidencias.js';
 
 const numero = valor => String(valor ?? '').trim();
 const identidad = (telefono, nro) => {
@@ -52,8 +52,11 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
       zona: p.zona, turno: p.turno,
       entrega_programada_en: programada,
       entregado_en: entregada, motivo_tardia: p.motivo_tardia || null,
+      entrega_conciliada_en:p.entrega_conciliada_en || null,
+      entrega_conciliada_por:p.entrega_conciliada_por || null,
+      entrega_conciliacion_motivo:p.entrega_conciliacion_motivo || null,
       visto_en: acc?.visto_en || null, veces: acc?.veces || 0,
-      estado: noSurtida(p) ? 'no_surtido' : !entregada ? 'pendiente' : tardia ? 'tardia' : 'entregado'
+      estado: noSurtida(p) ? 'no_surtido' : !entregaConfirmada(p) ? 'pendiente' : tardia ? 'tardia' : 'entregado'
     };
   }
 

@@ -1,7 +1,10 @@
 import { DateTime } from 'luxon';
 
 export const noSurtida = p => !!p.no_surtido_en;
-export const entregada = p => !!p.entregado_en && !noSurtida(p);
+// La conciliación acredita la entrega, nunca una hora física ni un escaneo.
+export const conciliada = p => !!p.entrega_conciliada_en;
+export const entregada = p => !!(p.entregado_en || p.entrega_conciliada_en) && !noSurtida(p);
+export const sinHoraEntrega = p => entregada(p) && !p.entregado_en;
 
 export function validarIncidencia(tipo, id, datos) {
   if (!['regular', 'cobertura'].includes(tipo) || !/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))) {

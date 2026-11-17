@@ -6,7 +6,7 @@
     return pedidos.filter(p => p.zona === zona && p.turno === turno);
   }
   function pendientesDelCierre(pedidos, zona, turno) {
-    return pedidosDelGrupo(pedidos, zona, turno).filter(p => p.tipo === 'regular' && !p.entregado_en);
+    return pedidosDelGrupo(pedidos, zona, turno).filter(p => p.tipo === 'regular' && !p.entregado_en && !p.entrega_conciliada_en && !p.no_surtido_en);
   }
   function validarGrupo(pedido, zona, turno) {
     if (!zona || !turnoValido(turno)) return { ok: false, motivo: 'grupo_requerido' };
