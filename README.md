@@ -219,6 +219,21 @@ impresión, pero el servidor devuelve 403 en cualquier escritura sobre
 El administrador mantiene todos sus permisos. Si no se configura `GERENTE_KEY`,
 el acceso de gerente permanece deshabilitado.
 
+## Acceso de solo lectura para monitoreo
+
+Configurar `MONITOREO_KEY` en Railway con una contraseña aleatoria propia y distinta
+de las claves de administración, gerente y reparto. El usuario es `monitoreo`.
+Sin esa variable el acceso queda deshabilitado. Rotarla revoca la contraseña
+anterior sin cambiar las otras cuentas; nunca se guarda en el repositorio.
+
+La vista abre el dashboard de hoy y permite Pedidos, Coberturas, Recorridos y
+Reportes/PDF/Excel. Oculta altas, autorizaciones, claves, menús y configuración.
+No activa sonido ni impresión automática. El middleware del panel rechaza todas
+las escrituras para este rol, incluidas futuras rutas. En `/api/entrega` solo
+admite `GET /bitacora` con el usuario `monitoreo`; bloquea descargas de la app de
+reparto, GPS y registro de entregas. No requiere migración ni cambia cuentas
+existentes. La clave no se devuelve en la respuesta de sesión.
+
 ## Impresión programada en Windows
 
 Paquete: `public/impresion-windows.zip`; fuentes en `tools/impresion-windows/`.

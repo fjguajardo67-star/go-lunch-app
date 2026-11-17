@@ -177,3 +177,11 @@ Extensión del mundo operativo existente, con la misma paleta, tipografía, cont
 **Regla de incidencia visible.** El estado «No surtido · Sin cargo» se expresa con texto y fondo neutro, acompañado por motivo, rol y fecha/hora. Tiene prioridad sobre la entrega previa; esa marca se conserva y se identifica como «Marca previa rectificada». No se presenta como entrega pendiente ni como falta de recogida del empleado. Dashboard y PDF cuentan las incidencias por separado; producción conserva las solicitudes originales. Las incidencias se excluyen de entregadas, pendientes, no recogidos, merma por empleado, encuesta y puntualidad. Reparto no ofrece esas comidas; un escaneo atrasado no revierte la incidencia y un folio que la contiene no admite edición ni cancelación.
 
 **Regla de conciliación sin cargo.** El PDF mantiene logos aprobados, carta vertical y márgenes de 14 mm. «Incidencias sin cargo» forma grupos por turno y zona, con empleado, platillo, servicio, folio cuando corresponde, motivo y autorización por rol/hora. Conserva cabeceras, continuaciones y numeración; los motivos largos crecen en las filas sin recortarse. El Excel de operación incluye «Incidencias_Sin_Cargo» y facturación conserva «Auditoria_Detalle» aun cuando excluye esas comidas del cargo. El manual indica regenerar y reemplazar ante RRHH cualquier PDF previamente enviado; la app no modifica nómina externa. Se mantiene la regla de cobro para quien realmente no recoge su comida; esta extensión no activa OTP ni WhatsApp.
+
+### Monitoreo de solo lectura
+
+El usuario monitoreo abre el dashboard del día y navega entre pedidos, coberturas,
+recorridos y reportes. Descarga PDF/Excel y conserva filtros de consulta, sin
+acciones de edición, autorizaciones, incidencias o entrega. El aviso de sesión
+explica el alcance. No activa alarma ni impresión automática de cocina. La
+autorización del servidor es obligatoria, además de ocultar controles.
