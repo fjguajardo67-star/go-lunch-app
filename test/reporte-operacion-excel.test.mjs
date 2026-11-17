@@ -40,6 +40,8 @@ test('archivo nativo lleva cuatro hojas, logos incrustados y detalle por comida 
   assert.ok(w.model.media.every(m => m.extension === 'png' && m.buffer.length > 100));
   assert.equal(w.getWorksheet('Entregas').views[0].xSplit, 3);
   assert.equal(w.getWorksheet('Entregas').views[0].ySplit, 9);
+  const horario = w.getWorksheet('Entregas').getCell('I10').value;
+  assert.ok(horario instanceof Date); assert.equal(horario.getUTCHours(), 10);
   assert.match(w.getWorksheet('Resumen').getCell('G11').formula, /^SUM/);
   assert.equal(resultado(w.getWorksheet('Resumen').getCell('G11')), 68);
 });

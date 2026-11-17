@@ -10,8 +10,10 @@ const logos = ['go-lunch', 'alefer', 'glovis'].map(nombre =>
 const fechaExcel = fecha => new Date(`${fecha}T00:00:00.000Z`);
 const turno = valor => valor === 'turno_a' ? 'Turno A' : valor === 'turno_b' ? 'Turno B' : 'Sin turno';
 const horaExcel = valor => {
-  const m = /^(\d{2}):(\d{2})$/.exec(valor || '');
-  return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? (Number(m[1]) * 60 + Number(m[2])) / 1440 : valor || null;
+  const m = /^(\d{1,2}):(\d{2})(?:\s+(AM|PM))?$/.exec(valor || '');
+  if (!m || Number(m[2]) >= 60 || (m[3] ? Number(m[1]) < 1 || Number(m[1]) > 12 : Number(m[1]) > 23)) return valor || null;
+  const hora = m[3] ? Number(m[1]) % 12 + (m[3] === 'PM' ? 12 : 0) : Number(m[1]);
+  return (hora * 60 + Number(m[2])) / 1440;
 };
 const instanteLocal = iso => {
   const d = DateTime.fromISO(iso || '', { zone: ZONA }).setZone(ZONA);
