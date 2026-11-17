@@ -35,35 +35,5 @@
     filtros(fecha, fecha, resumen.filtros); return wb;
   }
 
-  function facturacion(X, f, ini, fin, costo, comidas, seleccion) {
-    const { wb, hoja, filtros } = libro(X, f), dias = new Map();
-    for (const p of comidas) {
-      if (!dias.has(p.fecha_menu)) dias.set(p.fecha_menu, { regulares:0, coberturas:0, entregados:0, total:0, no_surtidos:0 });
-      const d = dias.get(p.fecha_menu);
-      if (p.no_surtido_en) { d.no_surtidos++; continue; }
-      d.total++; d[p.tipo === 'cobertura' ? 'coberturas' : 'regulares']++;
-      if (entregada(p)) d.entregados++;
-    }
-    const filas = [['Fecha', 'Regulares_Con_Cargo', 'Coberturas_Con_Cargo', 'Total_Servicios_Con_Cargo', 'Costo_Unitario ($)', 'Subtotal ($)', 'Entregados', 'Pendientes', 'No_Surtidos_Sin_Cargo']];
-    for (const [fecha, d] of [...dias].sort(([a],[b]) => a.localeCompare(b))) filas.push([fecha, d.regulares, d.coberturas, d.total, costo, d.total*costo, d.entregados, d.total-d.entregados, d.no_surtidos]);
-    const total = filas.length + 1;
-    filas.push(['TOTAL', 0, 0, 0, '', 0, 0, 0, 0]);
-    const ws = hoja('Resumen_Facturacion', filas, [14, 22, 22, 25, 20, 18, 14, 14, 24]);
-    for (let i=2; i<total; i++) {
-      ws['F'+i] = { t:'n', v:filas[i-1][5], f:`D${i}*E${i}`, z:'$#,##0.00' };
-      ws['E'+i].z = '$#,##0.00';
-    }
-    for (const [col, indice] of [['B',1],['C',2],['D',3],['F',5],['G',6],['H',7],['I',8]]) {
-      const v = filas.slice(1,-1).reduce((n,r) => n+r[indice],0);
-      ws[col+total] = { t:'n', v, ...(total>2 ? {f:`SUM(${col}2:${col}${total-1})`} : {}), ...(col==='F' ? {z:'$#,##0.00'} : {}) };
-    }
-    hoja('Auditoria_Detalle', [['Servicio', 'Folio', 'No_Empleado', 'Nombre', 'Telefono', 'Fecha_Servicio', 'Platillo', 'Zona', 'Turno', 'Horario', 'Estado', 'Entrega_Original', 'Motivo_Sin_Cargo', 'Autorizado_Por', 'Autorizado_En', 'Conciliada_En', 'Conciliada_Por', 'Motivo_Conciliacion'],
-      ...comidas.map(p => [f.servicio(p), p.folio || '', p.empleados?.numero_empleado || '', p.empleados?.nombre || '',
-        f.telefono(p.empleados?.telefono || p.empleado_telefono), p.fecha_menu, p.opcion_texto || p.opcion_id,
-        f.zona(p.zona), f.turno(p.turno), f.horario(p), estado(p), p.entregado_en || '', p.no_surtido_motivo || '', p.no_surtido_por || '', p.no_surtido_en || '', p.entrega_conciliada_en || '', p.entrega_conciliada_por || '', p.entrega_conciliacion_motivo || ''])],
-      [26, 26, 14, 36, 16, 16, 38, 18, 24, 16, 35, 28, 60, 18, 28, 28, 30, 65]);
-    filtros(ini, fin, seleccion); return wb;
-  }
-
-  raiz.GoLunchReportesExcel = { cocina, facturacion };
+  raiz.GoLunchReportesExcel = { cocina };
 })(globalThis);
