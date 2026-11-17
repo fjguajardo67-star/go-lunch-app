@@ -81,4 +81,3 @@ export function detalle(wb, nombre, titulo, columnas, anchos, filas, d, imagenes
   ws.pageSetup.printArea = `A1:${columna(columnas.length)}${ws.rowCount}`;
   return ws;
 }
-
