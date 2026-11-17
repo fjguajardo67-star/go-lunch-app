@@ -21,6 +21,7 @@ import { prepararReporteEntregas, htmlReporteEntregas, validarElaboro } from '..
 import { validarEstimacion } from '../services/caratula-estimacion.js';
 import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
 import { crearExcelOperacion } from '../services/reporte-operacion-excel.js';
+import { crearExcelFacturacion, validarCostoFacturacion } from '../services/reporte-facturacion-excel.js';
 import { validarIncidencia, errorIncidencia } from '../services/incidencias.js';
 
 export const adminRouter = express.Router();
@@ -496,6 +497,27 @@ adminRouter.get('/reportes/operacion.xlsx', async (req, res) => {
     res.send(excel.buffer);
   } catch (error) {
     if (!error.status) console.error('[Excel de operación]', error.message);
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'No se pudo generar el Excel completo. Vuelve a intentar con conexión.' });
+  }
+});
+
+adminRouter.get('/reportes/facturacion.xlsx', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try {
+    const { ini, fin } = req.query;
+    if (!ini || !fin) throw Object.assign(new Error('Selecciona Desde y Hasta para el reporte.'), { status: 400 });
+    validarPeriodo(ini, fin);
+    const costo = validarCostoFacturacion(req.query.costo);
+    const filtros = normalizarSeleccionCocina(req.query);
+    const comidas = await comidasDelPeriodo(ini, fin);
+    const excel = await crearExcelFacturacion(ini, fin, costo, comidas, { filtros });
+    res.setHeader('X-Comidas-Entregadas', String(excel.entregadas));
+    res.setHeader('X-Servicios-Con-Cargo', String(excel.conCargo));
+    res.setHeader('X-Servicios-Sin-Cargo', String(excel.sinCargo));
+    res.attachment(`CICSA_Facturacion_${ini}_a_${fin}.xlsx`);
+    res.send(excel.buffer);
+  } catch (error) {
+    if (!error.status) console.error('[Excel de facturación]', error.message);
     res.status(error.status || 500).json({ error: error.status ? error.message : 'No se pudo generar el Excel completo. Vuelve a intentar con conexión.' });
   }
 });

@@ -10,7 +10,8 @@ import { prepararReporteEntregas, htmlReporteEntregas } from '../services/report
 import { datosDashboard } from './fixtures/dashboard.mjs';
 import { datosReportes } from './fixtures/reportes.mjs';
 import { unirComidas } from '../services/comidas.js';
-import '../public/reportes-excel.js';
+import ExcelJS from 'exceljs';
+import { crearExcelFacturacion } from '../services/reporte-facturacion-excel.js';
 
 const incidencia = { no_surtido_en:'2026-11-10T11:30:00-06:00', no_surtido_motivo:'Cocina omitió cargar la comida.', no_surtido_por:'gerente' };
 test('regular y cobertura conservan identidad y evidencia, pero salen de entregas, pendientes y no-recogidos', () => {
@@ -50,14 +51,14 @@ test('el PDF pagina motivos máximos y escapa su contenido sin perder incidencia
   assert.match(html,/&lt;script&gt;/); assert.doesNotMatch(html,/<script>/);
 });
 
-test('Excel conserva detalle auditado y excluye no surtidas del subtotal con cargo', () => {
-  const X={utils:{book_new:()=>({Sheets:{}}),book_append_sheet:(w,s,n)=>w.Sheets[n]=s,aoa_to_sheet:filas=>Object.fromEntries(filas.flatMap((r,i)=>r.map((v,j)=>[String.fromCharCode(65+j)+(i+1),{v}])))} };
-  const f={zona:x=>x,turno:x=>x,servicio:p=>p.tipo,horario:()=>'',telefono:()=>'',filtros:()=>''};
+test('Excel conserva detalle auditado y excluye no surtidas del subtotal con cargo', async () => {
   const base={fecha_menu:'2026-11-10',tipo:'regular',empleados:{numero_empleado:'00001'}};
-  const w=GoLunchReportesExcel.facturacion(X,f,base.fecha_menu,base.fecha_menu,100,[base,{...base,...incidencia},{...base,tipo:'cobertura',entregado_en:'2026-11-10T10:00:00-06:00'}]);
-  assert.equal(w.Sheets.Resumen_Facturacion.D2.v,2); assert.equal(w.Sheets.Resumen_Facturacion.F2.v,200);
-  assert.equal(w.Sheets.Resumen_Facturacion.I2.v,1); assert.equal(w.Sheets.Resumen_Facturacion.H2.v,1);
-  assert.match(w.Sheets.Auditoria_Detalle.K3.v,/Sin cargo/); assert.equal(w.Sheets.Auditoria_Detalle.M3.v,incidencia.no_surtido_motivo);
+  const r=await crearExcelFacturacion(base.fecha_menu,base.fecha_menu,100,[base,{...base,...incidencia},{...base,tipo:'cobertura',entregado_en:'2026-11-10T10:00:00-06:00'}]);
+  const w=new ExcelJS.Workbook();await w.xlsx.load(r.buffer);const s=w.getWorksheet('Resumen_Facturacion');
+  assert.equal(s.getCell('D10').result,2);assert.equal(s.getCell('F10').result,200);
+  assert.equal(s.getCell('I10').result,1);assert.equal(s.getCell('H10').result,1);
+  const a=w.getWorksheet('Auditoria_Detalle');assert.match(a.getCell('J11').value,/Sin cargo/);
+  assert.equal(a.getCell('P11').value,incidencia.no_surtido_motivo);
 });
 
 test('API exige credenciales de panel, motivo y versión; la atribución viene del servidor', async () => {

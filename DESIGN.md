@@ -20,12 +20,16 @@ accesos instalados y el Dock de macOS. La versión maestra del Dock es de
 Los demás originales autorizados, incluido el trazo monocromático, viven en
 `assets/brand/` y no deben redibujarse desde CSS.
 
-El Excel de operación requiere imágenes PNG incrustadas para conservar los logos
+Los Excel de operación y facturación requieren imágenes PNG incrustadas para conservar los logos
 en Excel de Mac y Windows. Las copias de `assets/reportes/` derivan de los SVG
 aprobados de Go Lunch, Alefer y Glovis; se usan en el archivo descargado y no
 reemplazan las marcas SVG de la interfaz. La descarga presenta Resumen, Entregas,
 Sin_Confirmacion e Incidencias_Sin_Cargo, con encabezados de fecha y selección,
 nombres y números de empleado, filas ajustadas al texto y encabezados congelados.
+Facturación reutiliza este formato en Resumen_Facturacion y Auditoria_Detalle,
+sin Calificaciones, Filtros ni teléfonos. Cada descarga consulta datos actuales;
+conserva las conciliaciones sin fabricar hora real y excluye las incidencias del
+cargo. El precio unitario capturado se aplica a ambos servicios; subtotal sin IVA.
 
 ## Principios
 

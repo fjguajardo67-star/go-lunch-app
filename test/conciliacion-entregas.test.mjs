@@ -11,7 +11,8 @@ import { entregada, sinHoraEntrega } from '../services/incidencias.js';
 import '../public/operacion.js';
 import '../public/reparto-guiado.js';
 import '../public/reparto-grupos.js';
-import '../public/reportes-excel.js';
+import ExcelJS from 'exceljs';
+import { crearExcelFacturacion } from '../services/reporte-facturacion-excel.js';
 
 const fecha='2026-11-16';
 const conciliacion={entrega_conciliada_en:'2026-11-17T05:30:00Z',entrega_conciliada_por:'Administración QA',
@@ -66,13 +67,13 @@ test('una conciliación no vuelve a pendientes ni ofrece una entrega manual; sin
   const diario=prepararReporteEntregas(fecha,[p]);assert.equal(diario.entregado.total,0);assert.equal(diario.no_surtidos,1);assert.equal(diario.pendientes,0);
 });
 
-test('Excel conserva 59 entregadas, cero pendientes y autor/motivo, dejando vacía la hora desconocida',()=>{
-  const X={utils:{book_new:()=>({Sheets:{}}),book_append_sheet:(wb,ws,n)=>{wb.Sheets[n]=ws;},aoa_to_sheet:filas=>{
-    const ws={};filas.forEach((fila,r)=>fila.forEach((v,c)=>{ws[String.fromCharCode(65+c)+(r+1)]={v};}));return ws;
-  }}};
-  const f={servicio:p=>p.tipo,zona:x=>x,turno:x=>x,horario:()=> '10:00',telefono:x=>x||'',filtros:()=> 'Todos'};
-  const wb=GoLunchReportesExcel.facturacion(X,f,fecha,fecha,118,datos().comidas),r=wb.Sheets.Resumen_Facturacion;
-  assert.equal(r.B2.v,48);assert.equal(r.C2.v,11);assert.equal(r.D2.v,59);assert.equal(r.G2.v,59);assert.equal(r.H2.v,0);
-  assert.equal(wb.Sheets.Auditoria_Detalle.L4.v,'');assert.equal(wb.Sheets.Auditoria_Detalle.P4.v,conciliacion.entrega_conciliada_en);
-  assert.equal(wb.Sheets.Auditoria_Detalle.Q4.v,conciliacion.entrega_conciliada_por);assert.equal(wb.Sheets.Auditoria_Detalle.R4.v,conciliacion.entrega_conciliacion_motivo);
+test('Excel conserva 59 entregadas, cero pendientes y autor/motivo, dejando vacía la hora desconocida',async()=>{
+  const r=await crearExcelFacturacion(fecha,fecha,118,datos().comidas);
+  const wb=new ExcelJS.Workbook();await wb.xlsx.load(r.buffer);
+  const resumen=wb.getWorksheet('Resumen_Facturacion'),a=wb.getWorksheet('Auditoria_Detalle');
+  assert.equal(resumen.getCell('B10').result,48);assert.equal(resumen.getCell('C10').result,11);
+  assert.equal(resumen.getCell('D10').result,59);assert.equal(resumen.getCell('G10').result,59);assert.equal(resumen.getCell('H10').result,0);
+  const f=Array.from({length:59},(_,i)=>a.getRow(i+10)).find(f=>f.getCell(12).value);
+  assert.equal(f.getCell(11).value,null);assert.ok(f.getCell(12).value instanceof Date);
+  assert.equal(f.getCell(13).value,conciliacion.entrega_conciliada_por);assert.equal(f.getCell(14).value,conciliacion.entrega_conciliacion_motivo);
 });

@@ -23,16 +23,6 @@ test('Excel de cocina conserva 61 regulares + 7 coberturas, folios y números co
  assert.equal(c.Sheets.Filtros.B1.v,d.fecha+' a '+d.fecha);
 });
 
-test('facturación aplica el mismo precio a ambos servicios y sus fórmulas suman el total sin duplicar personas',()=>{
- const wb=GoLunchReportesExcel.facturacion(X,f,d.fecha,d.fecha,100,comidas),r=wb.Sheets.Resumen_Facturacion;
- assert.equal(r.B2.v,61);assert.equal(r.C2.v,7);assert.equal(r.D2.v,68);assert.equal(r.E2.v,100);
- assert.equal(r.F2.f,'D2*E2');assert.equal(r.F2.v,6800);assert.equal(r.F3.f,'SUM(F2:F2)');assert.equal(r.F3.v,6800);
- assert.equal(r.G2.v,68);assert.equal(r.H2.v,0);
- assert.equal(wb.Sheets.Auditoria_Detalle.C2.v,'00001');assert.equal(wb.Sheets.Auditoria_Detalle.C63.v,'00001');
- const vacio=GoLunchReportesExcel.facturacion(X,f,d.fecha,d.fecha,100,[]).Sheets.Resumen_Facturacion;
- assert.equal(vacio.F2.v,0);assert.equal(vacio.F2.f,undefined);
-});
-
 test('cocina rechaza descargar un detalle que cambió entre consultas',()=>{
  assert.throws(()=>GoLunchReportesExcel.cocina(X,f,d.fecha,resumen,comidas.slice(1)),/conteo cambió/);
 });

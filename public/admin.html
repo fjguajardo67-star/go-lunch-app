@@ -1372,11 +1372,14 @@
           <div class="card-icon">💼</div>
           <h3>Reporte de facturación</h3>
         </div>
+        <p style="font-size:.82rem;color:var(--gris-text);margin:-4px 0 12px">
+          Excel con título, periodo y logos, resumen de cargos y detalle con nombre y número de empleado. Consulta las entregas actualizadas y excluye las incidencias sin cargo del subtotal.
+        </p>
         <div class="row-fin">
           <div><label for="r-ini">Desde</label><input type="date" id="r-ini"></div>
           <div><label for="r-fin">Hasta</label><input type="date" id="r-fin"></div>
           <div><label for="r-costo">Costo unitario ($)</label><input type="number" id="r-costo" placeholder="0.00" step="0.01"></div>
-          <button class="accion" onclick="excelFacturacion()">Descargar Excel</button>
+          <button class="accion" onclick="excelFacturacion(this)">Descargar Excel</button>
         </div>
         <div id="repFactAviso" class="aviso"></div>
       </div>
@@ -2963,9 +2966,6 @@
   function buildWorkbookCocina(fecha, resumen, comidas) {
     return GoLunchReportesExcel.cocina(XLSX, formatosExcel(), fecha, resumen, comidas);
   }
-  function buildWorkbookFacturacion(ini, fin, costo, comidas, filtros) {
-    return GoLunchReportesExcel.facturacion(XLSX, formatosExcel(), ini, fin, costo, comidas, filtros);
-  }
 
   async function excelCocina() {
     const f = val('r-fecha');
@@ -3008,18 +3008,32 @@
     finally { if (boton) { boton.disabled = false; boton.removeAttribute('aria-busy'); } }
   }
 
-  async function excelFacturacion() {
+  async function excelFacturacion(boton) {
     const ini = val('r-ini'), fin = val('r-fin');
-    const costo = parseFloat(val('r-costo'));
+    const costo = Number(val('r-costo'));
     if (!ini || !fin) return aviso('repFactAviso', 'Selecciona el rango de fechas', false);
     if (!Number.isFinite(costo) || !(costo > 0)) return aviso('repFactAviso', 'Ingresa el costo unitario', false);
+    if (boton?.disabled) return;
+    if (boton) { boton.disabled = true; boton.setAttribute('aria-busy', 'true'); }
     try {
-      const r = await api(`/api/comidas?ini=${ini}&fin=${fin}&${parametrosServicio()}`);
-      if (!r.count) return aviso('repFactAviso', 'Sin pedidos en ese rango', false);
-      const wb = buildWorkbookFacturacion(ini, fin, costo, r.comidas, r.filtros);
-      XLSX.writeFile(wb, `CICSA_Facturacion_${ini}_a_${fin}.xlsx`);
-      aviso('repFactAviso', `Reporte generado: ${r.regulares} regulares + ${r.coberturas} coberturas = ${r.count} servicios`);
+      aviso('repFactAviso', 'Preparando el Excel de facturación con las entregas actualizadas…');
+      const consulta = new URLSearchParams({ ini, fin, costo });
+      const res = await fetch(API_BASE + '/api/reportes/facturacion.xlsx?' + consulta + '&' + parametrosServicio(), {
+        cache: 'no-store', headers: { 'x-admin-key': ADMIN_KEY, 'x-panel-user': PANEL_USUARIO }
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || 'No se pudo descargar el Excel.');
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const enlace = document.createElement('a');
+      enlace.href = url; enlace.download = `CICSA_Facturacion_${ini}_a_${fin}.xlsx`;
+      document.body.appendChild(enlace); enlace.click(); enlace.remove();
+      // Safari necesita conservar la URL mientras inicia la descarga.
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      aviso('repFactAviso', `Excel generado: ${res.headers.get('X-Servicios-Con-Cargo')} servicios con cargo, ${res.headers.get('X-Comidas-Entregadas')} entregados y ${res.headers.get('X-Servicios-Sin-Cargo')} sin cargo.`);
     } catch (e) { aviso('repFactAviso', 'Error: ' + e.message, false); }
+    finally { if (boton) { boton.disabled = false; boton.removeAttribute('aria-busy'); } }
   }
 
   function val(id){ return document.getElementById(id).value.trim(); }
