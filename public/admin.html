@@ -1562,6 +1562,7 @@
     if (!document.getElementById('aviso-rol-monitoreo')) {
       const aviso = document.createElement('p');
       aviso.id = 'aviso-rol-monitoreo'; aviso.className = 'aviso info';
+      aviso.style.display = 'block';
       aviso.textContent = 'Sesión: monitoreo · Solo lectura. Puedes consultar y descargar reportes. Los cambios y las entregas corresponden al personal autorizado.';
       document.querySelector('.wrap').prepend(aviso);
       new MutationObserver(aplicarPermisosMonitoreo).observe(document.getElementById('app'), { childList: true, subtree: true });
@@ -1574,11 +1575,15 @@
     for (const id of ['cov-menu-semanal','cov-supervisor','rp-nombre']) ocultar(document.getElementById(id)?.closest('.card'));
     const rutas = document.querySelector('.tab[data-p="cocina"]');
     if (rutas && rutas.textContent !== 'Recorridos') rutas.textContent = 'Recorridos';
+    const tituloRutas = document.querySelector('#p-cocina h2');
+    if (tituloRutas && tituloRutas.textContent !== 'Recorridos') tituloRutas.textContent = 'Recorridos';
     // Lista explícita de consultas e impresos; los controles nuevos no obtienen
     // permiso por defecto. La API vuelve a comprobar todas las escrituras.
     const consultas = /^(tab|cocinaVista|verDashboard|verPedidos|cargarCobertura|imprimirCobertura|imprimirFolioCobertura|verReportes|alternarEstimacion|imprimirReportePeriodo|imprimirReporteEntregas|excelCocina|excelOperacion|excelFacturacion|salir)\(/;
     document.querySelectorAll('#app button[onclick]').forEach(b => {
-      if (!consultas.test(b.getAttribute('onclick'))) { b.disabled = true; ocultar(b); }
+      const accion = b.getAttribute('onclick');
+      const manual = /^window\.open\('manual\.html',/.test(accion);
+      if (!consultas.test(accion) && !manual) { b.disabled = true; ocultar(b); }
     });
   }
 
