@@ -93,6 +93,8 @@ Las coberturas conservan su calibración física al 85 %, centrada dentro del bl
 
 ## Grupo activo de reparto
 
+El inicio del recorrido usa botones visibles con el turno y las zonas autorizadas. Cada botón registra directamente la salida del comedor y deja un único botón para el siguiente paso. Una lista de otro día bloquea el inicio con una instrucción de descarga visible; el avance y las marcas pendientes sin conexión se conservan al reabrir. Estos botones mantienen soporte táctil y de teclado en Safari y Android, con alternativa local cuando no existe CommandEvent.
+
 La extensión de reparto guiado corresponde a v62 y conserva el mundo operativo, temas, logos y controles existentes; esta documentación no certifica despliegue. Hay un punto fijo oficial ASLA y otro REFIS. La captura directa de administración se hace desde un móvil físicamente en cada sitio; el flujo aprobado de propuestas para v63 permite que el repartidor capture allí y administración revise desde PC, como se describe abajo. GPS propone el punto y el horario sugiere el servicio de la agenda del día; las coberturas conservan folio y horario propios. Sin GPS o ante una sugerencia incorrecta, «Cambiar punto o servicio» permite selección manual entre las zonas autorizadas.
 
 **Regla de servicio estable.** Punto, horario y cantidad pendiente preceden a «Comenzar entrega», que registra llegada y abre cámara o prepara el lector. Una vez iniciado, reloj y GPS no cambian el servicio activo. El cambio de punto o servicio requiere una acción explícita; «Finalizar reparto» cierra el escaneo sin marcar pendientes. No se ofrece «Entregar» en la lista ni cierre masivo al supervisor.
