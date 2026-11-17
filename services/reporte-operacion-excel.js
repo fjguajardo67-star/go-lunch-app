@@ -50,11 +50,13 @@ function encabezado(wb, nombre, titulo, anchos, datos, imagenes) {
 function estiloFila(fila, anchos, cabecera = false) {
   let lineas = 1;
   fila.eachCell({ includeEmpty: true }, (celda, i) => {
+    const numerica = typeof celda.value === 'number' || celda.type === ExcelJS.ValueType.Formula;
     celda.font = { name: 'Arial', size: 11, bold: cabecera, color: { argb: cabecera ? 'FFFFFF' : TINTA } };
-    celda.alignment = { vertical: 'middle', horizontal: cabecera ? 'center' : typeof celda.value === 'number' || typeof celda.value?.result === 'number' ? 'right' : 'left', wrapText: true };
+    celda.alignment = { vertical: 'middle', horizontal: cabecera ? 'center' : numerica ? 'right' : 'left', wrapText: true };
     if (cabecera) celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: AZUL } };
     else if (fila.number % 2 === 0) celda.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CLARO } };
-    lineas = Math.max(lineas, Math.ceil(String(celda.text).length / Math.max(8, anchos[i - 1] - 2)));
+    const longitud = celda.value instanceof Date ? 10 : numerica ? String(celda.result ?? celda.value).split('.')[0].length : String(celda.text).length;
+    lineas = Math.max(lineas, Math.ceil(longitud / Math.max(8, anchos[i - 1] - 2)));
   });
   fila.height = cabecera ? 43 : Math.max(30, lineas * 14 + 8);
 }
@@ -93,7 +95,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
     fechaExcel(dia.fecha), f.numero, f.nombre, f.platillo, f.servicio, f.folio, turno(g.turno), g.zona_texto,
     horaExcel(f.horario), horaExcel(f.hora_registrada === 'Conciliada' ? '' : f.hora_registrada),
     f.hora_registrada === 'Conciliada' ? 'Conciliada' : 'Registrada',
-    f.hora_registrada === 'Conciliada' ? 'Hora real no registrada' : f.fecha_registrada ? `Registro: ${f.fecha_registrada}` : ''
+    f.hora_registrada === 'Conciliada' ? 'Hora real no registrada' : f.fecha_registrada ? `Registro: ${f.fecha_registrada}` : null
   ])));
   const pendientes = d.resumen.sin_confirmacion.map(p => [fechaExcel(p.fecha), p.numero_empleado, p.nombre, p.platillo,
     p.tipo === 'cobertura' ? 'Cobertura' : 'Regular', p.folio || null, turno(p.turno), ZONAS[p.zona] || 'Sin zona', horaExcel(p.horario)]);
@@ -144,7 +146,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
   const puntualidad = resumen.getRow(totalFila + 3);
   puntualidad.values = ['Puntualidad de las entregas', 'A tiempo', 'Tardías', 'Sin puntualidad verificable'];
   estiloFila(puntualidad, anchos, true);
-  resumen.getRow(totalFila + 4).values = ['', d.resumen.entrega.entregados, d.resumen.entrega.tardios, d.resumen.entrega.indeterminados];
+  resumen.getRow(totalFila + 4).values = [null, d.resumen.entrega.entregados, d.resumen.entrega.tardios, d.resumen.entrega.indeterminados];
   estiloFila(resumen.getRow(totalFila + 4), anchos);
   for (const [offset, texto] of [
     [7, 'Las entregas conciliadas se incluyen en Entregas. Su hora real no quedó registrada.'],
