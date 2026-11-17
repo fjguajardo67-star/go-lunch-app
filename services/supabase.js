@@ -871,7 +871,7 @@ export async function getSolicitudCobertura(supervisorId, fecha, turno = 'turno_
   if (!solicitud) return null;
   const { data: items, error: e2 } = await supabase
     .from('solicitudes_cobertura_items')
-    .select('id, empleado_numero_snapshot, empleado_nombre_snapshot, opcion_id, opcion_texto, codigo_entrega, entregado_en')
+    .select('id, empleado_numero_snapshot, empleado_nombre_snapshot, opcion_id, opcion_texto, codigo_entrega, entregado_en, entrega_conciliada_en, entrega_conciliada_por, entrega_conciliacion_motivo')
     .eq('solicitud_id', solicitud.id)
     .order('id');
   if (e2) throw e2;
@@ -952,7 +952,7 @@ export async function listLotesSupervisor(supervisorId, fecha) {
   for (let i = 0; i < solicitudes.length; i += 100) {
     const ids = solicitudes.slice(i, i + 100).map(s => s.id);
     items.push(...await leerPaginas(() => supabase.from('solicitudes_cobertura_items')
-      .select('id,solicitud_id,empleado_numero_snapshot,empleado_nombre_snapshot,opcion_id,opcion_texto,entregado_en,no_surtido_en')
+      .select('id,solicitud_id,empleado_numero_snapshot,empleado_nombre_snapshot,opcion_id,opcion_texto,entregado_en,no_surtido_en,entrega_conciliada_en,entrega_conciliada_por,entrega_conciliacion_motivo')
       .in('solicitud_id', ids).order('id')));
   }
   return solicitudes.map(s => ({ ...s, items: items.filter(i => i.solicitud_id === s.id) }));

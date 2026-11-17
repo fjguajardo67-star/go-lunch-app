@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { MOTIVOS_TARDIA, ZONA as ZONA_COMEDOR } from './menu.js';
 import { contarServicios, limiteComida, tardiaComida, horaComida } from './comidas.js';
-import { noSurtida } from './incidencias.js';
+import { noSurtida, entregada, sinHoraEntrega } from './incidencias.js';
 
 const MIN_OPINIONES = 5;
 
@@ -36,7 +36,7 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
         platillo: plat, porciones: 0, entregados: 0, si: 0, tal_vez: 0, no: 0
       });
       c.porciones++;
-      if (p.entregado_en) c.entregados++;
+      if (entregada(p)) c.entregados++;
       if (['si', 'tal_vez', 'no'].includes(p.rating)) c[p.rating]++;
       }
 
@@ -49,9 +49,10 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
       const limite = limiteComida(p);
       const yaVencio = limite ? ahora > limite : p.fecha_menu < hoyISO;
 
-      if (!yaVencio && !p.entregado_en) pendientes++;
+      if (!yaVencio && !entregada(p)) pendientes++;
 
-      if (!p.entregado_en) { noEntregados++; continue; }
+      if (!entregada(p)) { noEntregados++; continue; }
+      if (sinHoraEntrega(p)) { indeterminados++; continue; }
 
       // Tiempos de ruta: la primera y la última entrega de cada turno de cada
       // día. No hay marca de "salió el vehículo", así que la ruta se mide entre
@@ -169,7 +170,7 @@ export function construirReporte(ini, fin, pedidos, ahora = DateTime.now()) {
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => ({ motivo: MOTIVOS_TARDIA[id] || 'Sin motivo indicado', veces: n })),
 
-      sin_confirmacion: pedidos.filter(p => !noSurtida(p) && !p.entregado_en).map(p => ({
+      sin_confirmacion: pedidos.filter(p => !noSurtida(p) && !entregada(p)).map(p => ({
         fecha: p.fecha_menu, numero_empleado: p.empleados?.numero_empleado || '',
         nombre: p.empleados?.nombre || '', platillo: p.opcion_texto || p.opcion_id,
         tipo: p.tipo || 'regular', folio: p.folio || '', turno: p.turno, zona: p.zona, horario: horaComida(p)

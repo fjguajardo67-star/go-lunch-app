@@ -644,6 +644,7 @@
   }
 
   const $ = id => document.getElementById(id);
+  const entregada = p => !!(p.entregado_en || p.entrega_conciliada_en) && !p.no_surtido_en;
   const leerLS  = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
   const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -1052,7 +1053,7 @@
   }
   function finalizarReparto() {
     if (!SERVICIO_INICIADO) return;
-    const pendientes=comidasEnPantalla().filter(p => !p.entregado_en).length;
+    const pendientes=comidasEnPantalla().filter(p => !entregada(p)).length;
     if (!confirm('Finalizar este reparto. Quedan ' + pendientes + ' comida(s) pendientes; conservarán ese estado hasta que se identifique y registre cada paquete.')) return;
     cerrarEscaneoDeServicio();
     pintar();
@@ -1850,7 +1851,7 @@
     }
     if (!validarGrupoEnPantalla(p)) return;
     ORIGEN_PENDIENTE=origen;
-    if (p.entregado_en) return flash('dup', 'Ya estaba entregada', p.nombre + ' — se registró antes.');
+    if (entregada(p)) return flash('dup', 'Ya estaba entregada', p.nombre + ' — se registró antes.');
 
     if (p.tipo === 'cobertura') {
       const receptor = receptoresDelDia()[p.folio];
@@ -1861,7 +1862,7 @@
   }
 
   function registrarEntrega(p, receptor, metodo = ORIGEN_PENDIENTE) {
-    if (!p || p.entregado_en || !validarGrupoEnPantalla(p)) return;
+    if (!p || entregada(p) || !validarGrupoEnPantalla(p)) return;
 
     p.entregado_en = ahoraComedor().toISOString();
     p.metodo_entrega=metodo;
@@ -1927,7 +1928,7 @@
     if (!listaDeHoy() || !SERVICIO_INICIADO) return flash('mal','Comienza el reparto','Revisa el punto y horario y pulsa Comenzar entrega.');
     const numero=$('manual').value.trim();
     if (!numero) return;
-    const candidatos=comidasEnPantalla().filter(p => String(p.numero_empleado) === numero && !p.entregado_en);
+    const candidatos=comidasEnPantalla().filter(p => String(p.numero_empleado) === numero && !entregada(p));
     if (!candidatos.length) return flash('mal','Sin comida pendiente en este servicio','Verifica el número escrito en la etiqueta, el punto y el horario.');
     MANUAL_NUMERO=numero;
     $('manual-error').textContent='';
@@ -2138,8 +2139,8 @@
     }
     $('btn-camara').disabled = !escaneando && (!listaDeHoy() || !SERVICIO_INICIADO);
     const delDia = comidasEnPantalla();
-    const hechas = delDia.filter(p => p.entregado_en);
-    const faltan = delDia.filter(p => !p.entregado_en);
+    const hechas = delDia.filter(entregada);
+    const faltan = delDia.filter(p => !entregada(p));
 
     pintarLlegada();
     pintarUbicacion();
@@ -2153,7 +2154,7 @@
     $('badge-entregadas').textContent = hechas.length;
     $('caja-cola').classList.toggle('vacia', porSubir === 0);
 
-    const ultima = hechas.slice().sort((a, b) => new Date(b.entregado_en) - new Date(a.entregado_en))[0];
+    const ultima = hechas.filter(p => p.entregado_en).sort((a, b) => new Date(b.entregado_en) - new Date(a.entregado_en))[0];
     $('ultima-entrega').classList.toggle('oculto', !ultima);
     if (ultima) {
       $('ultima-hora').textContent = horaLocal(ultima.entregado_en);
@@ -2187,7 +2188,7 @@
         ${hecho
           ? (faltaMotivo
               ? `<button class="btn-e alerta" onclick="pedirMotivoPorClave('${codificarClave(clavePedido(p))}')">Motivo</button>`
-              : `<span class="hora ${tardia ? 'tarde' : ''}">${horaLocal(p.entregado_en)}</span>`)
+              : `<span class="hora ${tardia ? 'tarde' : ''}">${p.entregado_en ? horaLocal(p.entregado_en) : 'Conciliada · sin hora'}</span>`)
           : `<span class="hora">#${esc(p.numero_empleado)}</span>`}
       </div>`;
     };

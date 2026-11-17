@@ -20,6 +20,7 @@ import {
 } from '../services/menu.js';
 import { validarReceptorEscaneado } from '../services/cobertura.js';
 import { turnoValido } from '../services/reparto-grupos.js';
+import { entregada } from '../services/incidencias.js';
 import '../public/bitacora-rutas.js';
 
 const { permitidas: rutasPermitidas, porId: itinerarioPorId } = globalThis.GoLunchBitacora;
@@ -404,6 +405,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
         zona: p.zona,
         turno: p.turno,
         entregado_en: p.entregado_en || null,
+        entrega_conciliada_en:p.entrega_conciliada_en || null,
         metodo_entrega: p.metodo_entrega ?? null,
         motivo_tardia: p.motivo_tardia || null,
         entregado_a: p.entregado_a || null,
@@ -420,6 +422,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
         origen: item.origen || 'supervisor',
         entrega_programada_en: item.entrega_programada_en || null,
         entregado_en: item.entregado_en || null,
+        entrega_conciliada_en:item.entrega_conciliada_en || null,
         metodo_entrega: item.metodo_entrega ?? null,
         motivo_tardia: item.motivo_tardia || null,
         entregado_a: 'responsable',
@@ -459,7 +462,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
       zona,
       turno,
       total: pedidos.length,
-      entregados: pedidos.filter(p => p.entregado_en).length,
+      entregados: pedidos.filter(entregada).length,
       indice_zonas,
       llegadas: llegadas.filter(p => zonaAutorizada(p) && (!zona || p.zona === zona) && (!turno || p.turno === turno)),
       puntos: puntos.filter(p => zonaAutorizada(p) && (!zona || p.zona === zona)),

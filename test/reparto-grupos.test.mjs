@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {pedidosDelGrupo,pendientesDelCierre,validarGrupo} from '../services/reparto-grupos.js';
+import {entregada} from '../services/incidencias.js';
 import http from 'node:http';
 import express from 'express';
 import {Settings} from 'luxon';
@@ -33,7 +34,7 @@ test('finalizar reparto detiene la sesión sin marcar pendientes ni cambiar la c
   html.match(new RegExp('function '+nombre+'\\([\\s\\S]*?\\n  }'))[0]).join('\n');
  const captura={};const copia=structuredClone(pedidos);
  const cola=[{numero_empleado:'002',entregado_en:pedidos[1].entregado_en}];
- const contexto=vm.createContext({PEDIDOS:copia,COLA:structuredClone(cola),SERVICIO_INICIADO:true,SERVICIO_MANUAL:false,
+ const contexto=vm.createContext({entregada,PEDIDOS:copia,COLA:structuredClone(cola),SERVICIO_INICIADO:true,SERVICIO_MANUAL:false,
   SUPERVISOR_ACTUAL:'Responsable QA',escaneando:true,RECEPTOR_PENDIENTE:null,
   comidasEnPantalla:()=>copia.filter(p=>p.zona===zona&&p.turno==='turno_a'),
   confirm:mensaje=>{captura.prompt=mensaje;return true;},detenerCamara:()=>{captura.camara=true;},

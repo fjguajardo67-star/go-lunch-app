@@ -132,6 +132,23 @@ test('API de entrega individual: métodos, primera marca, colas antiguas y zonas
       }
     });
 
+    await t.test('la descarga incluye conciliaciones sin inventar hora y una cola individual original conserva ambas evidencias', async () => {
+      for (const tipo of ['regular','cobertura']) {
+        reiniciar();
+        const tabla=tipo==='regular'?'pedidos':'solicitudes_cobertura_items';
+        const evidencia={entrega_conciliada_en:fecha+'T12:00:00-06:00',entrega_conciliada_por:'Administración QA',entrega_conciliacion_motivo:'Entrega verificada, sin hora real registrada.'};
+        Object.assign(tablas[tabla][0],evidencia);
+        const lista=await get();
+        const fila=lista.pedidos.find(p=>p.tipo===tipo&&p.numero_empleado===(tipo==='regular'?'001':'007'));
+        assert.equal(fila.entregado_en,null);assert.equal(fila.entrega_conciliada_en,evidencia.entrega_conciliada_en);
+        assert.equal(lista.entregados,1);
+        const entrada=tipo==='regular'?regular:cobertura;
+        const respuesta=await post([entrada({})],sesion());assert.equal(respuesta.resultados[0].ok,true);
+        assert.equal(tablas[tabla][0].entregado_en,hora);
+        for(const [k,v] of Object.entries(evidencia))assert.equal(tablas[tabla][0][k],v);
+      }
+    });
+
     await t.test('cierre y origen lista nunca registran pendientes, incluso con método y supervisor', async () => {
       reiniciar();
       for (const entrada of [regular, cobertura]) for (const obsoleto of [

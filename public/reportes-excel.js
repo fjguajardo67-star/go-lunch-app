@@ -1,6 +1,7 @@
 // Constructores compartidos por el panel y las pruebas. SheetJS ya existe en el panel.
 (function (raiz) {
-  const estado = p => p.no_surtido_en ? 'No surtido por cocina/reparto · Sin cargo al empleado' : p.entregado_en ? 'Entregado' : 'Pendiente';
+  const entregada = p => !!(p.entregado_en || p.entrega_conciliada_en) && !p.no_surtido_en;
+  const estado = p => p.no_surtido_en ? 'No surtido por cocina/reparto · Sin cargo al empleado' : p.entrega_conciliada_en && !p.entregado_en ? 'Entregado · Conciliación administrativa sin hora real' : entregada(p) ? 'Entregado' : 'Pendiente';
   function libro(X, f) {
     const wb = X.utils.book_new();
     const hoja = (nombre, filas, anchos) => {
@@ -41,7 +42,7 @@
       const d = dias.get(p.fecha_menu);
       if (p.no_surtido_en) { d.no_surtidos++; continue; }
       d.total++; d[p.tipo === 'cobertura' ? 'coberturas' : 'regulares']++;
-      if (p.entregado_en) d.entregados++;
+      if (entregada(p)) d.entregados++;
     }
     const filas = [['Fecha', 'Regulares_Con_Cargo', 'Coberturas_Con_Cargo', 'Total_Servicios_Con_Cargo', 'Costo_Unitario ($)', 'Subtotal ($)', 'Entregados', 'Pendientes', 'No_Surtidos_Sin_Cargo']];
     for (const [fecha, d] of [...dias].sort(([a],[b]) => a.localeCompare(b))) filas.push([fecha, d.regulares, d.coberturas, d.total, costo, d.total*costo, d.entregados, d.total-d.entregados, d.no_surtidos]);
@@ -56,11 +57,11 @@
       const v = filas.slice(1,-1).reduce((n,r) => n+r[indice],0);
       ws[col+total] = { t:'n', v, ...(total>2 ? {f:`SUM(${col}2:${col}${total-1})`} : {}), ...(col==='F' ? {z:'$#,##0.00'} : {}) };
     }
-    hoja('Auditoria_Detalle', [['Servicio', 'Folio', 'No_Empleado', 'Nombre', 'Telefono', 'Fecha_Servicio', 'Platillo', 'Zona', 'Turno', 'Horario', 'Estado', 'Entrega_Original', 'Motivo_Sin_Cargo', 'Autorizado_Por', 'Autorizado_En'],
+    hoja('Auditoria_Detalle', [['Servicio', 'Folio', 'No_Empleado', 'Nombre', 'Telefono', 'Fecha_Servicio', 'Platillo', 'Zona', 'Turno', 'Horario', 'Estado', 'Entrega_Original', 'Motivo_Sin_Cargo', 'Autorizado_Por', 'Autorizado_En', 'Conciliada_En', 'Conciliada_Por', 'Motivo_Conciliacion'],
       ...comidas.map(p => [f.servicio(p), p.folio || '', p.empleados?.numero_empleado || '', p.empleados?.nombre || '',
         f.telefono(p.empleados?.telefono || p.empleado_telefono), p.fecha_menu, p.opcion_texto || p.opcion_id,
-        f.zona(p.zona), f.turno(p.turno), f.horario(p), estado(p), p.entregado_en || '', p.no_surtido_motivo || '', p.no_surtido_por || '', p.no_surtido_en || ''])],
-      [26, 26, 14, 36, 16, 16, 38, 18, 24, 16, 35, 28, 60, 18, 28]);
+        f.zona(p.zona), f.turno(p.turno), f.horario(p), estado(p), p.entregado_en || '', p.no_surtido_motivo || '', p.no_surtido_por || '', p.no_surtido_en || '', p.entrega_conciliada_en || '', p.entrega_conciliada_por || '', p.entrega_conciliacion_motivo || ''])],
+      [26, 26, 14, 36, 16, 16, 38, 18, 24, 16, 35, 28, 60, 18, 28, 28, 30, 65]);
     filtros(ini, fin, seleccion); return wb;
   }
 

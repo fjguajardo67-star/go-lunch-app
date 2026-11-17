@@ -2097,8 +2097,8 @@
       let entregados = 0, noSurtidos = 0;
       for (const p of r.pedidos) {
         if (p.no_surtido_en) noSurtidos++;
-        else if (p.entregado_en) entregados++;
-        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno, p.zona, f)}</td><td>${p.no_surtido_en ? 'No surtido · Sin cargo al empleado' : horaEntrega(p.entregado_en)}</td></tr>`;
+        else if (p.entregado_en || p.entrega_conciliada_en) entregados++;
+        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno, p.zona, f)}</td><td>${p.no_surtido_en ? 'No surtido · Sin cargo al empleado' : p.entrega_conciliada_en && !p.entregado_en ? 'Entregada · Conciliada, sin hora' : horaEntrega(p.entregado_en)}</td></tr>`;
       }
       h += `</table><p style="margin-top:10px;font-size:.85rem;color:var(--gris)">Total: ${r.count} pedidos · Entregados: ${entregados} · Pendientes: ${r.count - entregados - noSurtidos} · No surtidos sin cargo: ${noSurtidos}</p>`;
       box.innerHTML = h;
@@ -3592,7 +3592,7 @@
       box.innerHTML = solicitudes.map(s => {
         const cancelada = s.estado === 'cancelada';
         const items = (s.items || []).map(i => {
-          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entregado_en
+          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entrega_conciliada_en && !i.entregado_en ? ' · Entregada · Confirmación administrativa, sin hora real' : i.entregado_en
             ? ' · Entregado a ' + escaparHtml(i.receptor_nombre || s.responsable_nombre_snapshot) +
               (i.receptor_discrepante ? (i.receptor_verificado === false ? ' · gafete por revisar' : ' · receptor distinto verificado') : '')
             : '';

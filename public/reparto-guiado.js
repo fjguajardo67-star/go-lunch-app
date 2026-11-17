@@ -95,7 +95,7 @@
       if (servicio.turno !== p.turno) servicio.turno = '';
       servicio.pedidos.push(p);
       servicio.total++;
-      if (!p.entregado_en) servicio.pendientes++;
+      if (!p.entregado_en && !p.entrega_conciliada_en) servicio.pendientes++;
     }
     // Se conserva también cada servicio terminado: no adelanta el siguiente.
     return [...grupos.values()].sort((a, b) => (a.hora || '99:99').localeCompare(b.hora || '99:99') || a.id.localeCompare(b.id));
