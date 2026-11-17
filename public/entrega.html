@@ -332,11 +332,9 @@
   <main>
     <section class="bitacora-ruta oculto" id="bitacora-ruta" aria-labelledby="bitacora-titulo">
       <h2 id="bitacora-titulo">Ruta del turno</h2>
-      <div class="bitacora-controles">
-        <label id="bitacora-selector">Turno y recorrido
-          <select id="bitacora-plan" onchange="pintarBitacora()"></select>
-        </label>
-        <button class="btn sec" id="bitacora-accion" type="button" onclick="accionBitacora()">Iniciar ruta</button>
+      <div class="bitacora-inicios" id="bitacora-inicios" role="group" aria-labelledby="bitacora-titulo" aria-describedby="bitacora-estado"></div>
+      <div class="bitacora-controles oculto" id="bitacora-controles">
+        <button class="btn sec" id="bitacora-accion" type="button" onclick="accionBitacora()" aria-describedby="bitacora-estado">Continuar ruta</button>
       </div>
       <p id="bitacora-estado" role="status" aria-live="polite"></p>
       <button class="btn-texto oculto" id="bitacora-sincronizar" type="button" onclick="sincronizar()">Sincronizar bitácora</button>
@@ -645,6 +643,22 @@
 
   const $ = id => document.getElementById(id);
   const entregada = p => !!(p.entregado_en || p.entrega_conciliada_en) && !p.no_surtido_en;
+
+  // CommandEvent es nativo en navegadores recientes. El fallback local mantiene
+  // los mismos botones operables en Safari y Android anteriores, sin CDN.
+  function activarRecorrido(evento) {
+    const boton=evento.source || evento.target.closest('button[commandfor="bitacora-ruta"]');
+    if (!boton || boton.getAttribute('aria-disabled') === 'true') return;
+    const comando=evento.command || boton.getAttribute('command') || '';
+    if (comando.startsWith('--iniciar-')) accionBitacora(comando.slice('--iniciar-'.length));
+  }
+  function prepararBotonesRecorrido() {
+    $('bitacora-ruta').addEventListener('command', activarRecorrido);
+    if (!('commandForElement' in HTMLButtonElement.prototype)) {
+      $('bitacora-ruta').addEventListener('click', activarRecorrido);
+    }
+  }
+  prepararBotonesRecorrido();
   const leerLS  = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
   const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -1163,29 +1177,24 @@
       && !registradas.some(ruta => ruta.plan === plan));
     $('bitacora-ruta').classList.toggle('oculto', !FECHA && !activa);
     $('bitacora-titulo').textContent=activa?.plan.titulo || 'Ruta del turno';
-    const selector=$('bitacora-plan');
-    const anterior=selector.value;
-    if (!activa) {
-      const elegir=opciones.length > 1 ? '<option value="">Selecciona recorrido</option>' : '';
-      const html=elegir + opciones.map(plan => `<option value="${plan.id}">${plan.titulo}</option>`).join('');
-      if (selector.innerHTML !== html) selector.innerHTML=html;
-      if (opciones.some(plan => plan.id === anterior)) selector.value=anterior;
-      else selector.value=opciones.length === 1 ? opciones[0].id : '';
-    }
-    $('bitacora-selector').classList.toggle('oculto', !!activa || !opciones.length);
+    const inicios=$('bitacora-inicios');
+    const html=opciones.map(plan => `<button class="btn sec" type="button" commandfor="bitacora-ruta" command="--iniciar-${plan.id}" aria-disabled="${!listaDeHoy()}">Iniciar ${esc(plan.titulo)}</button>`).join('');
+    if (!activa && inicios.innerHTML !== html) inicios.innerHTML=html;
+    inicios.classList.toggle('oculto', !!activa || !opciones.length);
+    $('bitacora-controles').classList.toggle('oculto', !activa);
     const accion=$('bitacora-accion');
     const paso=activa?.plan.pasos[activa.siguiente];
-    accion.textContent=paso?.boton || 'Iniciar ruta';
-    accion.classList.toggle('oculto', !activa && !opciones.length);
-    accion.disabled=!activa && (!listaDeHoy() || !selector.value);
+    accion.textContent=paso?.boton || 'Continuar ruta';
+    accion.disabled=!activa;
     const ultima=activa?.marcas.at(-1);
     const completadas=registradas.filter(ruta => ruta.siguiente < 0);
     const resumen=ultima ? activa.plan.pasos[ultima.paso].titulo + ' · ' + horaLocal(ultima.ocurrido_en)
       : completadas.map(ruta => ruta.plan.titulo + ' cerrada a las ' + horaLocal(ruta.marcas.at(-1).ocurrido_en)).join(' · ');
-    const ayuda=ocupadas.length && !opciones.length ? 'Otro repartidor ya inició las rutas disponibles.'
-      : opciones.length ? 'Inicia la ruta al salir del comedor.' : '';
+    const ayuda=!listaDeHoy() && !activa ? 'Descarga el reparto de hoy con señal para poder iniciar el recorrido.'
+      : ocupadas.length && !opciones.length ? 'Otro repartidor ya inició las rutas disponibles.'
+      : opciones.length ? 'Al salir del comedor, toca tu recorrido. El botón registra tu salida.' : '';
     const pendientes=BITACORA.pendientes.length;
-    $('bitacora-estado').textContent=[AVISO_BITACORA || resumen || ayuda,
+    $('bitacora-estado').textContent=[AVISO_BITACORA || (!listaDeHoy() && !activa ? ayuda : resumen || ayuda),
       pendientes ? `${pendientes} marca(s) por subir` : ''].filter(Boolean).join(' · ');
     $('bitacora-sincronizar').classList.toggle('oculto', !pendientes);
   }
@@ -1213,9 +1222,11 @@
     return paso.llegada ? guardarPasoRuta(ruta.plan, ruta.fecha, ruta.siguiente) : ruta.marcas[ruta.siguiente - 1];
   }
 
-  async function accionBitacora() {
+  async function accionBitacora(recorridoId) {
     const ruta=rutaEnCurso();
-    const plan=ruta?.plan || GoLunchBitacora.porId($('bitacora-plan').value);
+    // Un segundo evento del botón de inicio nunca adelanta la llegada.
+    if ((recorridoId && ruta) || (!recorridoId && !ruta)) return;
+    const plan=ruta?.plan || GoLunchBitacora.porId(recorridoId);
     if (!plan || !planesDeRuta().includes(plan)) return;
     const fecha=ruta?.fecha || FECHA;
     if (!ruta && (!listaDeHoy() || rutasRegistradas().some(x => x.fecha === fecha && x.plan === plan)
@@ -1230,6 +1241,7 @@
     if (waypoint.zona && !waypoint.llegada && ZONA === waypoint.zona && SERVICIO_INICIADO) cerrarEscaneoDeServicio();
     seleccionarPuntoDeRuta(rutaEnCurso());
     pintar();
+    if (recorridoId) $('bitacora-accion').focus({preventScroll:true});
     if (navigator.onLine) sincronizar();
   }
 
