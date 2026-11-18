@@ -112,6 +112,12 @@ La extensión de reparto guiado corresponde a v62 y conserva el mundo operativo,
 
 **Regla de una comida por confirmación.** Cámara y lector identifican cada paquete por QR. La captura por número de empleado se conserva como excepción de etiqueta dañada: muestra nombre, platillo, zona y horario, permite elegir entre varias coincidencias y confirma una comida específica. El método cámara/lector/manual queda auditado. Para paquetes regulares recibidos por supervisor se indica su nombre una vez y se escanea cada etiqueta; cobertura mantiene responsable por folio. La confirmación conserva el contexto individual de fecha, zona y turno. El servidor verifica la asignación almacenada y vuelve a comparar zona y turno al escribir; cada elemento de la cola conserva su grupo y los registros antiguos sin contexto permanecen para revisión, salvo confirmación previa del servidor.
 
+El lector procesa video desde que hay una imagen actual disponible, sin esperar
+que el navegador declare toda la reproducción preparada. Un cuadro inválido se
+reintenta sin detener silenciosamente el ciclo. La carga de análisis se limita y
+alterna imagen completa y centro; los mensajes caben en el visor móvil. Se
+conservan jsQR local, la lectura sin conexión y los códigos de las etiquetas.
+
 **Regla de lista disponible.** La descarga de hoy reúne todas las zonas autorizadas, horarios, puntos y datos GPS disponibles para continuar sin señal. Los estados textuales «Lista actualizada», «Lista guardada» y «Falta lista de hoy» describen la disponibilidad de la jornada; una indicación de conexión del navegador por sí sola no garantiza actualización. Una lista de hoy guardada permite nuevas marcas sin conexión; una de ayer no. La cola conserva cada entrega aunque cambie el servicio o el día y nunca se borra para resolver errores. Cámara, GPS y sincronización requieren la app abierta y visible. Se conservan estilos y formatos carta de los impresos y el manual.
 
 ## Propuestas de puntos de entrega
