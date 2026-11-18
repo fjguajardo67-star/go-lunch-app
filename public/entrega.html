@@ -572,6 +572,7 @@
   let MOTIVOS = {};
   let ABRIENDO_CAMARA = false;
   let escaneando = false, stream = null, ultimoCodigo = '', ultimoTs = 0;
+  let cuadroCamara = 0, ultimoAnalisisCamara = -Infinity, intentoCamara = 0;
   // Declaradas aquí y no junto a sus funciones: el arranque corre antes de que
   // el script termine de parsear, y un `let` más abajo las dejaría en zona
   // muerta — la excepción mataba iniciar() en silencio antes de sincronizar.
@@ -2086,18 +2087,31 @@
     if (!prueba && (!listaDeHoy() || !SERVICIO_INICIADO)) return flash('mal','Comienza el reparto','Revisa el punto y horario y pulsa Comenzar entrega.');
     if (escaneando) return detenerCamara();
     if (ABRIENDO_CAMARA) return;
+    if (typeof jsQR !== 'function') {
+      $('scan-status').textContent = 'Lector QR no disponible';
+      return mostrarAviso('avisoSync','No se cargó el lector QR. Con conexión, actualiza la app y vuelve a abrir la cámara. No se registró ninguna entrega.','err');
+    }
     ABRIENDO_CAMARA=true;
     const contexto=FECHA + '|' + ZONA + '|' + SERVICIO_ID;
     let nuevo=null;
     try {
-      nuevo=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      nuevo=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+      // Enfoque continuo solo cuando el teléfono lo ofrece. Su rechazo no
+      // impide abrir la cámara en Safari ni en equipos sin ese control.
+      const pista = nuevo.getVideoTracks()[0];
+      try {
+        if (pista?.getCapabilities?.().focusMode?.includes('continuous')) {
+          await pista.applyConstraints({advanced:[{focusMode:'continuous'}]});
+        }
+      } catch { /* Se conserva el enfoque que ofrece el equipo. */ }
       if ((!SERVICIO_INICIADO && !prueba) || contexto !== FECHA + '|' + ZONA + '|' + SERVICIO_ID) { nuevo.getTracks().forEach(t=>t.stop()); return; }
       const v=$('video'); v.srcObject=nuevo; await v.play();
       if ((!SERVICIO_INICIADO && !prueba) || contexto !== FECHA + '|' + ZONA + '|' + SERVICIO_ID) { nuevo.getTracks().forEach(t=>t.stop()); return; }
       stream=nuevo; escaneando=true;
+      ultimoAnalisisCamara=-Infinity; intentoCamara=0;
       $('camara').classList.remove('oculta'); $('btn-camara').classList.add('alta');
       $('btn-camara').setAttribute('aria-pressed','true'); $('btn-camara-label').textContent='Cerrar cámara';
-      $('scan-status').textContent='Buscando código…'; pintarLlegada(); requestAnimationFrame(leerCuadro);
+      $('scan-status').textContent='Buscando código…'; pintarLlegada(); cuadroCamara=requestAnimationFrame(leerCuadro);
     } catch {
       if (nuevo) nuevo.getTracks().forEach(t=>t.stop());
       $('scan-status').textContent='Cámara sin permiso';
@@ -2107,8 +2121,10 @@
 
   function detenerCamara() {
     escaneando = false;
+    cancelAnimationFrame(cuadroCamara); cuadroCamara = 0;
     if (stream) stream.getTracks().forEach(t => t.stop());
     stream = null;
+    $('video').pause(); $('video').srcObject = null;
     $('camara').classList.add('oculta');
     $('btn-camara').classList.remove('alta');
     $('btn-camara').setAttribute('aria-pressed', 'false');
@@ -2119,15 +2135,33 @@
   }
 
   const lienzo = document.createElement('canvas');
-  function leerCuadro() {
+  function leerCuadro(ahora) {
     if (!escaneando) return;
-    const v = $('video');
-    if (v.readyState === v.HAVE_ENOUGH_DATA) {
-      lienzo.width = v.videoWidth; lienzo.height = v.videoHeight;
+    try {
+      // Una cámara en vivo puede tener el cuadro actual (2) o siguiente (3)
+      // sin anunciar video completamente cargado (4). Ya se puede dibujar.
+      const v = $('video');
+      if (v.readyState < 2 || !v.videoWidth || !v.videoHeight) {
+        $('scan-status').textContent = 'Esperando imagen de la cámara…'; return;
+      }
+      if (ahora - ultimoAnalisisCamara < 125) return;
+      ultimoAnalisisCamara = ahora;
+      const w = v.videoWidth, h = v.videoHeight;
+      // Alterna imagen completa y centro: conserva códigos fuera del marco
+      // y reduce el ruido de nombres/texto alrededor de la etiqueta.
+      const lado = Math.floor(Math.min(w,h) * .8);
+      const centro = intentoCamara++ % 2 === 1;
+      const sx = centro ? (w-lado)/2 : 0, sy = centro ? (h-lado)/2 : 0;
+      const sw = centro ? lado : w, sh = centro ? lado : h;
+      const escala = Math.min(1, 960 / Math.max(sw,sh));
+      const ancho = Math.max(1,Math.round(sw*escala)), alto = Math.max(1,Math.round(sh*escala));
+      if (lienzo.width !== ancho) lienzo.width = ancho;
+      if (lienzo.height !== alto) lienzo.height = alto;
       const ctx = lienzo.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(v, 0, 0, lienzo.width, lienzo.height);
+      ctx.drawImage(v, sx, sy, sw, sh, 0, 0, lienzo.width, lienzo.height);
       const img = ctx.getImageData(0, 0, lienzo.width, lienzo.height);
       const cod = jsQR(img.data, img.width, img.height);
+      $('scan-status').textContent = 'Buscando código… Mantén la etiqueta plana y enfoca el QR.';
       // Con la cámara abierta el mismo código se lee 30 veces por segundo:
       // se ignora si es el mismo de hace menos de 2.5 s.
       if (cod && cod.data && (cod.data !== ultimoCodigo || Date.now() - ultimoTs > 2500)) {
@@ -2135,8 +2169,13 @@
         entregar(cod.data, 'camara');
         if (navigator.vibrate) navigator.vibrate(60);
       }
+    } catch {
+      // Un cuadro inválido no debe apagar para siempre el lector mientras
+      // la vista previa continúa dando la impresión de estar funcionando.
+      $('scan-status').textContent = 'Reintentando lectura… Si no mejora, cierra y abre la cámara.';
+    } finally {
+      if (escaneando) cuadroCamara=requestAnimationFrame(leerCuadro);
     }
-    requestAnimationFrame(leerCuadro);
   }
 
   // ── Pintado ───────────────────────────────────────────────
