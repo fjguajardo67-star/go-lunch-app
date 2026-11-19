@@ -33,7 +33,7 @@ export async function crearExcelFacturacion(ini, fin, valorCosto, comidas, opcio
     fechaExcel(p.fecha_menu), String(p.empleados?.numero_empleado ?? ''), p.empleados?.nombre || null,
     p.opcion_texto || p.opcion_id || null, p.tipo === 'cobertura' ? 'Cobertura' : 'Regular', p.folio || null,
     turno(p.turno), ZONAS[p.zona] || 'Sin zona', horaExcel(horaComida(p)),
-    p.no_surtido_en ? 'No surtido · Sin cargo' : sinHoraEntrega(p) ? 'Entregado · Conciliado sin hora real' : entregada(p) ? 'Entregado' : 'Pendientes de registro',
+    p.no_surtido_en ? 'No surtido · Sin cargo' : sinHoraEntrega(p) ? 'Entregado · Conciliado sin hora real' : entregada(p) ? 'Entregado' : 'Pendiente de registro',
     instanteLocal(p.entregado_en), instanteLocal(p.entrega_conciliada_en), p.entrega_conciliada_por || null,
     p.entrega_conciliacion_motivo || null, p.no_surtido_en ? 0 : 1,
     p.no_surtido_motivo || null, p.no_surtido_por || null, instanteLocal(p.no_surtido_en)

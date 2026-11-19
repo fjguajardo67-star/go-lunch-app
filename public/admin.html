@@ -176,9 +176,9 @@
   #pedidosEstado { margin-top: 14px; font-weight: 600; line-height: 1.5; }
   .pedidos-tabla { overflow: auto; max-inline-size: 100%; max-block-size: 65vh; }
   .pedidos-tabla:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
-  .pedidos-tabla table { min-inline-size: 880px; }
+  .pedidos-tabla table { min-inline-size: 840px; table-layout: fixed; }
   .pedidos-tabla caption { text-align: left; padding: 0 0 12px; font-weight: 700; }
-  .pedidos-tabla thead th { position: sticky; top: 0; background: var(--gris-bg); z-index: 1; }
+  .pedidos-tabla thead th { position: sticky; top: 0; background: var(--gris-bg); z-index: 1; font-size: .75rem; letter-spacing: 0; overflow-wrap: normal; }
   .pedidos-tabla tbody th { text-align: left; text-transform: none; letter-spacing: normal; font-weight: 600; padding: 10px; border-bottom: 1px solid var(--gris-line); }
   .pedidos-tabla th, .pedidos-tabla td { font-size: .875rem; vertical-align: top; overflow-wrap: anywhere; }
   .pedidos-tabla small { display: block; margin-top: 5px; font-size: .8125rem; color: var(--gris-text); }
@@ -2165,7 +2165,8 @@
         estado.textContent = 'Sin pedidos regulares ni coberturas para esta fecha.';
         return;
       }
-      let h = '<div class="pedidos-tabla" tabindex="0" role="region" aria-labelledby="pedidos-titulo"><table><caption>Pedidos regulares y coberturas · ' + escaparHtml(f.split('-').reverse().join('/')) + '</caption><thead><tr>' +
+      let h = '<div class="pedidos-tabla" tabindex="0" role="region" aria-labelledby="pedidos-titulo"><table><caption>Pedidos regulares y coberturas · ' + escaparHtml(f.split('-').reverse().join('/')) + '</caption><colgroup>' +
+        [22, 17, 20, 10, 7, 10, 14].map(ancho => '<col style="width:' + ancho + '%">').join('') + '</colgroup><thead><tr>' +
         ['Empleado', 'Servicio / Folio', 'Platillo', 'Zona', 'Turno', 'Hora prevista', 'Entrega'].map(t => '<th scope="col">' + t + '</th>').join('') + '</tr></thead><tbody>';
       let entregados = 0, noSurtidos = 0;
       const orden = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
@@ -2180,7 +2181,8 @@
             ? '<small>' + new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(hora) + '</small>'
             : '<small>Confirmado por administración · Sin hora registrada</small>')
           : 'Pendiente de registro';
-        h += `<tr><th scope="row">${escaparHtml(p.empleados?.nombre) || '—'}<small>N.º ${escaparHtml(p.empleados?.numero_empleado) || '—'}</small></th><td>${servicioTexto(p)}${p.folio ? '<small>' + escaparHtml(p.folio) + '</small>' : ''}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${escaparHtml(zonaTxt(p.zona))}</td><td>${escaparHtml(etiquetaTurno(p.turno))}</td><td>${escaparHtml(horarioServicio(p))}</td><td>${entrega}</td></tr>`;
+        const turno = p.turno === 'turno_a' ? 'Turno A' : p.turno === 'turno_b' ? 'Turno B' : 'Sin turno';
+        h += `<tr><th scope="row">${escaparHtml(p.empleados?.nombre) || '—'}<small>N.º ${escaparHtml(p.empleados?.numero_empleado) || '—'}</small></th><td>${servicioTexto(p)}${p.folio ? '<small>' + escaparHtml(p.folio) + '</small>' : ''}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${escaparHtml(zonaTxt(p.zona))}</td><td>${turno}</td><td>${escaparHtml(horarioServicio(p))}</td><td>${entrega}</td></tr>`;
       }
       const regulares = r.comidas.filter(p => p.tipo !== 'cobertura').length;
       estado.textContent = `${r.count} comidas: ${regulares} regulares + ${r.count - regulares} coberturas. Entregadas: ${entregados} · Pendientes de registro: ${r.count - entregados - noSurtidos} · No surtidas sin cargo: ${noSurtidos}.`;
