@@ -87,9 +87,9 @@ export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = 
 export function htmlReporteEntregas(datos, { fragmento = false, paginaInicial = 1, totalPaginas = datos.paginas.length } = {}) {
   const resumen = `<section class="resumen" aria-label="Resumen de comidas solicitadas y entregadas">
     ${[[datos.registradas.regulares, 'Regulares solicitadas'], [datos.registradas.coberturas, 'Coberturas solicitadas'],
-      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Sin confirmación'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
+      [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Pendientes de registro'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
       .map(([n, texto]) => `<div class="metrica"><strong>${n}</strong><span>${texto}</span></div>`).join('')}
-    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + sin confirmación + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.${datos.grupos.some(g => g.filas.some(f => f.hora_registrada === 'Conciliada')) ? ' Conciliada: entrega confirmada por administración, sin hora real registrada ni puntualidad verificable.' : ''}</p>`;
+    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes de registro + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.${datos.grupos.some(g => g.filas.some(f => f.hora_registrada === 'Conciliada')) ? ' Conciliada: entrega confirmada por administración, sin hora real registrada ni puntualidad verificable.' : ''}</p>`;
   const paginas = datos.paginas.map((pagina, indice) => `<section class="hoja">
     <header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div>
       <h1>Reporte diario de comidas entregadas</h1><div class="fecha"><strong>Servicio: ${esc(datos.fecha_texto)}</strong><span>Generado: ${esc(datos.generado)}</span></div></header>

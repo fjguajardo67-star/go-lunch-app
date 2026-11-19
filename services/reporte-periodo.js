@@ -58,7 +58,7 @@ function paginasResumen(d) {
       pagina.usado += alto;
     } while (inicio < filas.length);
   };
-  tabla('Comidas por día', ['Fecha', 'Regulares', 'Coberturas', 'Solicitadas', 'Entregadas', 'Sin confirmación', 'Sin cargo'], [18, 13, 14, 13, 13, 16, 13],
+  tabla('Comidas por día', ['Fecha', 'Regulares', 'Coberturas', 'Solicitadas', 'Entregadas', 'Pendientes de registro', 'Sin cargo'], [18, 13, 14, 13, 13, 16, 13],
     d.dias.map(dia => [dia.fecha_texto, dia.registradas.regulares, dia.registradas.coberturas, dia.registradas.total, dia.entregado.total, dia.pendientes, dia.no_surtidos]));
   tabla('Porciones solicitadas por platillo', ['Platillo', 'Regulares', 'Coberturas', 'Total'], [55, 15, 15, 15],
     r.porciones_por_platillo.map(p => [p.platillo, p.regulares, p.coberturas, p.total]));
@@ -70,7 +70,7 @@ function paginasResumen(d) {
     r.rating_por_platillo.map(p => [p.platillo, p.si, p.tal_vez, p.no, p.respondidos,
       p.aprobacion === null ? 'Sin opiniones' : p.muestra_corta ? 'Muestra corta' : p.aprobacion + '%']),
     'Con menos de 5 opiniones no se publica porcentaje. Aprobación: Me gustó = 100, Estuvo bien = 50, No me gustó = 0.');
-  tabla('Entregas del periodo', ['A tiempo', 'Tardías', 'Sin puntualidad verificable', 'Sin confirmación', 'No surtidas · Sin cargo'], [20, 20, 20, 20, 20],
+  tabla('Entregas del periodo', ['A tiempo', 'Tardías', 'Sin puntualidad verificable', 'Pendientes de registro', 'No surtidas · Sin cargo'], [20, 20, 20, 20, 20],
     [[r.entrega.entregados, r.entrega.tardios, r.entrega.indeterminados, r.entrega.no_entregados, r.no_surtidos]]);
   return paginas;
 }
@@ -81,11 +81,11 @@ export function htmlReportePeriodo(d) {
   const totalPaginas = offset + resumen.length + d.dias.reduce((n, dia) => n + dia.paginas.length, 0);
   const entregadas = r.entrega.entregados + r.entrega.tardios + r.entrega.indeterminados;
   const metricas = [[r.regulares, 'Regulares solicitadas'], [r.coberturas, 'Coberturas solicitadas'], [r.total, 'Total solicitado'],
-    [entregadas, 'Entregadas'], [r.entrega.no_entregados, 'Sin confirmación'], [r.no_surtidos, 'No surtidas · Sin cargo']];
+    [entregadas, 'Entregadas'], [r.entrega.no_entregados, 'Pendientes de registro'], [r.no_surtidos, 'No surtidas · Sin cargo']];
   let paginas = resumen.map((p, i) => `<section class="hoja">
     ${encabezadoReporte('Reporte de servicio del periodo', d.periodo, d.generado)}
     <p class="nota-resumen">${esc(textoSeleccionCocina(d.filtros))}</p>
-    ${i === 0 ? `<section class="resumen">${metricas.map(([n, t]) => `<div class="metrica"><strong>${n}</strong><span>${t}</span></div>`).join('')}</section><p class="nota-resumen">Solicitadas = entregadas + sin confirmación + no surtidas. Una comida sin confirmación requiere conciliación; no acredita una falta de recogida. Las incidencias sin cargo conservan su registro y se detallan por separado. ${d.estimacion ? 'La carátula incluye los servicios solicitados de esta selección, excluyendo los no surtidos sin cargo.' : 'Este documento acompaña la estimación; no calcula importes.'}</p>` : ''}
+    ${i === 0 ? `<section class="resumen">${metricas.map(([n, t]) => `<div class="metrica"><strong>${n}</strong><span>${t}</span></div>`).join('')}</section><p class="nota-resumen">Solicitadas = entregadas + pendientes de registro + no surtidas. Una comida pendiente de registro requiere conciliación; no acredita una falta de recogida. Las incidencias sin cargo conservan su registro y se detallan por separado. ${d.estimacion ? 'La carátula incluye los servicios solicitados de esta selección, excluyendo los no surtidos sin cargo.' : 'Este documento acompaña la estimación; no calcula importes.'}</p>` : ''}
     ${p.partes.join('')}
     ${pieReporte(d.elaboro, i + 1 + offset, totalPaginas)}
   </section>`).join('');

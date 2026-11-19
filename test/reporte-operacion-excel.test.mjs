@@ -25,7 +25,7 @@ const resultado = celda => celda.value?.result ?? celda.value;
 test('archivo nativo lleva cuatro hojas, logos incrustados y detalle por comida sin perder ceros iniciales', async () => {
   const r = await crearExcelOperacion('2026-11-07', '2026-11-07', base());
   const w = await abrir(r);
-  assert.deepEqual(w.worksheets.map(s => s.name), ['Resumen', 'Entregas', 'Sin_Confirmacion', 'Incidencias_Sin_Cargo']);
+  assert.deepEqual(w.worksheets.map(s => s.name), ['Resumen', 'Entregas', 'Pendientes_Registro', 'Incidencias_Sin_Cargo']);
   assert.equal(r.entregadas, 68); assert.equal(r.total, 68);
   assert.equal(filas(w.getWorksheet('Entregas')).length, 68);
   const numeros = filas(w.getWorksheet('Entregas')).map(f => f[1]);
@@ -59,7 +59,7 @@ test('conciliación incluye la comida sin inventar hora y una incidencia prevale
   assert.equal(r.entregadas, 66);
   assert.equal(e.filter(f => f[10] === 'Conciliada').length, 2);
   assert.ok(e.filter(f => f[10] === 'Conciliada').every(f => f[9] === null && /Hora real no registrada/.test(f[11])));
-  assert.equal(filas(w.getWorksheet('Sin_Confirmacion')).length, 1);
+  assert.equal(filas(w.getWorksheet('Pendientes_Registro')).length, 1);
   assert.equal(filas(w.getWorksheet('Incidencias_Sin_Cargo')).length, 1);
   const s = w.getWorksheet('Resumen');
   assert.equal(resultado(s.getCell('G10')), 66); assert.equal(resultado(s.getCell('H10')), 1); assert.equal(resultado(s.getCell('I10')), 1);

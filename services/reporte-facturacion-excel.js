@@ -33,7 +33,7 @@ export async function crearExcelFacturacion(ini, fin, valorCosto, comidas, opcio
     fechaExcel(p.fecha_menu), String(p.empleados?.numero_empleado ?? ''), p.empleados?.nombre || null,
     p.opcion_texto || p.opcion_id || null, p.tipo === 'cobertura' ? 'Cobertura' : 'Regular', p.folio || null,
     turno(p.turno), ZONAS[p.zona] || 'Sin zona', horaExcel(horaComida(p)),
-    p.no_surtido_en ? 'No surtido · Sin cargo' : sinHoraEntrega(p) ? 'Entregado · Conciliado sin hora real' : entregada(p) ? 'Entregado' : 'Sin confirmación',
+    p.no_surtido_en ? 'No surtido · Sin cargo' : sinHoraEntrega(p) ? 'Entregado · Conciliado sin hora real' : entregada(p) ? 'Entregado' : 'Pendiente de registro',
     instanteLocal(p.entregado_en), instanteLocal(p.entrega_conciliada_en), p.entrega_conciliada_por || null,
     p.entrega_conciliacion_motivo || null, p.no_surtido_en ? 0 : 1,
     p.no_surtido_motivo || null, p.no_surtido_por || null, instanteLocal(p.no_surtido_en)
@@ -47,7 +47,7 @@ export async function crearExcelFacturacion(ini, fin, valorCosto, comidas, opcio
     for (const c of ['K', 'L', 'R']) auditoria.getCell(`${c}${n}`).numFmt = 'dd/mm/yyyy hh:mm';
   }
   resumen.getRow(9).values = ['Fecha', 'Regulares con cargo', 'Coberturas con cargo', 'Servicios con cargo',
-    'Costo unitario (MXN)', 'Subtotal (MXN)', 'Entregadas con cargo', 'Sin confirmación con cargo', 'No surtidas sin cargo'];
+    'Costo unitario (MXN)', 'Subtotal (MXN)', 'Entregadas con cargo', 'Pendientes de registro con cargo', 'No surtidas sin cargo'];
   estiloFila(resumen.getRow(9), anchos, true);
   const contar = (n, criterios) => filas.length ?
     `COUNTIFS('Auditoria_Detalle'!$A$10:$A$${filas.length + 9},$A${n}${criterios.map(([c, v]) => `,'Auditoria_Detalle'!$${c}$10:$${c}$${filas.length + 9},${typeof v === 'number' ? v : '"' + v + '"'}`).join('')})` : '0';

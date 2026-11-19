@@ -29,7 +29,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
   const e = detalle(wb, 'Entregas', 'Relación de comidas entregadas',
     ['Fecha', 'N.º empleado', 'Nombre', 'Platillo', 'Servicio', 'Folio', 'Turno', 'Zona', 'Hora prevista', 'Hora de entrega', 'Confirmación', 'Observación'],
     [14, 17, 48, 33, 27, 34, 14, 20, 16, 16, 18, 31], entregas, d, imagenes, [9, 10]);
-  const p = detalle(wb, 'Sin_Confirmacion', 'Pedidos sin confirmación de entrega',
+  const p = detalle(wb, 'Pendientes_Registro', 'Pedidos pendientes de registro',
     ['Fecha', 'N.º empleado', 'Nombre', 'Platillo', 'Servicio', 'Folio', 'Turno', 'Zona', 'Hora prevista'],
     [14, 17, 48, 33, 27, 34, 14, 20, 16], pendientes, d, imagenes, [9]);
   const i = detalle(wb, 'Incidencias_Sin_Cargo', 'Incidencias sin cargo al empleado',
@@ -38,7 +38,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
   for (let n = 10; n < 10 + incidencias.length; n++) i.getCell(`K${n}`).numFmt = 'dd/mm/yyyy hh:mm';
 
   resumen.getRow(9).values = ['Fecha', 'Regulares solicitadas', 'Coberturas solicitadas', 'Total solicitado',
-    'Regulares entregadas', 'Coberturas entregadas', 'Total entregado', 'Sin confirmación', 'Sin cargo'];
+    'Regulares entregadas', 'Coberturas entregadas', 'Total entregado', 'Pendientes de registro', 'Sin cargo'];
   estiloFila(resumen.getRow(9), anchos, true);
   const criterio = (hoja, cantidad, columnaServicio, fecha, servicio) => cantidad ?
     `COUNTIFS('${hoja}'!$A$10:$A$${cantidad + 9},$A${fecha}${servicio ? `,'${hoja}'!$${columnaServicio}$10:$${columnaServicio}$${cantidad + 9},"${servicio}"` : ''})` : '0';
@@ -74,7 +74,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
   estiloFila(resumen.getRow(totalFila + 4), anchos);
   for (const [offset, texto] of [
     [7, 'Las entregas conciliadas se incluyen en Entregas. Su hora real no quedó registrada.'],
-    [8, 'Una comida sin confirmación requiere conciliación; no acredita que el empleado no la haya recogido.']
+    [8, 'Una comida pendiente de registro requiere conciliación; no acredita que el empleado no la haya recogido.']
   ]) {
     const n = totalFila + offset; resumen.mergeCells(`A${n}:I${n}`); resumen.getCell(`A${n}`).value = texto;
     resumen.getCell(`A${n}`).font = { name: 'Arial', size: 10, color: { argb: '14233E' } }; resumen.getRow(n).height = 24;

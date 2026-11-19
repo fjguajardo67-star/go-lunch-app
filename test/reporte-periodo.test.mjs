@@ -74,7 +74,7 @@ test('periodo concilia servicios y estados sin atribuir faltas de recogida ni de
   assert.ok(paginas.every(m => Number(m[2]) === paginas.length));
   assert.equal((html.match(/class="cierre"/g) || []).length, 3);
   assert.match(html, /Ana &lt;Caja&gt;/); assert.match(html, /09\/11\/2026 al 11\/11\/2026/);
-  assert.match(html, /Hora prevista/); assert.match(html, /Entrega registrada/); assert.match(html, /Sin confirmación/);
+  assert.match(html, /Hora prevista/); assert.match(html, /Entrega registrada/); assert.match(html, /Pendientes de registro/);
   assert.doesNotMatch(html, /Quién no recoge|Merma|Tiempos de ruta|x-admin-key|<script>/);
 });
 
