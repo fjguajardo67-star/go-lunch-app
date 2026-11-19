@@ -192,6 +192,10 @@
   .pedido-folio li { font-size: .875rem; padding: 8px 0; overflow-wrap: anywhere; }
   .supervisores-contenido { margin-top: 20px; }
   .ayuda-impresion { margin: 10px 0; }
+  @media (max-width: 600px) {
+    .pedidos-filtros { gap: 6px; }
+    .pedidos-filtros label { padding: 8px 6px; gap: 4px; font-size: .8125rem; }
+  }
   .pedidos-ayuda { margin: 12px 0; color: var(--gris-text); font-size: .875rem; }
   #pedidosEstado { margin-top: 14px; font-weight: 600; line-height: 1.5; }
   .pedidos-tabla { overflow: auto; max-inline-size: 100%; max-block-size: 65vh; }
@@ -1545,7 +1549,7 @@
   }
 
   function cocinaVista(nombre) {
-    if (PANEL_ROL === 'monitoreo' && nombre !== 'reparto') return;
+    if (PANEL_ROL === 'monitoreo' && !['diaria', 'reparto'].includes(nombre)) return;
     document.querySelectorAll('.cocina-subtab').forEach(b => {
       b.setAttribute('aria-pressed', b.dataset.cocinaVista === nombre ? 'true' : 'false');
     });
@@ -1599,14 +1603,18 @@
     }
     const ocultar = e => { if (e) e.style.display = 'none'; };
     for (const selector of ['.tab[data-p="menu"]', '.tab[data-p="empleados"]', '#cov-extra',
-      '.puntos-panel', '.cocina-subnav', '.cocina-link', '[data-cocina-panel="pruebas"]']) {
+      '.puntos-panel', '.cocina-link', '.cocina-grid-diaria', '.cocina-nota-diaria', '[data-cocina-vista="pruebas"]', '[data-cocina-panel="pruebas"]']) {
       document.querySelectorAll(selector).forEach(ocultar);
     }
     for (const id of ['cov-menu-semanal','cov-supervisor','rp-nombre']) ocultar(document.getElementById(id)?.closest('.card'));
     const rutas = document.querySelector('.tab[data-p="cocina"]');
-    if (rutas && rutas.textContent !== 'Recorridos') rutas.textContent = 'Recorridos';
+    if (rutas && rutas.textContent !== 'Cocina y recorridos') rutas.textContent = 'Cocina y recorridos';
     const tituloRutas = document.querySelector('#p-cocina h2');
-    if (tituloRutas && tituloRutas.textContent !== 'Recorridos') tituloRutas.textContent = 'Recorridos';
+    if (tituloRutas && tituloRutas.textContent !== 'Cocina y recorridos') tituloRutas.textContent = 'Cocina y recorridos';
+    for (const [vista, texto] of [['diaria', 'Impresos de coberturas'], ['reparto', 'Recorridos']]) {
+      const boton = document.querySelector('[data-cocina-vista="' + vista + '"]');
+      if (boton && boton.textContent !== texto) boton.textContent = texto;
+    }
     // Lista explícita de consultas e impresos; los controles nuevos no obtienen
     // permiso por defecto. La API vuelve a comprobar todas las escrituras.
     const consultas = /^(tab|cocinaVista|abrirFolioPedido|verDashboard|verPedidos|cargarCobertura|imprimirCobertura|imprimirFolioCobertura|verReportes|alternarEstimacion|imprimirReportePeriodo|imprimirReporteEntregas|excelCocina|excelOperacion|excelFacturacion|salir)\(/;
@@ -2230,7 +2238,7 @@
     if (!folios.size) return '';
     return '<h4>Detalle por folio de cobertura</h4>' + [...folios].map(([folio, filas]) => {
       const p = filas[0], entregadas = filas.filter(x => !x.no_surtido_en && (x.entregado_en || x.entrega_conciliada_en)).length;
-      return '<details class="pedido-folio" data-folio="' + escaparHtml(folio) + '"><summary tabindex="-1">' + escaparHtml(folio) +
+      return '<details class="pedido-folio" data-folio="' + escaparHtml(folio) + '"><summary>' + escaparHtml(folio) +
         ' · ' + escaparHtml(zonaTxt(p.zona)) + ' · ' + filas.length + ' comidas · Entregadas: ' + entregadas + '</summary>' +
         '<p>Recibe: ' + escaparHtml(p.responsable_nombre || 'Sin responsable registrado') +
         (p.responsable_numero ? ' · N.º ' + escaparHtml(p.responsable_numero) : '') + ' · Hora prevista: ' + escaparHtml(horarioServicio(p)) + '</p><ul>' +
@@ -3761,7 +3769,7 @@
             : '';
           return '<span><b>#' + escaparHtml(i.empleado_numero_snapshot) + '</b> · ' + escaparHtml(i.empleado_nombre_snapshot) + ' — ' + escaparHtml(i.opcion_texto) + receptor + '</span>';
         }).join('');
-        return '<details class="cov-solicitud" style="' + (cancelada ? 'opacity:.55' : '') + '"><summary>' + escaparHtml(zonaTxt(s.zona)) + ' · ' + escaparHtml(hora) + ' · ' + s.total_porciones + ' comidas · Entregadas: ' + entregadas + ' · ' + escaparHtml(s.folio) + '</summary><div class="cov-solicitud-cab"><div><b>' + escaparHtml(s.folio) + '</b><p>' +
+        return '<details class="cov-solicitud" style="' + (cancelada ? 'opacity:.55' : '') + '"><summary>' + escaparHtml(zonaTxt(s.zona)) + ' · ' + escaparHtml(hora) + ' · ' + s.total_porciones + (s.total_porciones === 1 ? ' comida' : ' comidas') + (cancelada ? ' · Pedido cancelado' : ' · Entregadas: ' + entregadas) + ' · ' + escaparHtml(s.folio) + '</summary><div class="cov-solicitud-cab"><div><b>' + escaparHtml(s.folio) + '</b><p>' +
           escaparHtml(zonaTxt(s.zona)) + ' · Recibe ' + escaparHtml(s.responsable_nombre_snapshot) + ' #' + escaparHtml(s.responsable_numero_snapshot) + '</p></div>' +
           '<span class="badge ' + (cancelada ? 'off' : 'on') + '">' + (cancelada ? 'Pedido cancelado' : 'Pedido confirmado') + ' · ' + s.total_porciones + '</span></div>' +
           (s.entrega_programada_en ? '<p style="font-size:.8rem;margin:8px 0">' + (s.origen === 'extraordinaria' ? 'Extraordinaria' : 'Pedido de supervisor') + ' · Entrega ' + escaparHtml(new Date(s.entrega_programada_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) +

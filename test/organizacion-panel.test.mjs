@@ -51,3 +51,8 @@ test('Cocina separa pedido confirmado de entrega, colapsa folios y rechaza respu
  const h=campos.covSolicitudes.innerHTML;
  assert.match(h,/<details class="cov-solicitud"/);assert.doesNotMatch(h,/<details[^>]*\bopen/);assert.match(h,/Entregadas: 1/);assert.match(h,/Pedido confirmado/);assert.match(h,/No surtido · Sin cargo/);assert.match(h,/Comanda de este folio/);assert.equal(campos['cov-n-por'].textContent,2);
 });
+
+test('monitoreo conserva la vista de impresos de coberturas y la bitácora sin cargar altas ni GPS',()=>{
+ const llamadas=[],ctx=vm.createContext({PANEL_ROL:'monitoreo',document:{querySelectorAll:()=>[],getElementById:()=>({value:'2026-11-19'})},cargarCobertura:()=>llamadas.push('folios'),consultarBitacora:()=>llamadas.push('bitacora')});
+ vm.runInContext(funcion('cocinaVista'),ctx);ctx.cocinaVista('diaria');ctx.cocinaVista('reparto');ctx.cocinaVista('pruebas');assert.deepEqual(llamadas,['folios','bitacora']);
+});
