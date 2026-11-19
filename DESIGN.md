@@ -48,7 +48,7 @@ cargo. El precio unitario capturado se aplica a ambos servicios; subtotal sin IV
 
 ## Pedidos de cobertura
 
-Los campos de platillos del panel comparten una escala: 0.8125 rem (13 px con la configuración predeterminada) en computadora para menú regular diario, tabla semanal y opciones diarias de coberturas. En pantallas pequeñas o con puntero táctil conservan 1 rem (16 px). Menú y Coberturas aprovechan hasta 1240 px del contenido, con padding exterior de 16 px y tarjetas de 16 px. La tabla regular distribuye las seis opciones en el ancho disponible; la fecha ocupa 108 px y su botón Editar pasa debajo. Las celdas usan padding de 6 px y altura mínima de 3 rem que crece con el texto, incluida su alternativa sin `field-sizing`. Solo cuando el contenedor baja de 640 px se habilita desplazamiento horizontal con un ancho mínimo de 720 px; el resto del panel conserva su ancho habitual. Coberturas reduce separaciones y padding; los campos táctiles conservan al menos 48 px. La escala de los documentos impresos es independiente.
+Los campos de platillos del panel comparten una escala: 0.8125 rem (13 px con la configuración predeterminada) en computadora para menú regular diario, tabla semanal y opciones diarias de coberturas. En pantallas pequeñas o con puntero táctil conservan 1 rem (16 px). Las dos pestañas de Menú aprovechan hasta 1240 px del contenido, con padding exterior de 16 px y tarjetas de 16 px. La tabla regular distribuye las seis opciones en el ancho disponible; la fecha ocupa 108 px y su botón Editar pasa debajo. Las celdas usan padding de 6 px y altura mínima de 3 rem que crece con el texto, incluida su alternativa sin `field-sizing`. Solo cuando el contenedor baja de 640 px se habilita desplazamiento horizontal con un ancho mínimo de 720 px; el resto del panel conserva su ancho habitual. La pestaña Menú de coberturas reduce separaciones y padding; los campos táctiles conservan al menos 48 px. La escala de los documentos impresos es independiente.
 
 El menú de Coberturas se programa de lunes a domingo, con tres opciones variables por fecha y publicación independiente por día. La vista mantiene la identidad corporativa y usa filas con fecha, estado, tres campos y una acción; en móvil los campos se apilan. Publicado, Cambios sin publicar y Sin menú se expresan con texto. Solo administración publica; gerente consulta. Hoy y futuro admiten una nueva publicación con control de versión; el pasado conserva el historial. Los borradores se conservan ante errores y se confirma antes de descartarlos al consultar otra semana.
 
@@ -58,10 +58,7 @@ La solicitud del supervisor se presenta como una lista de personas y alimentos,
 no como una orden financiera. La pantalla muestra únicamente horario, menú,
 zona, responsable y beneficiarios. Costos y acuerdos comerciales no aparecen.
 
-El panel administrativo mantiene cuatro bloques: menú especial, supervisores
-autorizados, solicitudes/producción y autorizaciones vigentes. En reparto, las
-coberturas se distinguen visualmente, pero comparten el mismo patrón de escaneo
-de las entregas regulares.
+El panel distribuye las funciones de cobertura por tarea: programación en Menú, consulta y pedidos extraordinarios en Pedidos, supervisores y vigencias en Empleados e impresión por turno y folio en Cocina. La navegación lateral no contiene Coberturas. En reparto se conserva el mismo patrón de escaneo individual.
 
 Los supervisores conservan su número y clave; pueden crear varios folios para hoy con turno, zona, responsable y hora propios. Altas, modificaciones y cancelaciones requieren al menos dos horas antes de la entrega, comprobadas por el reloj del servidor y la función transaccional de PostgreSQL. Un cambio de horario también debe respetar el límite del horario anterior. Mis pedidos de hoy muestra folios confirmados, entregados y cancelados. Cada empleado admite una cobertura por turno y día entre todos los supervisores y zonas; puede tener otra en el otro turno y su pedido regular.
 
@@ -197,3 +194,13 @@ autorización del servidor es obligatoria, además de ocultar controles.
 Pedidos consulta la misma fuente de comidas que los reportes y reúne regulares y coberturas vigentes, incluidas las extraordinarias. Una fila corresponde a una comida; nombre y número de empleado permanecen juntos, servicio y folio identifican la cobertura, y el horario autorizado se conserva. La tabla semántica tiene cabeceras, región con foco para desplazamiento horizontal, estados de carga, vacío y error, y descarta respuestas de fechas anteriores. Sus totales separan regulares y coberturas y usan la misma prioridad de incidencias y conciliaciones que Dashboard. No se habilitan acciones nuevas de entrega.
 
 La etiqueta visible es «Pendientes de registro» en panel, PDF y Excel; no significa que el empleado no recogió. Operación usa la pestaña Pendientes_Registro. La entrega confirmada por administración cuenta como entregada sin inventar hora de escaneo; las incidencias sin cargo conservan prioridad.
+
+## Organización del panel por tarea
+
+Menú contiene dos pestañas internas, Menú regular y Menú de coberturas, con sus propios campos y estado. Las pestañas usan botones, roles tablist/tab/tabpanel, selección y foco sincronizados; flechas/Home/End mueven foco, Enter/Espacio activan explícitamente por tratarse de una carga de red. Esta interacción compatible con Safari no requiere dependencias. El estado inicial oculto se declara en HTML. Cambiar de pestaña no recarga ni descarta borradores de coberturas.
+
+Pedidos muestra una única tabla y filtros nativos Todos, Regulares y Coberturas. La consulta conserva fecha y servicio, descarta respuestas obsoletas y sus conteos corresponden a la selección. El folio abre el detalle cerrado de ese grupo, con responsable, horario y una lista por comida; no habilita entregas ni impresiones en esa vista. Los pedidos extraordinarios se registran en un bloque desplegable de Pedidos.
+
+Empleados presenta Supervisores de coberturas al inicio, en un bloque desplegable con autorización, vigencias y restablecimiento de claves. Administración y gerente conservan sus permisos previos sobre supervisores; gerente sigue sin editar plantilla ni menús. Monitoreo consulta Pedidos y folios sin permisos de escritura. Su acceso Cocina y recorridos conserva la bitácora y los impresos de coberturas mediante dos vistas de consulta; las herramientas generales y las mutaciones permanecen ocultas.
+
+Cocina conserva el consolidado de impresión y agrega Producción por folio de cobertura, con fecha/turno propios, conteos de folios y comidas solicitadas y detalles inicialmente cerrados. Las ayudas de impresora se despliegan a demanda. Pedido confirmado se distingue de Entregadas; las incidencias prevalecen sobre las marcas previas. Las alertas por folio nuevo/modificado y la confirmación Comanda impresa mantienen su funcionamiento en toda la sesión. Se elimina el badge ambiguo de la antigua pestaña de Coberturas.
