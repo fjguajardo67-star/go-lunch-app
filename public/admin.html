@@ -172,6 +172,16 @@
      El logo vivía en un recuadro blanco de 3 px de padding sobre el header
      azul y se perdía. En una barra lateral blanca tiene su tamaño natural,
      y las seis secciones dejan de amontonarse en una fila que se partía. */
+  .pedidos-ayuda { margin: 12px 0; color: var(--gris-text); font-size: .875rem; }
+  #pedidosEstado { margin-top: 14px; font-weight: 600; line-height: 1.5; }
+  .pedidos-tabla { overflow: auto; max-inline-size: 100%; max-block-size: 65vh; }
+  .pedidos-tabla:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
+  .pedidos-tabla table { min-inline-size: 880px; }
+  .pedidos-tabla caption { text-align: left; padding: 0 0 12px; font-weight: 700; }
+  .pedidos-tabla thead th { position: sticky; top: 0; background: var(--gris-bg); z-index: 1; }
+  .pedidos-tabla tbody th { text-align: left; text-transform: none; letter-spacing: normal; font-weight: 600; padding: 10px; border-bottom: 1px solid var(--gris-line); }
+  .pedidos-tabla th, .pedidos-tabla td { font-size: .875rem; vertical-align: top; overflow-wrap: anywhere; }
+  .pedidos-tabla small { display: block; margin-top: 5px; font-size: .8125rem; color: var(--gris-text); }
   .shell { display: flex; align-items: stretch; min-height: calc(100vh - 72px); }
   .lateral {
     width: 232px; flex-shrink: 0; background: var(--blanco);
@@ -880,12 +890,14 @@
       <div class="card">
         <div class="card-header">
           <div class="card-icon">🧾</div>
-          <h3>Pedidos del día</h3>
+          <h3 id="pedidos-titulo">Pedidos del día</h3>
         </div>
         <div class="row-fin">
-          <div><label for="pe-fecha">Fecha</label><input type="date" id="pe-fecha" style="max-width:180px"></div>
+          <div><label for="pe-fecha">Fecha</label><input type="date" id="pe-fecha" onchange="limpiarPedidos()" style="max-width:180px"></div>
           <button class="accion" onclick="verPedidos()">Consultar pedidos</button>
         </div>
+        <p class="pedidos-ayuda">Regulares y coberturas, una fila por comida. Cada servicio conserva su horario y estado de entrega.</p>
+        <p id="pedidosEstado" role="status" aria-live="polite"></p>
         <div id="pedidosBox" style="margin-top:18px"></div>
       </div>
     </section>
@@ -1358,7 +1370,7 @@
           <h3>Reporte de operación</h3>
         </div>
         <p style="font-size:.82rem;color:var(--gris-text);margin:-4px 0 12px">
-          Entregas con nombre y número de empleado, resumen del periodo, comidas sin confirmación e incidencias sin cargo. Incluye título y logos.
+          Entregas con nombre y número de empleado, resumen del periodo, comidas pendientes de registro e incidencias sin cargo. Incluye título y logos.
         </p>
         <div class="row-fin">
           <div><label for="op-ini">Desde</label><input type="date" id="op-ini"></div>
@@ -2041,13 +2053,13 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
         cajita(e.entregados, 'Entregados a tiempo', 'var(--verde)', '#f0f7f0') +
         cajita(e.tardios, 'Tardíos', '#b8860b', '#fff9e6') +
-        cajita(e.no_entregados, 'Sin confirmación de entrega', 'var(--gris-text)', 'var(--gris-bg)') +
+        cajita(e.no_entregados, 'Pendientes de registro', 'var(--gris-text)', 'var(--gris-bg)') +
         cajita(d.no_surtidos || 0, 'No surtidos · Sin cargo', 'var(--gris-text)', 'var(--gris-bg)') +
         (e.indeterminados ? cajita(e.indeterminados, 'Entregados sin puntualidad verificable', 'var(--gris-text)', 'var(--gris-bg)') : '') +
         '</div>' +
         (e.pendientes
           ? '<p style="font-size:.78rem;color:var(--gris-text);margin-top:10px">De los ' +
-            e.no_entregados + ' sin confirmación, <strong>' + e.pendientes +
+            e.no_entregados + ' pendientes de registro, <strong>' + e.pendientes +
             '</strong> todavía no vencen su hora prevista de entrega.</p>'
           : '') +
         (d.motivos_tardia.length
@@ -2057,10 +2069,10 @@
           : ''));
 
       if (d.incidencias?.length) h += bloque('Incidencias sin cargo al empleado',
-        '<p>Fallas de cocina o reparto autorizadas. Se contabilizan por separado de entregas y comidas sin confirmación.</p><table><tr><th>Fecha</th><th>Empleado</th><th>Platillo</th><th>Motivo</th><th>Registró</th></tr>' +
+        '<p>Fallas de cocina o reparto autorizadas. Se contabilizan por separado de entregas y comidas pendientes de registro.</p><table><tr><th>Fecha</th><th>Empleado</th><th>Platillo</th><th>Motivo</th><th>Registró</th></tr>' +
         d.incidencias.map(i => '<tr><td>' + escaparHtml(i.fecha) + '</td><td>#' + escaparHtml(i.numero_empleado) + ' · ' + escaparHtml(i.nombre) + '</td><td>' + escaparHtml(i.platillo) + '</td><td>' + escaparHtml(i.motivo) + '</td><td>' + escaparHtml(i.registrado_por) + '</td></tr>').join('') + '</table>');
 
-      h += '<p class="reporte-nota">Una comida sin confirmación de entrega requiere conciliación. La ausencia de un escaneo no demuestra que el empleado no recogió ni que hubo desperdicio.</p>';
+      h += '<p class="reporte-nota">Una comida pendiente de registro requiere conciliación. La ausencia de un escaneo no demuestra que el empleado no recogió ni que hubo desperdicio.</p>';
 
       box.innerHTML = h;
     } catch(e) {
@@ -2124,29 +2136,63 @@
       : d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
+  let consultaPedidos = 0;
+  function limpiarPedidos() {
+    consultaPedidos++;
+    document.getElementById('pedidosBox').innerHTML = '';
+    document.getElementById('pedidosBox').removeAttribute('aria-busy');
+    document.getElementById('pedidosEstado').textContent = 'Consulta la fecha seleccionada para ver sus pedidos.';
+  }
   async function verPedidos() {
+    const consulta = ++consultaPedidos;
     const f = document.getElementById('pe-fecha').value;
     const box = document.getElementById('pedidosBox');
+    const estado = document.getElementById('pedidosEstado');
+    box.innerHTML = '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f)) {
+      estado.textContent = 'Selecciona una fecha de servicio para consultar los pedidos.';
+      box.removeAttribute('aria-busy');
+      return;
+    }
+    estado.textContent = 'Consultando pedidos regulares y coberturas…';
+    box.setAttribute('aria-busy', 'true');
+    const vigente = () => consulta === consultaPedidos && document.getElementById('pe-fecha').value === f;
     try {
-      const r = await api('/api/pedidos/' + f);
-      if (!r.count) return box.innerHTML = '<div class="vacio">Sin pedidos para esta fecha.</div>';
-      const horaEntrega = iso => {
-        if (!iso) return '<span style="color:#aaa">—</span>';
-        const d = new Date(iso);
-        return isNaN(d) ? '<span style="color:#aaa">—</span>'
-          : '<span style="color:var(--verde);font-weight:700">✓ ' +
-            d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true }) + '</span>';
-      };
-      let h = `<table><tr><th>Empleado</th><th>No.</th><th>Platillo</th><th>Zona</th><th>Turno</th><th>Entregado</th></tr>`;
+      const r = await api('/api/comidas/' + f);
+      if (!vigente()) return;
+      if (!Array.isArray(r.comidas) || r.comidas.length !== r.count) throw new Error('La lista recibida está incompleta. Vuelve a consultar.');
+      if (!r.count) {
+        estado.textContent = 'Sin pedidos regulares ni coberturas para esta fecha.';
+        return;
+      }
+      let h = '<div class="pedidos-tabla" tabindex="0" role="region" aria-labelledby="pedidos-titulo"><table><caption>Pedidos regulares y coberturas · ' + escaparHtml(f.split('-').reverse().join('/')) + '</caption><thead><tr>' +
+        ['Empleado', 'Servicio / Folio', 'Platillo', 'Zona', 'Turno', 'Hora prevista', 'Entrega'].map(t => '<th scope="col">' + t + '</th>').join('') + '</tr></thead><tbody>';
       let entregados = 0, noSurtidos = 0;
-      for (const p of r.pedidos) {
+      const orden = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+      const comidas = [...r.comidas].sort((a, b) => orden.compare(a.empleados?.nombre || '', b.empleados?.nombre || '') ||
+        orden.compare(a.empleados?.numero_empleado || '', b.empleados?.numero_empleado || ''));
+      for (const p of comidas) {
         if (p.no_surtido_en) noSurtidos++;
         else if (p.entregado_en || p.entrega_conciliada_en) entregados++;
-        h += `<tr><td>${escaparHtml(p.empleados?.nombre)||'—'}</td><td>${escaparHtml(p.empleados?.numero_empleado)||'—'}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${zonaTxt(p.zona)}</td><td>${turnoTxt(p.turno, p.zona, f)}</td><td>${p.no_surtido_en ? 'No surtido · Sin cargo al empleado' : p.entrega_conciliada_en && !p.entregado_en ? 'Entregada · Conciliada, sin hora' : horaEntrega(p.entregado_en)}</td></tr>`;
+        const hora = p.entregado_en && new Date(p.entregado_en);
+        const entrega = p.no_surtido_en ? 'No surtido · Sin cargo' : p.entregado_en || p.entrega_conciliada_en
+          ? 'Entregado' + (hora && !Number.isNaN(hora.getTime())
+            ? '<small>' + new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(hora) + '</small>'
+            : '<small>Confirmado por administración · Sin hora registrada</small>')
+          : 'Pendiente de registro';
+        h += `<tr><th scope="row">${escaparHtml(p.empleados?.nombre) || '—'}<small>N.º ${escaparHtml(p.empleados?.numero_empleado) || '—'}</small></th><td>${servicioTexto(p)}${p.folio ? '<small>' + escaparHtml(p.folio) + '</small>' : ''}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${escaparHtml(zonaTxt(p.zona))}</td><td>${escaparHtml(etiquetaTurno(p.turno))}</td><td>${escaparHtml(horarioServicio(p))}</td><td>${entrega}</td></tr>`;
       }
-      h += `</table><p style="margin-top:10px;font-size:.85rem;color:var(--gris)">Total: ${r.count} pedidos · Entregados: ${entregados} · Pendientes: ${r.count - entregados - noSurtidos} · No surtidos sin cargo: ${noSurtidos}</p>`;
-      box.innerHTML = h;
-    } catch(e) { box.innerHTML = `<div class="aviso err">Error: ${e.message}</div>`; }
+      const regulares = r.comidas.filter(p => p.tipo !== 'cobertura').length;
+      estado.textContent = `${r.count} comidas: ${regulares} regulares + ${r.count - regulares} coberturas. Entregadas: ${entregados} · Pendientes de registro: ${r.count - entregados - noSurtidos} · No surtidas sin cargo: ${noSurtidos}.`;
+      box.innerHTML = h + '</tbody></table></div><p class="pedidos-ayuda">En pantallas pequeñas, desliza la tabla para ver todas las columnas.</p>';
+    } catch(e) {
+      if (vigente()) estado.textContent = 'No se pudo cargar la lista completa de pedidos. ' + e.message;
+    } finally {
+      if (consulta === consultaPedidos) {
+        box.removeAttribute('aria-busy');
+        if (document.getElementById('pe-fecha').value !== f) estado.textContent = 'La fecha cambió. Consulta de nuevo para ver sus pedidos.';
+      }
+    }
   }
 
   // ── Carga masiva de la plantilla ──

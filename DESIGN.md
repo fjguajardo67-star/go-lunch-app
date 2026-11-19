@@ -24,7 +24,7 @@ Los Excel de operación y facturación requieren imágenes PNG incrustadas para 
 en Excel de Mac y Windows. Las copias de `assets/reportes/` derivan de los SVG
 aprobados de Go Lunch, Alefer y Glovis; se usan en el archivo descargado y no
 reemplazan las marcas SVG de la interfaz. La descarga presenta Resumen, Entregas,
-Sin_Confirmacion e Incidencias_Sin_Cargo, con encabezados de fecha y selección,
+Pendientes_Registro e Incidencias_Sin_Cargo, con encabezados de fecha y selección,
 nombres y números de empleado, filas ajustadas al texto y encabezados congelados.
 Facturación reutiliza este formato en Resumen_Facturacion y Auditoria_Detalle,
 sin Calificaciones, Filtros ni teléfonos. Cada descarga consulta datos actuales;
@@ -191,3 +191,9 @@ recorridos y reportes. Descarga PDF/Excel y conserva filtros de consulta, sin
 acciones de edición, autorizaciones, incidencias o entrega. El aviso de sesión
 explica el alcance. No activa alarma ni impresión automática de cocina. La
 autorización del servidor es obligatoria, además de ocultar controles.
+
+## Pedidos integrados
+
+Pedidos consulta la misma fuente de comidas que los reportes y reúne regulares y coberturas vigentes, incluidas las extraordinarias. Una fila corresponde a una comida; nombre y número de empleado permanecen juntos, servicio y folio identifican la cobertura, y el horario autorizado se conserva. La tabla semántica tiene cabeceras, región con foco para desplazamiento horizontal, estados de carga, vacío y error, y descarta respuestas de fechas anteriores. Sus totales separan regulares y coberturas y usan la misma prioridad de incidencias y conciliaciones que Dashboard. No se habilitan acciones nuevas de entrega.
+
+La etiqueta visible es «Pendientes de registro» en panel, PDF y Excel; no significa que el empleado no recogió. Operación usa la pestaña Pendientes_Registro. La entrega confirmada por administración cuenta como entregada sin inventar hora de escaneo; las incidencias sin cargo conservan prioridad.
