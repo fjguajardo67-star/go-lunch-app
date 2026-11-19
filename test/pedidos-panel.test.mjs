@@ -4,15 +4,16 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import '../public/operacion.js';
 const html=readFileSync(new URL('../public/admin.html',import.meta.url),'utf8');
-const codigo=html.slice(html.indexOf('  let consultaPedidos = 0;'),html.indexOf('  // ── Carga masiva'));
+const codigo=html.slice(html.indexOf('  const servicioPedidos ='),html.indexOf('  // ── Carga masiva'));
 function panel(api) {
- const elementos=Object.fromEntries(['pe-fecha','pedidosBox','pedidosEstado'].map(id=>[id,{value:'2026-11-18',innerHTML:'',textContent:'',atributos:{},setAttribute(k,v){this.atributos[k]=v;},removeAttribute(k){delete this.atributos[k];}}]));
- const ctx=vm.createContext({api,Date,Intl,GoLunchOperacion,document:{getElementById:id=>elementos[id]}});
+ const elementos=Object.fromEntries(['pe-fecha','pedidosBox','pedidosEstado','pedidosFolios'].map(id=>[id,{value:'2026-11-18',innerHTML:'',textContent:'',atributos:{},setAttribute(k,v){this.atributos[k]=v;},removeAttribute(k){delete this.atributos[k];}}]));
+ let servicioActual='';
+ const ctx=vm.createContext({api,Date,Intl,GoLunchOperacion,document:{getElementById:id=>elementos[id],querySelector:()=>({value:servicioActual})}});
  const escapar=html.match(/  function escaparHtml\(s\) \{[\s\S]*?\n  }/)[0];
  const horario=html.match(/  const horarioServicio = p => \{[\s\S]*?\n  };/)[0];
  const servicio=html.match(/  const servicioTexto = p => .*;/)[0];
  vm.runInContext(`const ZONA_COMEDOR='America/Mexico_City';const zonaTxt=z=>GoLunchOperacion.ZONAS[z]||z||'—';const etiquetaTurno=t=>t==='turno_a'?'Turno A':t==='turno_b'?'Turno B':'Sin turno';\n${escapar}\n${horario}\n${servicio}\n${codigo}`,ctx);
- return {ctx,elementos,consultar:()=>ctx.verPedidos()};
+ return {ctx,elementos,consultar:()=>ctx.verPedidos(),filtrar:s=>{servicioActual=s;return ctx.verPedidos();}};
 }
 const comida=(tipo='regular',extra={})=>({tipo,fecha_menu:'2026-11-18',empleados:{nombre:'Persona ficticia',numero_empleado:'00001'},opcion_texto:'Pechuga Empanizada',turno:'turno_b',zona:'zona_refris',entregado_en:null,...extra});
 
@@ -24,7 +25,7 @@ test('Pedidos reúne comidas de la misma persona, conserva horario propio, folio
  assert.equal((tabla.match(/scope="row"/g)||[]).length,4);assert.equal((tabla.match(/N.º 00001/g)||[]).length,4);
  assert.match(tabla,/Cobertura extraordinaria/);assert.match(tabla,/CE-QA-01/);assert.match(tabla,/18:20/);assert.match(tabla,/17:04/);assert.doesNotMatch(tabla,/02:00/);
  assert.match(tabla,/Confirmado por administración/);assert.match(tabla,/No surtido · Sin cargo/);assert.match(tabla,/Pendiente de registro/);
- assert.match(estado,/4 comidas: 3 regulares \+ 1 coberturas/);assert.match(estado,/Entregadas: 2 · Pendientes de registro: 1 · No surtidas sin cargo: 1/);
+ assert.match(estado,/4 comidas: 3 regulares \+ 1 cobertura/);assert.match(estado,/Entregadas: 2 · Pendientes de registro: 1 · No surtidas sin cargo: 1/);
  assert.match(tabla,/tabindex="0" role="region"/);assert.match(tabla,/<caption>/);assert.match(tabla,/<thead>/);assert.equal(p.elementos.pedidosBox.atributos['aria-busy'],undefined);
 });
 
@@ -46,4 +47,30 @@ test('consultas anteriores no reemplazan la fecha nueva y cambiar fecha limpia r
  const tercera=p.consultar();p.ctx.limpiarPedidos();solicitudes[2].reject(Error('Error anterior'));await tercera;
  assert.doesNotMatch(p.elementos.pedidosEstado.textContent,/Error anterior/);
  p.elementos['pe-fecha'].value='';await p.consultar();assert.match(p.elementos.pedidosEstado.textContent,/Selecciona una fecha/);assert.equal(solicitudes.length,3);
+});
+
+test('Todos, Regulares y Coberturas consultan y cuentan la misma lista según el servicio elegido',async()=>{
+ const rutas=[],todas=[comida(),comida('cobertura',{folio:'CE-01',responsable_nombre:'Responsable QA',responsable_numero:'00009'})];
+ const p=panel(async ruta=>{rutas.push(ruta);const servicio=new URL(ruta,'http://qa').searchParams.get('servicio');const comidas=todas.filter(x=>!servicio||x.tipo===servicio);return {count:comidas.length,comidas};});
+ await p.consultar();assert.match(p.elementos.pedidosEstado.textContent,/2 comidas: 1 regular \+ 1 cobertura/);
+ await p.filtrar('regular');assert.match(p.elementos.pedidosEstado.textContent,/1 comida: 1 regular \+ 0 coberturas/);assert.equal(p.elementos.pedidosFolios.innerHTML,'');
+ await p.filtrar('cobertura');assert.match(p.elementos.pedidosEstado.textContent,/1 comida: 0 regulares \+ 1 cobertura/);
+ assert.match(p.elementos.pedidosFolios.innerHTML,/Responsable QA · N.º 00009/);assert.match(p.elementos.pedidosFolios.innerHTML,/<details class="pedido-folio"/);assert.doesNotMatch(p.elementos.pedidosFolios.innerHTML,/<details[^>]*\bopen/);
+ assert.match(rutas[1],/\?servicio=regular$/);assert.match(rutas[2],/\?servicio=cobertura$/);
+});
+
+test('cambiar filtro durante una consulta descarta la respuesta anterior y no borra el detalle nuevo',async()=>{
+ const peticiones=[],p=panel(()=>new Promise(resolve=>peticiones.push(resolve)));
+ const anterior=p.consultar(),nueva=p.filtrar('cobertura');
+ peticiones[1]({count:1,comidas:[comida('cobertura',{folio:'CE-NUEVO'})]});await nueva;
+ peticiones[0]({count:1,comidas:[comida('regular',{opcion_texto:'Dato anterior'})]});await anterior;
+ assert.match(p.elementos.pedidosFolios.innerHTML,/CE-NUEVO/);assert.doesNotMatch(p.elementos.pedidosBox.innerHTML,/Dato anterior/);
+ p.ctx.limpiarPedidos();assert.equal(p.elementos.pedidosFolios.innerHTML,'');
+});
+
+test('detalle de folio mantiene comidas separadas, receptor y estados sin atribuir entrega a una incidencia',()=>{
+ const p=panel(async()=>({}));
+ const comidas=[comida('cobertura',{folio:'<FOLIO>',responsable_nombre:'Recibe <QA>',entregado_en:'2026-11-18T23:00:00Z',no_surtido_en:'2026-11-19T00:00:00Z'}),comida('cobertura',{folio:'<FOLIO>',entrega_conciliada_en:'2026-11-19T01:00:00Z'}),comida('regular')];
+ const h=p.ctx.detalleFoliosPedidos(comidas);
+ assert.equal((h.match(/<li>/g)||[]).length,2);assert.match(h,/2 comidas · Entregadas: 1/);assert.match(h,/No surtido · Sin cargo/);assert.match(h,/Recibe &lt;QA&gt;/);assert.doesNotMatch(h,/<FOLIO>|<QA>/);
 });

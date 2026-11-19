@@ -172,6 +172,26 @@
      El logo vivía en un recuadro blanco de 3 px de padding sobre el header
      azul y se perdía. En una barra lateral blanca tiene su tamaño natural,
      y las seis secciones dejan de amontonarse en una fila que se partía. */
+  #p-menu > h2 { font-size: 1.25rem; margin-bottom: 14px; }
+  .menu-vistas { display: flex; overflow-x: auto; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--gris-line); }
+  .menu-vistas button { position: relative; flex: none; min-height: 48px; padding: 10px 2px; border: 0; background: transparent; color: var(--gris-text); font: inherit; font-weight: 600; cursor: pointer; }
+  .menu-vistas button[aria-selected="true"] { color: var(--azul); }
+  .menu-vistas button[aria-selected="true"]::after { content: ""; position: absolute; inset: auto 0 0; border-bottom: 3px solid currentColor; }
+  .menu-vistas button:focus-visible, .pedido-folio-link:focus-visible { outline: 2px solid var(--azul); outline-offset: -2px; }
+  [role="tabpanel"][hidden] { display: none; }
+  .pedidos-filtros { display: flex; flex-wrap: wrap; gap: 8px; border: 0; padding: 0; margin-top: 16px; }
+  .pedidos-filtros legend { font-size: .875rem; font-weight: 600; margin-bottom: 8px; }
+  .pedidos-filtros label { display: flex; gap: 7px; align-items: center; min-height: 44px; padding: 8px 12px; border: 1px solid var(--control-line); border-radius: 6px; font-size: .875rem; text-transform: none; letter-spacing: 0; cursor: pointer; margin: 0; }
+  .pedidos-filtros label:has(:checked) { color: var(--azul); background: var(--azul-light); }
+  .pedidos-filtros input { width: 18px; min-height: 18px; accent-color: var(--azul); margin: 0; }
+  .pedido-folio-link { display: block; background: none; border: 0; color: var(--azul); font: inherit; font-size: .8125rem; padding: 8px 0; min-height: 44px; text-align: left; cursor: pointer; text-decoration: underline; overflow-wrap: anywhere; }
+  .pedido-folio { margin-top: 14px; border-top: 1px solid var(--gris-line); scroll-margin-top: 110px; }
+  .pedido-folio > summary, #supervisores-cobertura > summary, .ayuda-impresion > summary { padding: 14px 0; min-height: 44px; cursor: pointer; font-size: .9375rem; font-weight: 600; }
+  .pedido-folio p { font-size: .875rem; margin: 10px 0; overflow-wrap: anywhere; }
+  .pedido-folio ul { padding-left: 20px; }
+  .pedido-folio li { font-size: .875rem; padding: 8px 0; overflow-wrap: anywhere; }
+  .supervisores-contenido { margin-top: 20px; }
+  .ayuda-impresion { margin: 10px 0; }
   .pedidos-ayuda { margin: 12px 0; color: var(--gris-text); font-size: .875rem; }
   #pedidosEstado { margin-top: 14px; font-weight: 600; line-height: 1.5; }
   .pedidos-tabla { overflow: auto; max-inline-size: 100%; max-block-size: 65vh; }
@@ -202,9 +222,9 @@
   .lateral .marca img { width: 100%; height: auto; max-width: 186px; display: block; margin: 0 auto; }
   .contenido { flex: 1; min-width: 0; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 28px 24px; }
-  .wrap:has(#p-menu.activo, #p-coberturas.activo) { max-width:1240px; padding:20px 16px; }
-  :is(#p-menu, #p-coberturas) > .card { padding:16px; }
-  #p-menu > .card > .card-header { margin-bottom:12px; padding-bottom:10px; }
+  .wrap:has(#p-menu.activo) { max-width:1240px; padding:20px 16px; }
+  #p-menu [role="tabpanel"] > .card { padding:16px; }
+  #p-menu [role="tabpanel"] > .card > .card-header { margin-bottom:12px; padding-bottom:10px; }
 
   /* ── Navegación lateral ── */
   .tabs { display: flex; flex-direction: column; gap: 3px; }
@@ -577,27 +597,8 @@
   .oculto { display: none !important; }
 
   /* ── Coberturas: operación del mismo día, aislada del pedido regular ── */
-  .cov-hero {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    gap: 24px; margin-bottom: 18px; padding: 4px 2px 2px;
-  }
-  .cov-hero h2 { font-size: 1.45rem; letter-spacing: -.03em; line-height: 1.15; }
-  .cov-hero p { max-width: 65ch; color: var(--gris-text); font-size: .84rem; margin-top: 6px; }
-  .cov-reloj {
-    flex: 0 0 auto; min-width: 180px; padding: 12px 14px;
-    border: 1px solid var(--azul-line); border-radius: 10px; background: var(--azul-light);
-  }
-  .cov-reloj b, .cov-reloj span { display: block; }
-  .cov-reloj b { color: var(--azul); font-size: .88rem; }
-  .cov-reloj span { color: var(--gris-text); font-size: .75rem; margin-top: 2px; }
-  .cov-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr); gap: 16px; align-items: start; }
-  .cov-grid .card { margin-bottom: 0; }
-  .cov-grid > .card { min-width: 0; }
-  .cov-full { grid-column: 1 / -1; }
-  .cov-menu-options { display: grid; gap: 8px; }
-  .cov-menu-options label { margin-top: 8px; }
   .cov-resumen {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px; margin: 14px 0;
   }
   .cov-resumen div { padding: 12px; background: var(--gris-bg); border-radius: 9px; }
@@ -609,19 +610,13 @@
   }
   .cov-clave code { font-size: 1rem; font-weight: 900; letter-spacing: .08em; }
   .cov-solicitud { border-top: 1px solid var(--gris-line); padding: 14px 0; }
+  .cov-solicitud > summary { cursor: pointer; padding: 10px 0; min-height: 44px; font-size: .875rem; font-weight: 600; overflow-wrap: anywhere; }
   .cov-solicitud:first-child { border-top: 0; padding-top: 0; }
   .cov-solicitud-cab { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
   .cov-solicitud-cab b { color: var(--tinta); }
   .cov-solicitud-cab p, .cov-items { color: var(--gris-text); font-size: .76rem; margin-top: 3px; }
   .cov-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin-top: 10px; }
-  .cov-items span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tab-coberturas { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .cov-tab-badge {
-    min-width: 24px; padding: 2px 7px; border-radius: 999px;
-    background: var(--dorado-light); color: #7a5511;
-    font-size: .75rem; font-weight: 900; text-align: center;
-  }
-  .tab.activo .cov-tab-badge { background: rgba(255,255,255,.18); color: #fff; }
+  .cov-items span { overflow-wrap: anywhere; }
 
   /* El cierre de cobertura sí justifica interrumpir al operador: si la
      comanda no se imprime, cocina nunca ve el pedido. */
@@ -665,7 +660,7 @@
     0%,100% { box-shadow: 0 0 0 0 rgba(191, 133, 25, .24); }
     50% { box-shadow: 0 0 0 12px rgba(191, 133, 25, 0); }
   }
-  
+
   @media (max-width: 640px) {
     .grid2, .grid3 { grid-template-columns: 1fr; }
     .header-title { display: none; }
@@ -675,10 +670,6 @@
     .cocina-grid-diaria { grid-template-columns: 1fr; }
     .cocina-nota-diaria, .cocina-herramienta { align-items: flex-start; flex-direction: column; }
     .cocina-herramienta .accion { width: 100%; }
-    .cov-hero { flex-direction: column; }
-    .cov-reloj { width: 100%; }
-    .cov-grid { grid-template-columns: 1fr; }
-    .cov-full { grid-column: auto; }
     .cov-resumen { grid-template-columns: 1fr; }
     .cov-items { grid-template-columns: 1fr; }
     .cov-alerta-backdrop { padding: 14px; }
@@ -774,7 +765,6 @@
       <button class="tab"        data-p="dashboard" onclick="tab('dashboard')">Dashboard</button>
       <button class="tab"        data-p="pedidos"   onclick="tab('pedidos')">Pedidos</button>
       <button class="tab"        data-p="empleados" onclick="tab('empleados')">Empleados</button>
-      <button class="tab tab-coberturas" data-p="coberturas" onclick="tab('coberturas')"><span>Coberturas</span><span id="cov-tab-badge" class="cov-tab-badge oculto">0</span></button>
       <button class="tab"        data-p="cocina"    onclick="tab('cocina')">Cocina</button>
       <button class="tab"        data-p="reportes"  onclick="tab('reportes')">Reportes y estimaciones</button>
       </nav>
@@ -788,6 +778,13 @@
 
     <!-- MENÚ -->
     <section id="p-menu" class="panel activo">
+      <h2>Menú</h2>
+      <div class="menu-vistas" role="tablist" aria-label="Tipo de menú" onkeydown="tecladoMenu(event)">
+        <button type="button" role="tab" id="menu-tab-regular" data-menu-vista="regular" aria-selected="true" tabindex="0" onclick="menuVista('regular')">Menú regular</button>
+        <button type="button" role="tab" id="menu-tab-cobertura" data-menu-vista="cobertura" aria-selected="false" tabindex="-1" onclick="menuVista('cobertura')">Menú de coberturas</button>
+      </div>
+      <div role="tabpanel" id="menu-panel-regular" aria-labelledby="menu-tab-regular">
+
 
       <!-- Avisador: sin menú publicado = día sin servicio, que un olvido se vea -->
       <div class="card" id="card-semana">
@@ -854,6 +851,15 @@
         <div id="tablaMenuBox"></div>
         <div id="periodoAviso" class="aviso"></div>
       </div>
+      </div>
+      <div role="tabpanel" id="menu-panel-cobertura" aria-labelledby="menu-tab-cobertura" hidden>
+        <div class="card" id="menu-coberturas-card">
+          <div class="card-header"><h3>Menú semanal de coberturas</h3></div>
+          <p>Tres opciones variables por día, compartidas por los turnos A y B y las horas extras. Publica cada fecha por separado.</p>
+          <div id="cov-menu-semanal"></div>
+        </div>
+
+      </div>
     </section>
 
     <!-- DASHBOARD -->
@@ -896,14 +902,78 @@
           <div><label for="pe-fecha">Fecha</label><input type="date" id="pe-fecha" onchange="limpiarPedidos()" style="max-width:180px"></div>
           <button class="accion" onclick="verPedidos()">Consultar pedidos</button>
         </div>
+        <fieldset id="pedidosFiltros" class="pedidos-filtros" onchange="verPedidos()">
+          <legend>Tipo de pedido</legend>
+          <label><input type="radio" name="pe-servicio" value="" checked> Todos</label>
+          <label><input type="radio" name="pe-servicio" value="regular"> Regulares</label>
+          <label><input type="radio" name="pe-servicio" value="cobertura"> Coberturas</label>
+        </fieldset>
         <p class="pedidos-ayuda">Regulares y coberturas, una fila por comida. Cada servicio conserva su horario y estado de entrega.</p>
         <p id="pedidosEstado" role="status" aria-live="polite"></p>
         <div id="pedidosBox" style="margin-top:18px"></div>
+        <div id="pedidosFolios"></div>
       </div>
+        <details class="card" id="cov-extra" ontoggle="if(this.open)cargarExtraordinaria()">
+          <summary style="font-weight:800;cursor:pointer;padding:8px 0">Registrar pedido extraordinario de hoy</summary>
+          <p style="font-size:.85rem;line-height:1.5;margin:12px 0">Gerente o administrador autoriza cuando hay capacidad de preparación y ventana de entrega. Se crea un folio adicional con horario propio.</p>
+          <form id="cov-extra-form" novalidate onsubmit="guardarExtraordinaria(event)" oninput="limpiarErrorExtraordinaria(event.target)" onchange="limpiarErrorExtraordinaria(event.target)">
+            <div class="grid3">
+              <div><label for="extra-fecha">Fecha de servicio</label><input type="date" id="extra-fecha" readonly required></div>
+              <div><label for="extra-turno">Turno</label><select id="extra-turno" required aria-describedby="extra-turno-error"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select><p id="extra-turno-error" class="extra-error" hidden></p></div>
+              <div><label for="extra-zona">Zona de entrega</label><select id="extra-zona" required aria-describedby="extra-zona-error"><option value="">Selecciona zona</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select><p id="extra-zona-error" class="extra-error" hidden></p></div>
+            </div>
+            <div class="grid2">
+              <div><label for="extra-hora">Hora de entrega autorizada (24 horas)</label><input type="text" id="extra-hora" required maxlength="5" autocomplete="off" placeholder="17:30" aria-describedby="extra-hora-ayuda extra-hora-error"><p id="extra-hora-ayuda" style="font-size:.78rem;color:var(--gris-text);margin-top:5px">Escribe hora y minutos: 17:30 = 5:30 p. m. Horario de Lázaro Cárdenas; debe ser una hora futura de hoy.</p><p id="extra-hora-error" class="extra-error" hidden></p></div>
+              <div><label for="extra-responsable">N.º de empleado responsable de recibir</label><input type="text" id="extra-responsable" list="extra-empleados" required autocomplete="off" placeholder="Número de empleado" aria-describedby="extra-responsable-error"><p id="extra-responsable-error" class="extra-error" hidden></p></div>
+            </div>
+            <datalist id="extra-empleados"></datalist>
+            <fieldset style="border:0;padding:0;margin:16px 0">
+              <legend style="font-weight:700;margin-bottom:8px">Empleados y alimentos</legend>
+              <div class="grid3">
+                <div><label for="extra-numero">Número de empleado</label><input type="text" id="extra-numero" list="extra-empleados" autocomplete="off" placeholder="Número de empleado"></div>
+                <div><label for="extra-opcion">Platillo de hoy</label><select id="extra-opcion"><option value="">Cargando menú…</option></select></div>
+                <div style="display:flex;align-items:flex-end"><button class="accion sec" type="button" onclick="agregarExtraordinaria()">Agregar empleado</button></div>
+              </div>
+              <div id="extra-items"></div>
+            </fieldset>
+            <label for="extra-motivo">Motivo de la autorización</label><textarea id="extra-motivo" required minlength="5" maxlength="500" rows="2" style="width:100%;font:inherit;padding:10px" placeholder="Motivo por el que se autoriza este pedido" aria-describedby="extra-motivo-error"></textarea><p id="extra-motivo-error" class="extra-error" hidden></p>
+            <button class="accion verde" id="extra-guardar" type="submit" style="margin-top:12px" disabled>Autorizar y registrar pedido</button>
+          </form>
+          <div id="extra-aviso" class="aviso" role="status" aria-live="polite"></div>
+          <div id="extra-impresos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
+        </details>
+
     </section>
 
     <!-- EMPLEADOS -->
     <section id="p-empleados" class="panel">
+      <details class="card" data-supervisores id="supervisores-cobertura">
+        <summary>Supervisores de coberturas</summary>
+        <div class="supervisores-contenido">
+          <div class="card-header">
+            <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 8h5M18.5 5.5v5" stroke-linecap="round"/></svg></div>
+            <h3>Supervisores autorizados</h3>
+          </div>
+          <p style="font-size:.8rem;color:var(--gris-text)">Selecciona únicamente empleados incluidos en la lista oficial de Glovis. La clave se muestra una sola vez.</p>
+          <label for="cov-supervisor">Empleado de la plantilla</label>
+          <select id="cov-supervisor"><option value="">— Seleccionar empleado —</option></select>
+          <div class="grid2">
+            <div><label for="cov-vig-desde">Vigente desde</label><input type="date" id="cov-vig-desde"></div>
+            <div><label for="cov-vig-hasta">Vigente hasta <span style="font-weight:400">(opcional)</span></label><input type="date" id="cov-vig-hasta"></div>
+          </div>
+          <label for="cov-clave">Clave personal <span style="font-weight:400">(vacía = generar)</span></label>
+          <input type="password" id="cov-clave" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+          <button class="accion verde" onclick="autorizarSupervisorCobertura()">Autorizar supervisor</button>
+          <div id="covSupAviso" class="aviso"></div>
+          <div id="covClaveNueva" class="cov-clave oculto"></div>
+        </div>
+
+        <div class="supervisores-contenido">
+          <div class="card-header"><h3>Autorizaciones de supervisores</h3></div>
+          <p class="pedidos-ayuda"><strong id="cov-n-sup">0</strong> supervisores activos</p><div id="covSupervisores"><div class="vacio">Cargando autorizaciones…</div></div>
+        </div>
+      </details>
+
       <form class="card" id="empleado-form" aria-labelledby="empleado-form-titulo" onsubmit="event.preventDefault(); guardarEmpleado()">
         <div class="card-header">
           <div class="card-icon">👤</div>
@@ -966,113 +1036,6 @@
           <button class="accion mini sec" type="button" style="margin-left:auto" onclick="imprimirEmpleadosVisibles()">Imprimir lista</button>
         </div>
         <div id="empBox"><div class="vacio">Cargando plantilla…</div></div>
-      </div>
-    </section>
-
-    <!-- COBERTURAS DEL SEGUNDO TURNO -->
-    <section id="p-coberturas" class="panel">
-      <div class="cov-hero">
-        <div>
-          <h2>Pedidos especiales por turno</h2>
-          <p>Menú especial compartido. Cada supervisor puede registrar varios folios con turno, zona y hora propios, al menos dos horas antes de la entrega. Los pedidos nuevos y sus cambios avisan a cocina para imprimir el folio actualizado.</p>
-        </div>
-        <div class="cov-reloj" aria-label="Horario de cobertura">
-          <b>Anticipación mínima: 2 horas</b>
-          <span>Turnos A y B · ASLA y REFIS · Horario por folio</span>
-        </div>
-      </div>
-
-      <div class="cov-grid">
-        <div class="card cov-full">
-          <div class="card-header"><h3>Menú semanal de coberturas</h3></div>
-          <p>Tres opciones variables por día, compartidas por los turnos A y B y las horas extras. Publica cada fecha por separado.</p>
-          <div id="cov-menu-semanal"></div>
-        </div>
-
-        <div class="card cov-full">
-          <div class="card-header">
-            <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 8h5M18.5 5.5v5" stroke-linecap="round"/></svg></div>
-            <h3>Supervisores autorizados</h3>
-          </div>
-          <p style="font-size:.8rem;color:var(--gris-text)">Selecciona únicamente empleados incluidos en la lista oficial de Glovis. La clave se muestra una sola vez.</p>
-          <label for="cov-supervisor">Empleado de la plantilla</label>
-          <select id="cov-supervisor"><option value="">— Seleccionar empleado —</option></select>
-          <div class="grid2">
-            <div><label for="cov-vig-desde">Vigente desde</label><input type="date" id="cov-vig-desde"></div>
-            <div><label for="cov-vig-hasta">Vigente hasta <span style="font-weight:400">(opcional)</span></label><input type="date" id="cov-vig-hasta"></div>
-          </div>
-          <label for="cov-clave">Clave personal <span style="font-weight:400">(vacía = generar)</span></label>
-          <input type="password" id="cov-clave" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
-          <button class="accion verde" onclick="autorizarSupervisorCobertura()">Autorizar supervisor</button>
-          <div id="covSupAviso" class="aviso"></div>
-          <div id="covClaveNueva" class="cov-clave oculto"></div>
-        </div>
-
-        <div class="card cov-full">
-          <div class="card-header">
-            <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h14v14H5zM8 9h8M8 13h5" stroke-linecap="round"/></svg></div>
-            <h3>Solicitudes y producción</h3>
-            <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-              <button class="accion mini sec" onclick="imprimirCobertura('comanda')">Comanda</button>
-              <button class="accion mini sec" onclick="imprimirCobertura('etiquetas')">Etiquetas</button>
-            </div>
-          </div>
-          <div class="row-fin" style="margin-bottom:16px">
-            <div><label for="cov-turno">Turno de producción</label><select id="cov-turno" onchange="cargarCobertura()"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select></div>
-            <div><label for="cov-fecha">Fecha de servicio a consultar</label><input type="date" id="cov-fecha" style="max-width:190px" onchange="cargarCobertura()"></div>
-            <div>
-              <label for="cov-tamano">Tamaño de etiqueta (rollo × largo)</label>
-              <select id="cov-tamano" aria-describedby="cov-impresion-ayuda">
-                <option value="200x62" selected>62 × 200 mm — larga</option>
-                <option value="100x62">62 × 100 mm — anterior</option>
-                <option value="90x62">62 × 90 mm — anterior</option>
-              </select>
-            </div>
-            <button class="accion sec" onclick="cargarCobertura()">Consultar día</button>
-          </div>
-          <p id="cov-impresion-ayuda" style="font-size:.85rem;color:var(--gris-text);margin-bottom:16px;line-height:1.5">Este tamaño aplica a las etiquetas del turno y de cada folio. En la Brother selecciona rollo de <b>62 mm</b> y el mismo largo, orientación horizontal y escala <b>100 %</b>. Para la etiqueta larga, el papel debe medir <b>62 × 200 mm</b>; un papel de 100 mm recorta el contenido.</p>
-          <div class="cov-resumen">
-            <div><strong id="cov-n-sol">0</strong><span>Solicitudes activas</span></div>
-            <div><strong id="cov-n-por">0</strong><span>Alimentos confirmados</span></div>
-            <div><strong id="cov-n-sup">0</strong><span>Supervisores activos</span></div>
-          </div>
-          <div id="covSolicitudes"><div class="vacio">Selecciona una fecha para consultar.</div></div>
-        </div>
-
-        <details class="card cov-full" id="cov-extra" ontoggle="if(this.open)cargarExtraordinaria()">
-          <summary style="font-weight:800;cursor:pointer;padding:8px 0">Registrar pedido extraordinario de hoy</summary>
-          <p style="font-size:.85rem;line-height:1.5;margin:12px 0">Gerente o administrador autoriza cuando hay capacidad de preparación y ventana de entrega. Se crea un folio adicional con horario propio.</p>
-          <form id="cov-extra-form" novalidate onsubmit="guardarExtraordinaria(event)" oninput="limpiarErrorExtraordinaria(event.target)" onchange="limpiarErrorExtraordinaria(event.target)">
-            <div class="grid3">
-              <div><label for="extra-fecha">Fecha de servicio</label><input type="date" id="extra-fecha" readonly required></div>
-              <div><label for="extra-turno">Turno</label><select id="extra-turno" required aria-describedby="extra-turno-error"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select><p id="extra-turno-error" class="extra-error" hidden></p></div>
-              <div><label for="extra-zona">Zona de entrega</label><select id="extra-zona" required aria-describedby="extra-zona-error"><option value="">Selecciona zona</option><option value="zona_vdc">ASLA</option><option value="zona_refris">REFIS</option></select><p id="extra-zona-error" class="extra-error" hidden></p></div>
-            </div>
-            <div class="grid2">
-              <div><label for="extra-hora">Hora de entrega autorizada (24 horas)</label><input type="text" id="extra-hora" required maxlength="5" autocomplete="off" placeholder="17:30" aria-describedby="extra-hora-ayuda extra-hora-error"><p id="extra-hora-ayuda" style="font-size:.78rem;color:var(--gris-text);margin-top:5px">Escribe hora y minutos: 17:30 = 5:30 p. m. Horario de Lázaro Cárdenas; debe ser una hora futura de hoy.</p><p id="extra-hora-error" class="extra-error" hidden></p></div>
-              <div><label for="extra-responsable">N.º de empleado responsable de recibir</label><input type="text" id="extra-responsable" list="extra-empleados" required autocomplete="off" placeholder="Número de empleado" aria-describedby="extra-responsable-error"><p id="extra-responsable-error" class="extra-error" hidden></p></div>
-            </div>
-            <datalist id="extra-empleados"></datalist>
-            <fieldset style="border:0;padding:0;margin:16px 0">
-              <legend style="font-weight:700;margin-bottom:8px">Empleados y alimentos</legend>
-              <div class="grid3">
-                <div><label for="extra-numero">Número de empleado</label><input type="text" id="extra-numero" list="extra-empleados" autocomplete="off" placeholder="Número de empleado"></div>
-                <div><label for="extra-opcion">Platillo de hoy</label><select id="extra-opcion"><option value="">Cargando menú…</option></select></div>
-                <div style="display:flex;align-items:flex-end"><button class="accion sec" type="button" onclick="agregarExtraordinaria()">Agregar empleado</button></div>
-              </div>
-              <div id="extra-items"></div>
-            </fieldset>
-            <label for="extra-motivo">Motivo de la autorización</label><textarea id="extra-motivo" required minlength="5" maxlength="500" rows="2" style="width:100%;font:inherit;padding:10px" placeholder="Motivo por el que se autoriza este pedido" aria-describedby="extra-motivo-error"></textarea><p id="extra-motivo-error" class="extra-error" hidden></p>
-            <button class="accion verde" id="extra-guardar" type="submit" style="margin-top:12px" disabled>Autorizar y registrar pedido</button>
-          </form>
-          <div id="extra-aviso" class="aviso" role="status" aria-live="polite"></div>
-          <div id="extra-impresos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
-        </details>
-
-        <div class="card cov-full">
-          <div class="card-header"><h3>Autorizaciones vigentes</h3></div>
-          <div id="covSupervisores"><div class="vacio">Cargando autorizaciones…</div></div>
-        </div>
       </div>
     </section>
 
@@ -1187,6 +1150,37 @@
           <span>Usuarios, claves, geolocalización y herramientas de prueba ya no interrumpen el trabajo diario.</span>
           <button class="cocina-link" type="button" onclick="cocinaVista('reparto')">Administrar reparto →</button>
         </div>
+
+        <div class="card" id="cov-produccion">
+          <div class="card-header">
+            <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h14v14H5zM8 9h8M8 13h5" stroke-linecap="round"/></svg></div>
+            <h3>Producción por folio de cobertura</h3>
+            <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="accion mini sec" onclick="imprimirCobertura('comanda')">Comanda</button>
+              <button class="accion mini sec" onclick="imprimirCobertura('etiquetas')">Etiquetas</button>
+            </div>
+          </div>
+          <div class="row-fin" style="margin-bottom:16px">
+            <div><label for="cov-turno">Turno de producción</label><select id="cov-turno" onchange="cargarCobertura()"><option value="turno_b">Turno B y horas extras</option><option value="turno_a">Turno A</option></select></div>
+            <div><label for="cov-fecha">Fecha de servicio a consultar</label><input type="date" id="cov-fecha" style="max-width:190px" onchange="cargarCobertura()"></div>
+            <div>
+              <label for="cov-tamano">Tamaño de etiqueta (rollo × largo)</label>
+              <select id="cov-tamano" aria-describedby="cov-impresion-ayuda">
+                <option value="200x62" selected>62 × 200 mm — larga</option>
+                <option value="100x62">62 × 100 mm — anterior</option>
+                <option value="90x62">62 × 90 mm — anterior</option>
+              </select>
+            </div>
+            <button class="accion sec" onclick="cargarCobertura()">Consultar día</button>
+          </div>
+          <details class="ayuda-impresion"><summary>Configuración de la impresora</summary><p id="cov-impresion-ayuda" style="font-size:.85rem;color:var(--gris-text);margin-bottom:16px;line-height:1.5">Este tamaño aplica a las etiquetas del turno y de cada folio. En la Brother selecciona rollo de <b>62 mm</b> y el mismo largo, orientación horizontal y escala <b>100 %</b>. Para la etiqueta larga, el papel debe medir <b>62 × 200 mm</b>; un papel de 100 mm recorta el contenido.</p></details>
+          <div class="cov-resumen">
+            <div><strong id="cov-n-sol">0</strong><span>Folios vigentes del turno</span></div>
+            <div><strong id="cov-n-por">0</strong><span>Comidas solicitadas del turno</span></div>
+          </div>
+          <div id="covSolicitudes"><div class="vacio">Selecciona una fecha para consultar.</div></div>
+        </div>
+
       </div>
 
       <!-- Configuración que se modifica ocasionalmente. -->
@@ -1511,8 +1505,31 @@
     location.reload();
   }
 
+  function menuVista(nombre) {
+    if (PANEL_ROL === 'monitoreo' || !['regular', 'cobertura'].includes(nombre)) return;
+    document.querySelectorAll('[data-menu-vista]').forEach(b => {
+      const elegida = b.dataset.menuVista === nombre;
+      b.setAttribute('aria-selected', String(elegida)); b.tabIndex = elegida ? 0 : -1;
+    });
+    document.getElementById('menu-panel-regular').hidden = nombre !== 'regular';
+    document.getElementById('menu-panel-cobertura').hidden = nombre !== 'cobertura';
+    if (nombre === 'cobertura' && !MENU_COBERTURA_SEMANAL) cargarMenuCobertura(fechaComedor());
+  }
+
+  function tecladoMenu(event) {
+    const teclas = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+    if (!teclas.includes(event.key)) return;
+    const botones = [...event.currentTarget.querySelectorAll('[role="tab"]')];
+    const actual = botones.indexOf(event.target);
+    if (actual < 0) return;
+    event.preventDefault();
+    const indice = event.key === 'Home' ? 0 : event.key === 'End' ? botones.length - 1 :
+      (actual + (event.key === 'ArrowRight' ? 1 : -1) + botones.length) % botones.length;
+    botones[indice].focus();
+  }
+
   function tab(p) {
-    if (PANEL_ROL === 'monitoreo' && !['dashboard','pedidos','coberturas','cocina','reportes'].includes(p)) return;
+    if (PANEL_ROL === 'monitoreo' && !['dashboard','pedidos','cocina','reportes'].includes(p)) return;
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('activo', t.dataset.p === p));
     document.querySelectorAll('.panel').forEach(s => s.classList.toggle('activo', s.id === 'p-'+p));
     // Al abrir el Dashboard, precargar la fecha de mañana
@@ -1524,7 +1541,7 @@
     // se consultan solo cuando se entra a Reparto y puntos: son configuración
     // ocasional y ya no bloquean ni ensucian la vista de producción.
     if (p === 'cocina') cocinaVista(PANEL_ROL === 'monitoreo' ? 'reparto' : 'diaria');
-    if (p === 'coberturas') cargarCobertura();
+    if (p === 'empleados') cargarSupervisoresCobertura();
   }
 
   function cocinaVista(nombre) {
@@ -1535,6 +1552,7 @@
     document.querySelectorAll('.cocina-vista').forEach(v => {
       v.hidden = v.dataset.cocinaPanel !== nombre;
     });
+    if (nombre === 'diaria') cargarCobertura();
     if (nombre === 'reparto') {
       if (PANEL_ROL !== 'monitoreo') { cargarRepartidores(); cargarPropuestasPunto(); }
       const fecha = document.getElementById('bitacora-fecha');
@@ -1556,13 +1574,13 @@
       const observer = new MutationObserver(() => aplicarPermisosPanel());
       observer.observe(document.getElementById('app'), { childList: true, subtree: true });
     }
-    document.querySelectorAll('#p-menu input:not([type="date"]), #p-menu .menu-cell, #p-coberturas .cov-dia-opciones input').forEach(e => { e.readOnly = true; });
-    document.querySelectorAll('#p-empleados input, #p-empleados select').forEach(e => { e.disabled = true; });
+    document.querySelectorAll('#p-menu input:not([type="date"]), #p-menu .menu-cell, #p-menu .cov-dia-opciones input').forEach(e => { e.readOnly = true; });
+    document.querySelectorAll('#p-empleados input, #p-empleados select').forEach(e => { if (!e.closest('[data-supervisores]')) e.disabled = true; });
     document.getElementById('btn-guardar-empleado').disabled = true;
     document.querySelectorAll('button[onclick]').forEach(b => {
       const accion = b.getAttribute('onclick');
       const mutaMenu = /^(guardarMenu|guardarPeriodo|desbloquearFila|guardarMenuCobertura)\(/.test(accion);
-      const mutaEmpleado = b.closest('#p-empleados') && !/^(imprimirEmpleadosVisibles|cargarEmpleados|descargarFormato|descargarPlantilla)/.test(accion);
+      const mutaEmpleado = b.closest('#p-empleados') && !b.closest('[data-supervisores]') && !/^(imprimirEmpleadosVisibles|cargarEmpleados|descargarFormato|descargarPlantilla)/.test(accion);
       if (mutaMenu || mutaEmpleado) {
         b.disabled = true;
         b.title = 'Solo el administrador puede realizar este cambio';
@@ -1591,7 +1609,7 @@
     if (tituloRutas && tituloRutas.textContent !== 'Recorridos') tituloRutas.textContent = 'Recorridos';
     // Lista explícita de consultas e impresos; los controles nuevos no obtienen
     // permiso por defecto. La API vuelve a comprobar todas las escrituras.
-    const consultas = /^(tab|cocinaVista|verDashboard|verPedidos|cargarCobertura|imprimirCobertura|imprimirFolioCobertura|verReportes|alternarEstimacion|imprimirReportePeriodo|imprimirReporteEntregas|excelCocina|excelOperacion|excelFacturacion|salir)\(/;
+    const consultas = /^(tab|cocinaVista|abrirFolioPedido|verDashboard|verPedidos|cargarCobertura|imprimirCobertura|imprimirFolioCobertura|verReportes|alternarEstimacion|imprimirReportePeriodo|imprimirReporteEntregas|excelCocina|excelOperacion|excelFacturacion|salir)\(/;
     document.querySelectorAll('#app button[onclick]').forEach(b => {
       const accion = b.getAttribute('onclick');
       const manual = /^window\.open\('manual\.html',/.test(accion);
@@ -2136,19 +2154,23 @@
       : d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
 
+  const servicioPedidos = () => document.querySelector('#pedidosFiltros input:checked')?.value || '';
   let consultaPedidos = 0;
   function limpiarPedidos() {
     consultaPedidos++;
     document.getElementById('pedidosBox').innerHTML = '';
+    document.getElementById('pedidosFolios').innerHTML = '';
     document.getElementById('pedidosBox').removeAttribute('aria-busy');
     document.getElementById('pedidosEstado').textContent = 'Consulta la fecha seleccionada para ver sus pedidos.';
   }
   async function verPedidos() {
     const consulta = ++consultaPedidos;
+    const servicio = servicioPedidos();
     const f = document.getElementById('pe-fecha').value;
     const box = document.getElementById('pedidosBox');
     const estado = document.getElementById('pedidosEstado');
     box.innerHTML = '';
+    document.getElementById('pedidosFolios').innerHTML = '';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f)) {
       estado.textContent = 'Selecciona una fecha de servicio para consultar los pedidos.';
       box.removeAttribute('aria-busy');
@@ -2156,13 +2178,13 @@
     }
     estado.textContent = 'Consultando pedidos regulares y coberturas…';
     box.setAttribute('aria-busy', 'true');
-    const vigente = () => consulta === consultaPedidos && document.getElementById('pe-fecha').value === f;
+    const vigente = () => consulta === consultaPedidos && document.getElementById('pe-fecha').value === f && servicioPedidos() === servicio;
     try {
-      const r = await api('/api/comidas/' + f);
+      const r = await api('/api/comidas/' + f + (servicio ? '?servicio=' + servicio : ''));
       if (!vigente()) return;
       if (!Array.isArray(r.comidas) || r.comidas.length !== r.count) throw new Error('La lista recibida está incompleta. Vuelve a consultar.');
       if (!r.count) {
-        estado.textContent = 'Sin pedidos regulares ni coberturas para esta fecha.';
+        estado.textContent = servicio ? 'Sin pedidos de ' + (servicio === 'regular' ? 'servicio regular' : 'cobertura') + ' para esta fecha.' : 'Sin pedidos regulares ni coberturas para esta fecha.';
         return;
       }
       let h = '<div class="pedidos-tabla" tabindex="0" role="region" aria-labelledby="pedidos-titulo"><table><caption>Pedidos regulares y coberturas · ' + escaparHtml(f.split('-').reverse().join('/')) + '</caption><colgroup>' +
@@ -2182,11 +2204,12 @@
             : '<small>Confirmado por administración · Sin hora registrada</small>')
           : 'Pendiente de registro';
         const turno = p.turno === 'turno_a' ? 'Turno A' : p.turno === 'turno_b' ? 'Turno B' : 'Sin turno';
-        h += `<tr><th scope="row">${escaparHtml(p.empleados?.nombre) || '—'}<small>N.º ${escaparHtml(p.empleados?.numero_empleado) || '—'}</small></th><td>${servicioTexto(p)}${p.folio ? '<small>' + escaparHtml(p.folio) + '</small>' : ''}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${escaparHtml(zonaTxt(p.zona))}</td><td>${turno}</td><td>${escaparHtml(horarioServicio(p))}</td><td>${entrega}</td></tr>`;
+        h += `<tr><th scope="row">${escaparHtml(p.empleados?.nombre) || '—'}<small>N.º ${escaparHtml(p.empleados?.numero_empleado) || '—'}</small></th><td>${servicioTexto(p)}${p.folio ? '<button type="button" class="pedido-folio-link" onclick="abrirFolioPedido(this)" data-folio="' + escaparHtml(p.folio) + '">' + escaparHtml(p.folio) + '</button>' : ''}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${escaparHtml(zonaTxt(p.zona))}</td><td>${turno}</td><td>${escaparHtml(horarioServicio(p))}</td><td>${entrega}</td></tr>`;
       }
       const regulares = r.comidas.filter(p => p.tipo !== 'cobertura').length;
-      estado.textContent = `${r.count} comidas: ${regulares} regulares + ${r.count - regulares} coberturas. Entregadas: ${entregados} · Pendientes de registro: ${r.count - entregados - noSurtidos} · No surtidas sin cargo: ${noSurtidos}.`;
+      estado.textContent = `${r.count} ${r.count === 1 ? 'comida' : 'comidas'}: ${regulares} ${regulares === 1 ? 'regular' : 'regulares'} + ${r.count - regulares} ${r.count - regulares === 1 ? 'cobertura' : 'coberturas'}. Entregadas: ${entregados} · Pendientes de registro: ${r.count - entregados - noSurtidos} · No surtidas sin cargo: ${noSurtidos}.`;
       box.innerHTML = h + '</tbody></table></div><p class="pedidos-ayuda">En pantallas pequeñas, desliza la tabla para ver todas las columnas.</p>';
+      document.getElementById('pedidosFolios').innerHTML = detalleFoliosPedidos(r.comidas);
     } catch(e) {
       if (vigente()) estado.textContent = 'No se pudo cargar la lista completa de pedidos. ' + e.message;
     } finally {
@@ -2195,6 +2218,34 @@
         if (document.getElementById('pe-fecha').value !== f) estado.textContent = 'La fecha cambió. Consulta de nuevo para ver sus pedidos.';
       }
     }
+  }
+
+  function detalleFoliosPedidos(comidas) {
+    const folios = new Map();
+    for (const p of comidas) {
+      if (p.tipo !== 'cobertura' || !p.folio) continue;
+      if (!folios.has(p.folio)) folios.set(p.folio, []);
+      folios.get(p.folio).push(p);
+    }
+    if (!folios.size) return '';
+    return '<h4>Detalle por folio de cobertura</h4>' + [...folios].map(([folio, filas]) => {
+      const p = filas[0], entregadas = filas.filter(x => !x.no_surtido_en && (x.entregado_en || x.entrega_conciliada_en)).length;
+      return '<details class="pedido-folio" data-folio="' + escaparHtml(folio) + '"><summary tabindex="-1">' + escaparHtml(folio) +
+        ' · ' + escaparHtml(zonaTxt(p.zona)) + ' · ' + filas.length + ' comidas · Entregadas: ' + entregadas + '</summary>' +
+        '<p>Recibe: ' + escaparHtml(p.responsable_nombre || 'Sin responsable registrado') +
+        (p.responsable_numero ? ' · N.º ' + escaparHtml(p.responsable_numero) : '') + ' · Hora prevista: ' + escaparHtml(horarioServicio(p)) + '</p><ul>' +
+        filas.map(x => '<li><strong>' + escaparHtml(x.empleados?.nombre || 'Sin nombre') + ' · N.º ' + escaparHtml(x.empleados?.numero_empleado || '—') + '</strong> · ' +
+          escaparHtml(x.opcion_texto) + ' · ' + (x.no_surtido_en ? 'No surtido · Sin cargo' : x.entregado_en || x.entrega_conciliada_en ? 'Entregado' : 'Pendiente de registro') + '</li>').join('') + '</ul></details>';
+    }).join('');
+  }
+
+  function abrirFolioPedido(boton) {
+    const folio = [...document.getElementById('pedidosFolios').querySelectorAll('details[data-folio]')]
+      .find(d => d.dataset.folio === boton.dataset.folio);
+    if (!folio) return;
+    folio.open = true;
+    folio.querySelector('summary').focus();
+    folio.scrollIntoView({ block: 'start' });
   }
 
   // ── Carga masiva de la plantilla ──
@@ -2553,6 +2604,7 @@
       // Guardar los registros para poder reenviarlos completos al reasignar
       EMPLEADOS = {};
       empleados.forEach(e => { EMPLEADOS[e.telefono] = e; });
+      llenarSelectorSupervisores();
 
       const sinAsignar = empleados.filter(e => e.activo && (!e.zona_default || !e.turno_default)).length;
       let h = '';
@@ -3332,15 +3384,6 @@
     catch { return null; }
   }
 
-  function actualizarBadgeCobertura(datos) {
-    const badge = document.getElementById('cov-tab-badge');
-    if (!badge) return;
-    const total = Number(datos?.total_porciones || 0);
-    badge.textContent = String(total);
-    badge.classList.toggle('oculto', total === 0);
-    badge.title = total ? total + ' alimento(s) de cobertura para hoy' : '';
-  }
-
   function urlImpresoCobertura(tipo, fecha, autoPrint = false, turno = document.getElementById('cov-turno').value, seleccion = {}) {
     let url = tipo === 'comanda'
       ? API_BASE + '/comanda-cobertura/' + fecha + '?key=' + encodeURIComponent(ADMIN_KEY)
@@ -3397,10 +3440,9 @@
   }
 
   function evaluarCorteCobertura(datos, fecha) {
-    if (PANEL_ROL === 'monitoreo') { actualizarBadgeCobertura(datos); return; }
+    if (PANEL_ROL === 'monitoreo') return;
     if (fecha !== fechaComedor()) return;
     if (datos.por_turno) {
-      actualizarBadgeCobertura({total_porciones: datos.por_turno.reduce((n,s)=>n+s.total_porciones,0)});
       const pendientes = (datos.avisos_lotes || []).map(s => ({ ...s, clave_ack:'lote:' + s.id + '|' + s.revision }))
         .filter(s => ackCobertura(fecha,s.clave_ack) !== String(s.total_porciones));
       if (coberturaAlarma?.solicitud && !pendientes.some(s => s.id === coberturaAlarma.solicitud && s.clave_ack === coberturaAlarma.clave_ack)) detenerAlarmaCobertura();
@@ -3460,12 +3502,7 @@
   async function cargarCobertura() {
     const fecha = document.getElementById('cov-fecha').value || fechaComedor();
     document.getElementById('cov-fecha').value = fecha;
-    if (PANEL_ROL !== 'monitoreo' && !Object.keys(EMPLEADOS).length) await cargarEmpleados();
-    await Promise.all([
-      cargarMenuCobertura(fecha),
-      cargarSupervisoresCobertura(),
-      cargarSolicitudesCobertura(fecha)
-    ]);
+    await cargarSolicitudesCobertura(fecha);
   }
 
   let EXTRA_CONFIG = null;
@@ -3588,6 +3625,7 @@
       document.getElementById('extra-motivo').value = '';
       document.getElementById('cov-fecha').value = s.fecha_servicio; document.getElementById('cov-turno').value = s.turno;
       await cargarSolicitudesCobertura(s.fecha_servicio);
+      if (document.getElementById('pe-fecha').value === s.fecha_servicio) await verPedidos();
     } catch(e) {
       if(e.message.includes('El menú cambió')) { EXTRA_CONFIG=null; avisoExtraordinaria(e.message+' Cierra y vuelve a abrir Pedido extraordinario para consultar las opciones vigentes.', 'err'); }
       else avisoExtraordinaria(e.message + ' Puedes reintentar con los mismos datos.', 'err');
@@ -3602,7 +3640,7 @@
       puedeEditar:()=>PANEL_ROL === 'admin',
       alPublicar:async()=>{
         EXTRA_CONFIG=null;
-        await cargarSolicitudesCobertura(document.getElementById('cov-fecha').value || fechaComedor());
+
       }
     });
     await MENU_COBERTURA_SEMANAL.cargar(fecha);
@@ -3693,10 +3731,18 @@
     } catch (e) { alert(e.message); }
   }
 
+  let consultaFoliosCobertura = 0;
   async function cargarSolicitudesCobertura(fecha) {
+    const consulta = ++consultaFoliosCobertura;
+    const turno = document.getElementById('cov-turno').value;
+    const vigente = () => consulta === consultaFoliosCobertura && document.getElementById('cov-fecha').value === fecha && document.getElementById('cov-turno').value === turno;
     const box = document.getElementById('covSolicitudes');
+    box.innerHTML = '<p>Consultando folios…</p>';
+    document.getElementById('cov-n-sol').textContent = '—';
+    document.getElementById('cov-n-por').textContent = '—';
     try {
-      const r = await api('/api/cobertura/solicitudes/' + fecha + '?turno=' + document.getElementById('cov-turno').value);
+      const r = await api('/api/cobertura/solicitudes/' + fecha + '?turno=' + turno);
+      if (!vigente()) return;
       document.getElementById('cov-n-sol').textContent = r.total_solicitudes || 0;
       document.getElementById('cov-n-por').textContent = r.total_porciones || 0;
       evaluarCorteCobertura(r, fecha);
@@ -3706,6 +3752,8 @@
       }
       box.innerHTML = solicitudes.map(s => {
         const cancelada = s.estado === 'cancelada';
+        const entregadas = (s.items || []).filter(i => !i.no_surtido_en && (i.entregado_en || i.entrega_conciliada_en)).length;
+        const hora = horarioServicio({ ...s, fecha_menu: s.fecha_servicio });
         const items = (s.items || []).map(i => {
           const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entrega_conciliada_en && !i.entregado_en ? ' · Entregada · Confirmación administrativa, sin hora real' : i.entregado_en
             ? ' · Entregado a ' + escaparHtml(i.receptor_nombre || s.responsable_nombre_snapshot) +
@@ -3713,9 +3761,9 @@
             : '';
           return '<span><b>#' + escaparHtml(i.empleado_numero_snapshot) + '</b> · ' + escaparHtml(i.empleado_nombre_snapshot) + ' — ' + escaparHtml(i.opcion_texto) + receptor + '</span>';
         }).join('');
-        return '<div class="cov-solicitud" style="' + (cancelada ? 'opacity:.55' : '') + '"><div class="cov-solicitud-cab"><div><b>' + escaparHtml(s.folio) + '</b><p>' +
+        return '<details class="cov-solicitud" style="' + (cancelada ? 'opacity:.55' : '') + '"><summary>' + escaparHtml(zonaTxt(s.zona)) + ' · ' + escaparHtml(hora) + ' · ' + s.total_porciones + ' comidas · Entregadas: ' + entregadas + ' · ' + escaparHtml(s.folio) + '</summary><div class="cov-solicitud-cab"><div><b>' + escaparHtml(s.folio) + '</b><p>' +
           escaparHtml(zonaTxt(s.zona)) + ' · Recibe ' + escaparHtml(s.responsable_nombre_snapshot) + ' #' + escaparHtml(s.responsable_numero_snapshot) + '</p></div>' +
-          '<span class="badge ' + (cancelada ? 'off' : 'on') + '">' + escaparHtml(s.estado) + ' · ' + s.total_porciones + '</span></div>' +
+          '<span class="badge ' + (cancelada ? 'off' : 'on') + '">' + (cancelada ? 'Pedido cancelado' : 'Pedido confirmado') + ' · ' + s.total_porciones + '</span></div>' +
           (s.entrega_programada_en ? '<p style="font-size:.8rem;margin:8px 0">' + (s.origen === 'extraordinaria' ? 'Extraordinaria' : 'Pedido de supervisor') + ' · Entrega ' + escaparHtml(new Date(s.entrega_programada_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) +
             (s.origen === 'extraordinaria' ? ' · Autorizó ' + escaparHtml(s.autorizado_por) : '') +
             (s.creado_en ? ' · Registrado a las ' + escaparHtml(new Date(s.creado_en).toLocaleTimeString('es-MX',{timeZone:ZONA_COMEDOR,hour:'2-digit',minute:'2-digit'})) : '') +
@@ -3723,9 +3771,10 @@
           '<div class="cov-items">' + items + '</div>' +
           (!cancelada ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
             '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'comanda\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Comanda de este folio</button>' +
-            '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'etiquetas\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Etiquetas de este folio</button></div>' : '') + '</div>';
+            '<button class="accion mini sec" onclick="imprimirFolioCobertura(\'etiquetas\',' + Number(s.id) + ',\'' + s.fecha_servicio + '\',\'' + s.turno + '\')">Etiquetas de este folio</button></div>' : '') + '</details>';
       }).join('');
     } catch (e) {
+      if (!vigente()) return;
       box.innerHTML = '<div class="aviso err" style="display:block">' + escaparHtml(e.message) + '</div>';
     }
   }

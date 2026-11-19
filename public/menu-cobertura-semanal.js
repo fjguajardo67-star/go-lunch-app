@@ -80,7 +80,7 @@ window.MenuCoberturaSemanal = (() => {
         fila.querySelector('.cov-dia-nota').textContent=d.edicion.motivo;
         fila.querySelectorAll('[data-opcion]').forEach((input,i)=>{input.value=opciones[i];});
         fila.querySelector('[data-error]').textContent='Publicado para '+formato(d.fecha,{day:'numeric',month:'long',year:'numeric'})+'. Los pedidos anteriores conservan sus platillos.';
-        try {await alPublicar?.(d.fecha);} catch {aviso('El menú se publicó. Actualiza Solicitudes y producción para consultar sus pedidos.');}
+        try {await alPublicar?.(d.fecha);} catch {aviso('El menú se publicó. Consulta Pedidos para revisar las comidas registradas.');}
       } catch(e) {
         d.conflicto=true;
         fila.querySelector('[data-error]').textContent=e.message+' Conservamos lo escrito. Consulta Actualizar semana antes de reintentar para comprobar si se publicó.';
