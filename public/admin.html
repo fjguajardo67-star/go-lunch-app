@@ -186,11 +186,22 @@
   .pedidos-filtros input { width: 18px; min-height: 18px; accent-color: var(--azul); margin: 0; }
   .pedido-folio-link { display: block; background: none; border: 0; color: var(--azul); font: inherit; font-size: .8125rem; padding: 8px 0; min-height: 44px; text-align: left; cursor: pointer; text-decoration: underline; overflow-wrap: anywhere; }
   .pedido-folio { margin-top: 14px; border-top: 1px solid var(--gris-line); scroll-margin-top: 110px; }
-  .pedido-folio > summary, #supervisores-cobertura > summary, .ayuda-impresion > summary { padding: 14px 0; min-height: 44px; cursor: pointer; font-size: .9375rem; font-weight: 600; }
+  .pedido-folio > summary, .ayuda-impresion > summary { padding: 14px 0; min-height: 44px; cursor: pointer; font-size: .9375rem; font-weight: 600; }
   .pedido-folio p { font-size: .875rem; margin: 10px 0; overflow-wrap: anywhere; }
-  .pedido-folio ul { padding-left: 20px; }
-  .pedido-folio li { font-size: .875rem; padding: 8px 0; overflow-wrap: anywhere; }
-  .supervisores-contenido { margin-top: 20px; }
+  #supervisores-titulo { font-size: 1.25rem; color: var(--azul); margin-bottom: 20px; }
+  .supervisores-columnas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; }
+  .supervisores-contenido { min-width: 0; }
+  .supervisor-acciones .accion { display: block; min-height: 44px; margin: 0 0 6px; }
+  @media (max-width: 1100px) { .supervisores-columnas { grid-template-columns: minmax(0, 1fr); } }
+  .pedido-entregado { color: var(--verde); font-weight: 700; }
+  .pedido-sin-cargo { color: var(--gris-text); font-weight: 600; }
+  .pedido-detalle-tabla { max-inline-size: 100%; overflow-x: auto; }
+  .pedido-detalle-tabla table { min-inline-size: 640px; table-layout: fixed; }
+  .pedido-detalle-tabla caption { text-align: left; padding: 8px 0 12px; font-weight: 600; }
+  .pedido-detalle-tabla :is(th, td) { font-size: .875rem; padding: 10px; vertical-align: top; overflow-wrap: anywhere; }
+  .pedido-detalle-tabla tbody th { font-weight: 600; border-bottom: 1px solid var(--gris-line); }
+  .pedido-detalle-tabla small { display: block; margin-top: 5px; color: var(--gris-text); font-size: .8125rem; }
+  .pedido-detalle-tabla:focus-visible { outline: 2px solid var(--azul); outline-offset: 3px; }
   .ayuda-impresion { margin: 10px 0; }
   @media (max-width: 600px) {
     .pedidos-filtros { gap: 6px; }
@@ -951,12 +962,13 @@
 
     <!-- EMPLEADOS -->
     <section id="p-empleados" class="panel">
-      <details class="card" data-supervisores id="supervisores-cobertura">
-        <summary>Supervisores de coberturas</summary>
+      <section class="card" data-supervisores id="supervisores-cobertura" aria-labelledby="supervisores-titulo">
+        <h2 id="supervisores-titulo">Supervisores de coberturas</h2>
+        <div class="supervisores-columnas">
         <div class="supervisores-contenido">
           <div class="card-header">
             <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M16 8h5M18.5 5.5v5" stroke-linecap="round"/></svg></div>
-            <h3>Supervisores autorizados</h3>
+            <h3>Registrar supervisor</h3>
           </div>
           <p style="font-size:.8rem;color:var(--gris-text)">Selecciona únicamente empleados incluidos en la lista oficial de Glovis. La clave se muestra una sola vez.</p>
           <label for="cov-supervisor">Empleado de la plantilla</label>
@@ -967,16 +979,17 @@
           </div>
           <label for="cov-clave">Clave personal <span style="font-weight:400">(vacía = generar)</span></label>
           <input type="password" id="cov-clave" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
-          <button class="accion verde" onclick="autorizarSupervisorCobertura()">Autorizar supervisor</button>
+          <button class="accion verde" onclick="autorizarSupervisorCobertura()">Autorizar supervisor de cobertura</button>
           <div id="covSupAviso" class="aviso"></div>
           <div id="covClaveNueva" class="cov-clave oculto"></div>
         </div>
 
         <div class="supervisores-contenido">
-          <div class="card-header"><h3>Autorizaciones de supervisores</h3></div>
+          <div class="card-header"><h3>Autorizaciones vigentes</h3></div>
           <p class="pedidos-ayuda"><strong id="cov-n-sup">0</strong> supervisores activos</p><div id="covSupervisores"><div class="vacio">Cargando autorizaciones…</div></div>
         </div>
-      </details>
+        </div>
+      </section>
 
       <form class="card" id="empleado-form" aria-labelledby="empleado-form-titulo" onsubmit="event.preventDefault(); guardarEmpleado()">
         <div class="card-header">
@@ -2171,6 +2184,16 @@
     document.getElementById('pedidosBox').removeAttribute('aria-busy');
     document.getElementById('pedidosEstado').textContent = 'Consulta la fecha seleccionada para ver sus pedidos.';
   }
+  function estadoPedidoHtml(p) {
+    if (p.no_surtido_en) return '<span class="pedido-sin-cargo">No surtido · Sin cargo</span>';
+    if (!p.entregado_en && !p.entrega_conciliada_en) return 'Pendiente de registro';
+    const hora = p.entregado_en && new Date(p.entregado_en);
+    const detalle = hora && !Number.isNaN(hora.getTime())
+      ? new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(hora)
+      : 'Confirmado por administración · Sin hora registrada';
+    return '<span class="pedido-entregado">Entregado</span><small>' + detalle + '</small>';
+  }
+
   async function verPedidos() {
     const consulta = ++consultaPedidos;
     const servicio = servicioPedidos();
@@ -2205,12 +2228,7 @@
       for (const p of comidas) {
         if (p.no_surtido_en) noSurtidos++;
         else if (p.entregado_en || p.entrega_conciliada_en) entregados++;
-        const hora = p.entregado_en && new Date(p.entregado_en);
-        const entrega = p.no_surtido_en ? 'No surtido · Sin cargo' : p.entregado_en || p.entrega_conciliada_en
-          ? 'Entregado' + (hora && !Number.isNaN(hora.getTime())
-            ? '<small>' + new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(hora) + '</small>'
-            : '<small>Confirmado por administración · Sin hora registrada</small>')
-          : 'Pendiente de registro';
+        const entrega = estadoPedidoHtml(p);
         const turno = p.turno === 'turno_a' ? 'Turno A' : p.turno === 'turno_b' ? 'Turno B' : 'Sin turno';
         h += `<tr><th scope="row">${escaparHtml(p.empleados?.nombre) || '—'}<small>N.º ${escaparHtml(p.empleados?.numero_empleado) || '—'}</small></th><td>${servicioTexto(p)}${p.folio ? '<button type="button" class="pedido-folio-link" onclick="abrirFolioPedido(this)" data-folio="' + escaparHtml(p.folio) + '">' + escaparHtml(p.folio) + '</button>' : ''}</td><td>${escaparHtml(p.opcion_texto)}</td><td>${escaparHtml(zonaTxt(p.zona))}</td><td>${turno}</td><td>${escaparHtml(horarioServicio(p))}</td><td>${entrega}</td></tr>`;
       }
@@ -2236,14 +2254,17 @@
       folios.get(p.folio).push(p);
     }
     if (!folios.size) return '';
-    return '<h4>Detalle por folio de cobertura</h4>' + [...folios].map(([folio, filas]) => {
+    return '<h4>Detalle por folio de cobertura</h4>' + [...folios].map(([folio, filas], indice) => {
       const p = filas[0], entregadas = filas.filter(x => !x.no_surtido_en && (x.entregado_en || x.entrega_conciliada_en)).length;
-      return '<details class="pedido-folio" data-folio="' + escaparHtml(folio) + '"><summary>' + escaparHtml(folio) +
+      const titulo = 'pe-folio-titulo-' + indice;
+      return '<details class="pedido-folio" data-folio="' + escaparHtml(folio) + '"><summary id="' + titulo + '">' + escaparHtml(folio) +
         ' · ' + escaparHtml(zonaTxt(p.zona)) + ' · ' + filas.length + ' comidas · Entregadas: ' + entregadas + '</summary>' +
         '<p>Recibe: ' + escaparHtml(p.responsable_nombre || 'Sin responsable registrado') +
-        (p.responsable_numero ? ' · N.º ' + escaparHtml(p.responsable_numero) : '') + ' · Hora prevista: ' + escaparHtml(horarioServicio(p)) + '</p><ul>' +
-        filas.map(x => '<li><strong>' + escaparHtml(x.empleados?.nombre || 'Sin nombre') + ' · N.º ' + escaparHtml(x.empleados?.numero_empleado || '—') + '</strong> · ' +
-          escaparHtml(x.opcion_texto) + ' · ' + (x.no_surtido_en ? 'No surtido · Sin cargo' : x.entregado_en || x.entrega_conciliada_en ? 'Entregado' : 'Pendiente de registro') + '</li>').join('') + '</ul></details>';
+        (p.responsable_numero ? ' · N.º ' + escaparHtml(p.responsable_numero) : '') + ' · Hora prevista: ' + escaparHtml(horarioServicio(p)) + '</p>' +
+        '<div class="pedido-detalle-tabla" tabindex="0" role="region" aria-labelledby="' + titulo + '"><table><caption>Comidas del folio ' + escaparHtml(folio) + '</caption>' +
+        '<colgroup>' + [34, 30, 14, 22].map(ancho => '<col style="width:' + ancho + '%">').join('') + '</colgroup><thead><tr><th scope="col">Empleado</th><th scope="col">Platillo</th><th scope="col">Hora prevista</th><th scope="col">Entrega</th></tr></thead><tbody>' +
+        filas.map(x => '<tr><th scope="row">' + escaparHtml(x.empleados?.nombre || 'Sin nombre') + '<small>N.º ' + escaparHtml(x.empleados?.numero_empleado || '—') + '</small></th><td>' +
+          escaparHtml(x.opcion_texto) + '</td><td>' + escaparHtml(horarioServicio(x)) + '</td><td>' + estadoPedidoHtml(x) + '</td></tr>').join('') + '</tbody></table></div></details>';
     }).join('');
   }
 
@@ -3682,7 +3703,7 @@
           const vig = s.vigente_desde + (s.vigente_hasta ? ' → ' + s.vigente_hasta : ' → sin término');
           return '<tr><td><b>' + escaparHtml(e.nombre || 'Empleado no disponible') + '</b><br><span style="font-size:.75rem;color:var(--gris-text)">#' + escaparHtml(e.numero_empleado || '—') + '</span></td>' +
             '<td>' + escaparHtml(vig) + '</td><td><span class="badge ' + (s.activo ? 'on' : 'off') + '">' + (s.activo ? 'Autorizado' : 'Inactivo') + '</span></td>' +
-            '<td style="white-space:nowrap"><button class="accion mini sec" onclick="cambiarSupervisorCobertura(' + s.id + ',' + (!s.activo) + ')">' + (s.activo ? 'Desactivar' : 'Activar') + '</button> ' +
+            '<td class="supervisor-acciones"><button class="accion mini sec" onclick="cambiarSupervisorCobertura(' + s.id + ',' + (!s.activo) + ')">' + (s.activo ? 'Desactivar' : 'Activar') + '</button> ' +
             '<button class="accion mini sec" onclick="restablecerClaveCobertura(' + s.id + ')">Nueva clave</button></td></tr>';
         }).join('') + '</tbody></table></div>';
     } catch (e) {
@@ -3763,8 +3784,8 @@
         const entregadas = (s.items || []).filter(i => !i.no_surtido_en && (i.entregado_en || i.entrega_conciliada_en)).length;
         const hora = horarioServicio({ ...s, fecha_menu: s.fecha_servicio });
         const items = (s.items || []).map(i => {
-          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entrega_conciliada_en && !i.entregado_en ? ' · Entregada · Confirmación administrativa, sin hora real' : i.entregado_en
-            ? ' · Entregado a ' + escaparHtml(i.receptor_nombre || s.responsable_nombre_snapshot) +
+          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entrega_conciliada_en && !i.entregado_en ? ' · <span class="pedido-entregado">Entregado</span> · Confirmación administrativa, sin hora real' : i.entregado_en
+            ? ' · <span class="pedido-entregado">Entregado</span> a ' + escaparHtml(i.receptor_nombre || s.responsable_nombre_snapshot) +
               (i.receptor_discrepante ? (i.receptor_verificado === false ? ' · gafete por revisar' : ' · receptor distinto verificado') : '')
             : '';
           return '<span><b>#' + escaparHtml(i.empleado_numero_snapshot) + '</b> · ' + escaparHtml(i.empleado_nombre_snapshot) + ' — ' + escaparHtml(i.opcion_texto) + receptor + '</span>';
