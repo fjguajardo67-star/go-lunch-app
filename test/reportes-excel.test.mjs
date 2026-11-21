@@ -26,3 +26,17 @@ test('Excel de cocina conserva 61 regulares + 7 coberturas, folios y números co
 test('cocina rechaza descargar un detalle que cambió entre consultas',()=>{
  assert.throws(()=>GoLunchReportesExcel.cocina(X,f,d.fecha,resumen,comidas.slice(1)),/conteo cambió/);
 });
+
+test('cocina identifica la procedencia administrativa sin sustituir escaneos ni fabricar horas',()=>{
+ const seleccion=structuredClone(comidas.slice(0,4));
+ Object.assign(seleccion[0],{entregado_en:null,entrega_conciliada_en:'2026-11-08T02:00:00Z'});
+ seleccion[1].entrega_conciliada_en='2026-11-08T02:00:00Z';
+ Object.assign(seleccion[2],{no_surtido_en:'2026-11-08T02:00:00Z',entrega_conciliada_en:'2026-11-08T02:00:00Z'});
+ seleccion[3].entregado_en=null;
+ const wb=GoLunchReportesExcel.cocina(X,f,d.fecha,resumirPedidosCocina(d.fecha,seleccion),seleccion),ws=wb.Sheets.Etiquetas;
+ assert.equal(ws.J2.v,'Reportada como entregada por el administrador');assert.equal(ws.K2.v,'');
+ assert.equal(ws.J3.v,'Entregado');assert.equal(ws.K3.v,seleccion[1].entregado_en);
+ assert.match(ws.J4.v,/No surtido.*Sin cargo/);assert.equal(ws.K4.v,'');
+ assert.equal(ws.J5.v,'Pendiente');assert.equal(ws.K5.v,'');
+ assert.ok(ws['!cols'][9].wch>=ws.J2.v.length,'el estado completo cabe en su columna');
+});

@@ -1,7 +1,7 @@
 // Constructores compartidos por el panel y las pruebas. SheetJS ya existe en el panel.
 (function (raiz) {
   const entregada = p => !!(p.entregado_en || p.entrega_conciliada_en) && !p.no_surtido_en;
-  const estado = p => p.no_surtido_en ? 'No surtido por cocina/reparto · Sin cargo al empleado' : p.entrega_conciliada_en && !p.entregado_en ? 'Entregado · Conciliación administrativa sin hora real' : entregada(p) ? 'Entregado' : 'Pendiente';
+  const estado = p => p.no_surtido_en ? 'No surtido por cocina/reparto · Sin cargo al empleado' : p.entrega_conciliada_en && !p.entregado_en ? 'Reportada como entregada por el administrador' : entregada(p) ? 'Entregado' : 'Pendiente';
   function libro(X, f) {
     const wb = X.utils.book_new();
     const hoja = (nombre, filas, anchos) => {
@@ -31,7 +31,7 @@
       ...comidas.map(p => [f.servicio(p), p.folio || '', p.empleados?.numero_empleado || '', p.empleados?.nombre || '',
         p.opcion_texto || p.opcion_id, f.zona(p.zona), f.turno(p.turno), f.horario(p), fecha,
         estado(p), p.no_surtido_en ? '' : p.entregado_en || '', p.responsable_nombre || '', p.codigo_etiqueta || ''])],
-      [24, 26, 14, 36, 36, 18, 24, 16, 14, 14, 28, 36, 52]);
+      [24, 26, 14, 36, 36, 18, 24, 16, 14, 60, 28, 36, 52]);
     filtros(fecha, fecha, resumen.filtros); return wb;
   }
 

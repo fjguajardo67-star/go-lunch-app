@@ -10,6 +10,7 @@ const LOGO_CICSA = logo('go-lunch.svg'), LOGO_GLOVIS = logo('glovis.svg'), LOGO_
 export const esc = valor => String(valor ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
   .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 const numeros = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
+export const ENTREGA_ADMINISTRADOR = 'Reportada como entregada por el administrador';
 
 export function validarElaboro(valor = '') {
   if (typeof valor !== 'string' || valor.length > 120 || /[\x00-\x1f\x7f]/.test(valor)) {
@@ -21,6 +22,8 @@ export function validarElaboro(valor = '') {
 // Presupuesto en mm, conservador para carta y Safari. Cada continuación repite
 // su encabezado. El resumen y el cierre tienen espacio propio fuera de la tabla.
 function paginar(grupos) {
+  // La leyenda se repite en cada hoja con entregas administrativas.
+  const reservaLeyenda = grupos.some(g => g.filas.some(f => f.hora_registrada === 'Admin')) ? 10 : 0;
   const paginas = [{ partes: [], usado: 0 }];
   const nueva = () => { const p = { partes: [], usado: 0 }; paginas.push(p); return p; };
   const altoFila = fila => 3 + 3.8 * Math.max(1,
@@ -31,8 +34,8 @@ function paginar(grupos) {
   for (const grupo of grupos) {
     let inicio = 0, parte = 0;
     while (inicio < grupo.filas.length) {
-      let pagina = paginas.at(-1), limite = paginas.length === 1 ? 110 : 140;
-      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 140; }
+      let pagina = paginas.at(-1), limite = (paginas.length === 1 ? 110 : 140) - reservaLeyenda;
+      if (pagina.usado + 22 + altoFila(grupo.filas[inicio]) > limite) { pagina = nueva(); limite = 140 - reservaLeyenda; }
       const filas = []; let alto = 22;
       while (inicio < grupo.filas.length && (filas.length === 0 || pagina.usado + alto + altoFila(grupo.filas[inicio]) <= limite)) {
         const fila = grupo.filas[inicio++]; alto += altoFila(fila); filas.push(fila);
@@ -67,7 +70,7 @@ export function prepararReporteEntregas(fecha, comidas, { elaboro = '', ahora = 
       folio: p.folio || null, horario: horarioComida(p, fecha),
       incidencia, motivo:p.no_surtido_motivo || '', autor:p.no_surtido_por || '',
       incidencia_fecha: registrada.isValid ? registrada.toFormat('dd/MM/yyyy HH:mm') : '',
-      hora_registrada: sinHoraEntrega(p) ? 'Conciliada' : hora.isValid ? hora.setZone(ZONA).toFormat('HH:mm') : 'Sin hora válida',
+      hora_registrada: sinHoraEntrega(p) ? 'Admin' : hora.isValid ? hora.setZone(ZONA).toFormat('HH:mm') : 'Sin hora válida',
       fecha_registrada: hora.isValid && hora.setZone(ZONA).toISODate() !== fecha ? hora.setZone(ZONA).toFormat('dd/MM/yyyy') : null
     });
   }
@@ -89,11 +92,12 @@ export function htmlReporteEntregas(datos, { fragmento = false, paginaInicial = 
     ${[[datos.registradas.regulares, 'Regulares solicitadas'], [datos.registradas.coberturas, 'Coberturas solicitadas'],
       [datos.registradas.total, 'Total solicitado'], [datos.entregado.total, 'Entregadas'], [datos.pendientes, 'Pendientes de registro'], [datos.no_surtidos, 'No surtidas · Sin cargo']]
       .map(([n, texto]) => `<div class="metrica"><strong>${n}</strong><span>${texto}</span></div>`).join('')}
-    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes de registro + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.${datos.grupos.some(g => g.filas.some(f => f.hora_registrada === 'Conciliada')) ? ' Conciliada: entrega confirmada por administración, sin hora real registrada ni puntualidad verificable.' : ''}</p>`;
+    </section><p class="nota-resumen">Regulares + coberturas = total solicitado. Entregadas + pendientes de registro + no surtidas = total solicitado. Las incidencias sin cargo se detallan por separado y se excluyen del descuento al empleado.</p>`;
   const paginas = datos.paginas.map((pagina, indice) => `<section class="hoja">
     <header><div class="marcas"><img src="${LOGO_CICSA}" alt="CICSA Go Lunch"><img src="${LOGO_GLOVIS}" alt="Hyundai Glovis"></div>
       <h1>Reporte diario de comidas entregadas</h1><div class="fecha"><strong>Servicio: ${esc(datos.fecha_texto)}</strong><span>Generado: ${esc(datos.generado)}</span></div></header>
     ${indice === 0 ? resumen : ''}
+    ${pagina.partes.some(p => p.filas.some(f => f.hora_registrada === 'Admin')) ? `<p class="nota-resumen">Admin: ${ENTREGA_ADMINISTRADOR}, sin hora real registrada ni puntualidad verificable.</p>` : ''}
     ${pagina.partes.map(({ grupo, filas, continuacion, ultima }) => `<section class="grupo">
       <h2>${grupo.incidencia ? 'Incidencias sin cargo · ' : ''}${esc(grupo.turno_texto)} · ${esc(grupo.zona_texto)}${continuacion ? ' · Continuación' : ''}</h2>
       <table><colgroup><col class="numero"><col class="nombre"><col class="platillo"><col class="servicio"><col class="hora"><col class="hora"></colgroup>

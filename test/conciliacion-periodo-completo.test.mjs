@@ -23,7 +23,7 @@ test('120 entregas confirmadas coinciden en dashboard, PDF y ambos Excel, conser
  assert.equal(op.entregadas,120);assert.equal(fact.entregadas,120);assert.equal(fact.conCargo,120);assert.equal(fact.subtotal,12000);
  const w=await abrir(op),f=await abrir(fact),e=w.getWorksheet('Entregas');
  const filas=Array.from({length:120},(_,n)=>e.getRow(n+10));
- assert.equal(filas.filter(r=>r.getCell(11).value==='Conciliada'&&r.getCell(10).value===null).length,53);
+ assert.equal(filas.filter(r=>r.getCell(11).value==='Reportada como entregada por el administrador'&&r.getCell(10).value===null).length,53);
  assert.equal(filas.filter(r=>r.getCell(11).value==='Registrada'&&r.getCell(10).value instanceof Date).length,67);
  assert.equal(w.getWorksheet('Resumen').getCell('G10').result,120);assert.equal(w.getWorksheet('Resumen').getCell('H10').result,0);
  assert.equal(f.getWorksheet('Resumen_Facturacion').getCell('G10').result,120);assert.equal(f.getWorksheet('Resumen_Facturacion').getCell('H10').result,0);

@@ -49,13 +49,19 @@ test('incidencia prevalece, pendiente mantiene cargo y conciliación cuenta entr
   assert.equal(r.conCargo,3);assert.equal(r.entregadas,2);assert.equal(r.sinCargo,1);assert.equal(r.subtotal,354);
   const a=w.getWorksheet('Auditoria_Detalle');
   const filas=Array.from({length:4},(_,i)=>a.getRow(i+10));
-  const conciliada=filas.find(f=>f.getCell(10).value.includes('Conciliado'));
+  const conciliada=filas.find(f=>f.getCell(10).value==='Reportada como entregada por el administrador');
   assert.equal(conciliada.getCell(11).value,null);assert.equal(conciliada.getCell(12).value.getUTCHours(),12);
+  assert.equal(conciliada.getCell(14).value,'Entrega verificada');
+  assert.equal(conciliada.getCell(10).alignment.wrapText,true);
+  assert.equal(conciliada.getCell(10).font.size,11);assert.ok(conciliada.height>=36);
   assert.equal(conciliada.getCell(13).value,'Admin QA');assert.equal(conciliada.getCell(15).value,1);
   const incidencia=filas.find(f=>f.getCell(15).value===0);assert.ok(incidencia.getCell(11).value instanceof Date);
   assert.equal(incidencia.getCell(16).value,'No salió de cocina');assert.equal(incidencia.getCell(17).value,'gerente');
   const s=w.getWorksheet('Resumen_Facturacion');assert.equal(s.getCell('H10').result,1);assert.equal(s.getCell('I10').result,1);
   assert.equal(s.getCell('D10').result,s.getCell('G10').result+s.getCell('H10').result);
+  assert.match(s.getCell('G10').formula, /,\"Entregado\"\)/);
+  assert.match(s.getCell('G10').formula, /,\"Reportada como entregada por el administrador\"\)/);
+  assert.equal(filas.filter(f=>['Entregado','Reportada como entregada por el administrador'].includes(f.getCell(10).value)).length,s.getCell('G10').result);
 });
 
 test('mismo periodo y filtros que operación, fechas locales y exportación vacía correcta', async () => {

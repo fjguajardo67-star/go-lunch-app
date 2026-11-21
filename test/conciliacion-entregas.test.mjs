@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import { construirDashboard } from '../services/dashboard.js';
 import { construirReporte } from '../services/reportes.js';
 import { prepararReporteEntregas, htmlReporteEntregas } from '../services/reporte-entregas.js';
-import { prepararReportePeriodo } from '../services/reporte-periodo.js';
+import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-periodo.js';
 import { entregada, sinHoraEntrega } from '../services/incidencias.js';
 import '../public/operacion.js';
 import '../public/reparto-guiado.js';
@@ -37,8 +37,17 @@ test('59 entregas: dashboard, PDF diario, periodo y estimaci처n incluyen las 57 
   assert.equal(dashboard.resumen.entregados,59);assert.equal(dashboard.resumen.pendientes,0);
   assert.equal(dashboard.resumen.tardias,0);assert.equal(dashboard.resumen.regulares,48);assert.equal(dashboard.resumen.coberturas,11);
   assert.deepEqual(diario.entregado,{regulares:48,coberturas:11,total:59});assert.equal(diario.pendientes,0);
-  assert.equal(diario.grupos.flatMap(g=>g.filas).filter(f=>f.hora_registrada==='Conciliada').length,57);
-  assert.match(htmlReporteEntregas(diario),/sin hora real registrada ni puntualidad verificable/);
+  assert.equal(diario.grupos.flatMap(g=>g.filas).filter(f=>f.hora_registrada==='Admin').length,57);
+  for (const html of [htmlReporteEntregas(diario), htmlReportePeriodo(periodo)]) {
+    const hojas = html.split('<section class="hoja">').slice(1);
+    assert.ok(hojas.some(h => h.includes('<td>Admin</td>')));
+    for (const hoja of hojas.filter(h => h.includes('<td>Admin</td>'))) {
+      assert.match(hoja, /Admin: Reportada como entregada por el administrador, sin hora real registrada ni puntualidad verificable/);
+    }
+    assert.equal((html.match(/<td>Admin<\/td>/g) || []).length, 57);
+    assert.equal((html.match(/<td>10:00<\/td><\/tr>/g) || []).length, 2);
+    assert.doesNotMatch(html, /<td>23:30<\/td>/, 'la fecha de confirmaci처n no es hora de entrega');
+  }
   assert.equal(reporte.entrega.entregados,2);assert.equal(reporte.entrega.indeterminados,57);
   assert.equal(reporte.entrega.tardios,0);assert.equal(reporte.entrega.no_entregados,0);assert.equal(reporte.sin_confirmacion.length,0);
   assert.equal(reporte.ruta.por_dia.reduce((n,r)=>n+r.entregas,0),2,'la conciliaci처n no fabrica tiempos de ruta');
@@ -54,7 +63,7 @@ test('la evidencia administrativa se ve en dashboard sin presentar su fecha como
   const panel=contexto.GoLunchDashboard.montar({raiz,hora:()=> '10:00',registro:x=>x,horario:()=> 'Turno A',zona:x=>x,motivo:x=>x,puedeIncidencia:()=>false});
   panel.actualizar(construirDashboard(datos()));
   assert.equal((raiz.innerHTML.match(/Sin hora registrada/g)||[]).length,57);
-  assert.equal((raiz.innerHTML.match(/Confirmaci처n administrativa/g)||[]).length,57);
+  assert.equal((raiz.innerHTML.match(/Reportada como entregada por el administrador/g)||[]).length,57);
   assert.match(raiz.innerHTML,/Administraci처n QA/);
 });
 
@@ -74,6 +83,7 @@ test('Excel conserva 59 entregadas, cero pendientes y autor/motivo, dejando vac�
   assert.equal(resumen.getCell('B10').result,48);assert.equal(resumen.getCell('C10').result,11);
   assert.equal(resumen.getCell('D10').result,59);assert.equal(resumen.getCell('G10').result,59);assert.equal(resumen.getCell('H10').result,0);
   const f=Array.from({length:59},(_,i)=>a.getRow(i+10)).find(f=>f.getCell(12).value);
+  assert.equal(f.getCell(10).value,'Reportada como entregada por el administrador');
   assert.equal(f.getCell(11).value,null);assert.ok(f.getCell(12).value instanceof Date);
   assert.equal(f.getCell(13).value,conciliacion.entrega_conciliada_por);assert.equal(f.getCell(14).value,conciliacion.entrega_conciliacion_motivo);
 });
