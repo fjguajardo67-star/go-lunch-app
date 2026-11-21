@@ -5,6 +5,7 @@ import { horaComida } from './comidas.js';
 import { entregada, sinHoraEntrega } from './incidencias.js';
 import { seleccionarPedidosCocina } from './seleccion-cocina.js';
 import { prepararReportePeriodo } from './reporte-periodo.js';
+import { ENTREGA_ADMINISTRADOR } from './reporte-entregas.js';
 import { logos, fechaExcel, turno, horaExcel, instanteLocal, columna, encabezado, estiloFila, detalle } from './formato-excel.js';
 
 export function validarCostoFacturacion(valor) {
@@ -33,7 +34,7 @@ export async function crearExcelFacturacion(ini, fin, valorCosto, comidas, opcio
     fechaExcel(p.fecha_menu), String(p.empleados?.numero_empleado ?? ''), p.empleados?.nombre || null,
     p.opcion_texto || p.opcion_id || null, p.tipo === 'cobertura' ? 'Cobertura' : 'Regular', p.folio || null,
     turno(p.turno), ZONAS[p.zona] || 'Sin zona', horaExcel(horaComida(p)),
-    p.no_surtido_en ? 'No surtido · Sin cargo' : sinHoraEntrega(p) ? 'Entregado · Conciliado sin hora real' : entregada(p) ? 'Entregado' : 'Pendiente de registro',
+    p.no_surtido_en ? 'No surtido · Sin cargo' : sinHoraEntrega(p) ? ENTREGA_ADMINISTRADOR : entregada(p) ? 'Entregado' : 'Pendiente de registro',
     instanteLocal(p.entregado_en), instanteLocal(p.entrega_conciliada_en), p.entrega_conciliada_por || null,
     p.entrega_conciliacion_motivo || null, p.no_surtido_en ? 0 : 1,
     p.no_surtido_motivo || null, p.no_surtido_por || null, instanteLocal(p.no_surtido_en)
@@ -62,7 +63,7 @@ export async function crearExcelFacturacion(ini, fin, valorCosto, comidas, opcio
       dia.entregado.total, dia.pendientes, dia.no_surtidos];
     const fila = resumen.addRow(valores);
     const formulas = { 2: contar(n, [['O', 1], ['E', 'Regular']]), 3: contar(n, [['O', 1], ['E', 'Cobertura']]),
-      4: `SUM(B${n}:C${n})`, 6: `D${n}*E${n}`, 7: contar(n, [['O', 1], ['J', 'Entregado*']]),
+      4: `SUM(B${n}:C${n})`, 6: `D${n}*E${n}`, 7: `${contar(n, [['O', 1], ['J', 'Entregado']])}+${contar(n, [['O', 1], ['J', ENTREGA_ADMINISTRADOR]])}`,
       8: `D${n}-G${n}`, 9: contar(n, [['O', 0]]) };
     for (const [c, formula] of Object.entries(formulas)) {
       fila.getCell(Number(c)).value = { formula, result: valores[Number(c) - 1] };
@@ -81,7 +82,7 @@ export async function crearExcelFacturacion(ini, fin, valorCosto, comidas, opcio
   estiloFila(total, anchos, true); total.height = 30;
   for (const [offset, texto] of [
     [2, 'Servicios con cargo = regulares + coberturas, excluyendo incidencias autorizadas sin cargo. Subtotal = servicios con cargo × costo unitario; no incluye IVA.'],
-    [4, 'La falta de escaneo no elimina el cargo. Las entregas conciliadas cuentan como entregadas y conservan vacía la hora real cuando no se registró.'],
+    [4, 'La falta de escaneo no elimina el cargo. Las entregas reportadas por el administrador cuentan como entregadas, sin hora real registrada ni puntualidad verificable.'],
     [6, 'Datos actuales al generar la descarga. El detalle conserva las incidencias y su autorización para conciliar el periodo.']
   ]) {
     const r = n + offset; resumen.mergeCells(`A${r}:I${r}`); resumen.getCell(`A${r}`).value = texto;

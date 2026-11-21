@@ -714,6 +714,7 @@
 </style>
 <link rel="stylesheet" href="/menu-cobertura-semanal.css?v=78">
 <link rel="stylesheet" href="/dashboard-panel.css?v=78">
+<link rel="stylesheet" href="/entregas-admin.css">
 </head>
 <body>
 
@@ -902,6 +903,10 @@
           <button class="accion sec" id="db-reporte" type="button" onclick="imprimirReporteEntregas()">Reporte diario / PDF</button>
         </div>
         <p id="db-reporte-aviso" role="status" aria-live="polite"></p>
+        <div id="db-entregas-admin" class="entregas-admin-acceso" hidden>
+          <button class="accion sec" id="db-registrar-entregas" type="button" onclick="abrirEntregasAdmin()" disabled>Registrar entregas omitidas</button>
+          <p>Solo administrador · Para comidas entregadas que no quedaron registradas.</p>
+        </div>
         <div id="dashboardBox" style="margin-top:18px"></div>
       </div>
     </section>
@@ -1436,6 +1441,36 @@
 <script src="/menu-cobertura-semanal.js"></script>
 <script src="/bitacora-rutas.js"></script>
 <script src="/reportes-excel.js"></script>
+<dialog id="entregas-admin-dialog" class="entregas-admin-dialog" aria-labelledby="ea-titulo" aria-describedby="ea-ayuda">
+  <div class="ea-cabecera"><h2 id="ea-titulo">Registrar entregas omitidas</h2><button id="ea-cancelar" class="accion sec" type="button" autofocus>Cancelar</button></div>
+  <p id="ea-fecha"></p>
+  <p id="ea-ayuda">Selecciona únicamente comidas que ya se entregaron. Contarán como entregadas en Dashboard y reportes, con la leyenda «Reportada como entregada por el administrador».</p>
+  <p id="ea-estado" role="status"></p>
+  <button id="ea-reintentar" class="accion sec" type="button" hidden>Volver a consultar</button>
+  <form>
+    <fieldset id="ea-campos">
+      <legend>Selección y confirmación de entregas</legend>
+      <div class="ea-filtros">
+        <div><label for="ea-turno">Turno</label><select id="ea-turno"><option value="">Todos</option><option value="turno_a">Turno A · mañana</option><option value="turno_b">Turno B · tarde</option></select></div>
+        <div><label for="ea-zona">Zona</label><select id="ea-zona"><option value="">Todas</option><option value="zona_refris">REFIS</option><option value="zona_vdc">ASLA</option></select></div>
+        <div><label for="ea-tipo">Servicio</label><select id="ea-tipo"><option value="">Todos</option><option value="regular">Regulares</option><option value="cobertura">Coberturas</option></select></div>
+      </div>
+      <p class="ea-ayuda">Al cambiar filtros se limpia la selección.</p>
+      <div class="ea-seleccion-todas"><input id="ea-todas" type="checkbox"><label for="ea-todas">Seleccionar todas las comidas visibles</label></div>
+      <div id="ea-lista" class="ea-lista"></div>
+      <p id="ea-vacio" hidden></p>
+      <p id="ea-seleccion" role="status"></p>
+      <label for="ea-motivo">Motivo del registro administrativo</label>
+      <p id="ea-motivo-ayuda" class="ea-ayuda">Describe la falla del operador o de captura y cómo verificaste la entrega. De 10 a 500 caracteres.</p>
+      <textarea id="ea-motivo" required minlength="10" maxlength="500" aria-describedby="ea-motivo-ayuda"></textarea>
+      <div class="ea-confirmacion"><input id="ea-confirmado" type="checkbox" required><label for="ea-confirmado">Confirmo que todas las comidas seleccionadas se entregaron físicamente.</label></div>
+      <p class="ea-ayuda">Se guardan el motivo y la fecha del registro administrativo. La hora física de entrega queda sin registrar.</p>
+      <div class="ea-acciones"><button id="ea-enviar" class="accion" type="submit" disabled>Reportar 0 como entregadas</button></div>
+    </fieldset>
+  </form>
+  <p id="ea-error" class="ea-error" role="alert"></p>
+</dialog>
+<script src="/entregas-admin.js"></script>
 <script src="/incidencias-panel.js"></script>
 <script src="/dashboard-panel.js"></script>
 <script>
@@ -1580,6 +1615,7 @@
 
   // Las restricciones visuales acompañan la autorización obligatoria del servidor.
   function aplicarPermisosPanel() {
+    document.getElementById('db-entregas-admin').hidden = PANEL_ROL !== 'admin';
     if (PANEL_ROL === 'monitoreo') return aplicarPermisosMonitoreo();
     if (PANEL_ROL !== 'gerente') return;
     if (!document.getElementById('aviso-rol-gerente')) {
@@ -1803,8 +1839,25 @@
   //     debe seguir consultando toda la noche contra el plan Free de Supabase.
   const REFRESCO_MS = 30000;
   let temporizadorDash = null, ultimoDash = null, filasDashboard = [], fechaDashboard = null, consultaDashboard = 0, dashboardPanel = null;
+  const entregasAdmin = GoLunchEntregasAdmin.montar({
+    dialogo:document.getElementById('entregas-admin-dialog'), api,
+    puedeRegistrar:()=>PANEL_ROL === 'admin',
+    alActualizar:async resultado=>{
+      await verDashboard();
+      document.getElementById('db-reporte-aviso').textContent=(resultado.registradas ?? resultado.total ?? 0) + ' comidas reportadas como entregadas por el administrador. Vuelve a descargar los reportes PDF y Excel.';
+    }
+  });
+  function abrirEntregasAdmin() {
+    if(PANEL_ROL !== 'admin')return;
+    const fecha=document.getElementById('db-fecha').value;
+    if(!fechaDashboard || fecha!==fechaDashboard || fecha>fechaComedor()) {
+      document.getElementById('db-reporte-aviso').textContent='Consulta primero una fecha de servicio de hoy o anterior.'; return;
+    }
+    entregasAdmin.abrir(fecha);
+  }
   document.getElementById('db-fecha').addEventListener('change', () => {
     consultaDashboard++; filasDashboard = []; fechaDashboard = null;
+    document.getElementById('db-registrar-entregas').disabled=true;
     document.getElementById('dashboardBox').textContent = 'La fecha cambió. Pulsa Consultar para cargar el dashboard de esa fecha.';
   });
   function registrarIncidencia(indice) {
@@ -1863,6 +1916,7 @@
       const data = await api('/api/dashboard/' + fecha);
       if (consulta !== consultaDashboard || fecha !== document.getElementById('db-fecha').value) return;
       filasDashboard = data.filas || []; fechaDashboard = fecha;
+      document.getElementById('db-registrar-entregas').disabled=PANEL_ROL!=='admin' || fecha>fechaComedor() || !data.resumen.pendientes;
       dashboardPanel ||= GoLunchDashboard.montar({
         raiz: box,
         hora: valor => valor ? horaTxt(valor) : '—',
@@ -2190,7 +2244,7 @@
     const hora = p.entregado_en && new Date(p.entregado_en);
     const detalle = hora && !Number.isNaN(hora.getTime())
       ? new Intl.DateTimeFormat('es-MX', { timeZone: ZONA_COMEDOR, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(hora)
-      : 'Confirmado por administración · Sin hora registrada';
+      : 'Reportada como entregada por el administrador · Sin hora registrada';
     return '<span class="pedido-entregado">Entregado</span><small>' + detalle + '</small>';
   }
 
@@ -3784,7 +3838,7 @@
         const entregadas = (s.items || []).filter(i => !i.no_surtido_en && (i.entregado_en || i.entrega_conciliada_en)).length;
         const hora = horarioServicio({ ...s, fecha_menu: s.fecha_servicio });
         const items = (s.items || []).map(i => {
-          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entrega_conciliada_en && !i.entregado_en ? ' · <span class="pedido-entregado">Entregado</span> · Confirmación administrativa, sin hora real' : i.entregado_en
+          const receptor = i.no_surtido_en ? ' · No surtido · Sin cargo al empleado' : i.entrega_conciliada_en && !i.entregado_en ? ' · <span class="pedido-entregado">Entregado</span> · Reportada como entregada por el administrador, sin hora real' : i.entregado_en
             ? ' · <span class="pedido-entregado">Entregado</span> a ' + escaparHtml(i.receptor_nombre || s.responsable_nombre_snapshot) +
               (i.receptor_discrepante ? (i.receptor_verificado === false ? ' · gafete por revisar' : ' · receptor distinto verificado') : '')
             : '';

@@ -57,8 +57,17 @@ test('conciliación incluye la comida sin inventar hora y una incidencia prevale
   const r = await crearExcelOperacion('2026-11-07', '2026-11-07', comidas);
   const w = await abrir(r), e = filas(w.getWorksheet('Entregas'));
   assert.equal(r.entregadas, 66);
-  assert.equal(e.filter(f => f[10] === 'Conciliada').length, 2);
-  assert.ok(e.filter(f => f[10] === 'Conciliada').every(f => f[9] === null && /Hora real no registrada/.test(f[11])));
+  assert.equal(e.filter(f => f[10] === 'Reportada como entregada por el administrador').length, 2);
+  assert.ok(e.filter(f => f[10] === 'Reportada como entregada por el administrador').every(f => f[9] === null && /Hora real no registrada/.test(f[11])));
+  for (let n = 10; n <= w.getWorksheet('Entregas').rowCount; n++) {
+    const fila = w.getWorksheet('Entregas').getRow(n);
+    if (fila.getCell(11).value === 'Reportada como entregada por el administrador') {
+      assert.equal(fila.getCell(11).alignment.wrapText, true);
+      assert.equal(fila.getCell(11).font.size, 11);
+      assert.ok(fila.height >= 36, 'la frase completa tiene espacio para dos líneas');
+      assert.match(fila.getCell(12).value, /Sin puntualidad verificable/);
+    }
+  }
   assert.equal(filas(w.getWorksheet('Pendientes_Registro')).length, 1);
   assert.equal(filas(w.getWorksheet('Incidencias_Sin_Cargo')).length, 1);
   const s = w.getWorksheet('Resumen');
@@ -67,7 +76,7 @@ test('conciliación incluye la comida sin inventar hora y una incidencia prevale
   // Un escaneo original posterior conserva su hora y deja de aparecer sin hora.
   comidas[0].entregado_en = '2026-11-07T16:03:00Z';
   const actualizado = filas((await abrir(await crearExcelOperacion('2026-11-07','2026-11-07',comidas))).getWorksheet('Entregas'));
-  assert.equal(actualizado.filter(f => f[10] === 'Conciliada').length, 1);
+  assert.equal(actualizado.filter(f => f[10] === 'Reportada como entregada por el administrador').length, 1);
   assert.ok(actualizado.some(f => f[1] === '00001' && f[10] === 'Registrada' &&
     f[9] instanceof Date && f[9].getUTCHours() === 10 && f[9].getUTCMinutes() === 3));
 });

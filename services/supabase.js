@@ -1075,3 +1075,21 @@ export { supabase };
 export async function cambiarMenuCoberturaFecha(menu) {
   return guardarMenuFecha(supabase, menu);
 }
+
+// Estas RPC solo tienen EXECUTE para service_role; nunca se llama desde el navegador.
+export async function previewEntregasAdmin(fecha) {
+  const { data, error } = await supabase.rpc('preview_entregas_admin', { p_fecha: fecha });
+  if (error) throw error;
+  if (!data || !Array.isArray(data.items)) throw new Error('La base no devolvió la vista previa.');
+  return data;
+}
+
+export async function confirmarEntregasAdmin(d) {
+  const { data, error } = await supabase.rpc('confirmar_entregas_admin', {
+    p_fecha: d.fecha, p_items: d.items, p_motivo: d.motivo,
+    p_confirmado: d.confirmado, p_idempotencia: d.idempotencia
+  });
+  if (error) throw error;
+  if (data?.ok !== true) throw new Error('La base no confirmó el lote.');
+  return data;
+}

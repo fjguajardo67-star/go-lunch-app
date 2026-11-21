@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import { ZONAS } from './menu.js';
 import { logos, fechaExcel, turno, horaExcel, instanteLocal, columna, encabezado, estiloFila, detalle } from './formato-excel.js';
 import { prepararReportePeriodo } from './reporte-periodo.js';
+import { ENTREGA_ADMINISTRADOR } from './reporte-entregas.js';
 
 // El mismo modelo de fechas, selección y estados que el PDF. Ningún dato de
 // empleados se manda a servicios externos ni se agrega teléfono al archivo.
@@ -17,9 +18,9 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
   const resumen = encabezado(wb, 'Resumen', 'Resumen de comidas y entregas', anchos, d, imagenes);
   const entregas = d.dias.flatMap(dia => dia.grupos.filter(g => !g.incidencia).flatMap(g => g.filas.map(f => [
     fechaExcel(dia.fecha), f.numero, f.nombre, f.platillo, f.servicio, f.folio, turno(g.turno), g.zona_texto,
-    horaExcel(f.horario), horaExcel(f.hora_registrada === 'Conciliada' ? '' : f.hora_registrada),
-    f.hora_registrada === 'Conciliada' ? 'Conciliada' : 'Registrada',
-    f.hora_registrada === 'Conciliada' ? 'Hora real no registrada' : f.fecha_registrada ? `Registro: ${f.fecha_registrada}` : null
+    horaExcel(f.horario), horaExcel(f.hora_registrada === 'Admin' ? '' : f.hora_registrada),
+    f.hora_registrada === 'Admin' ? ENTREGA_ADMINISTRADOR : 'Registrada',
+    f.hora_registrada === 'Admin' ? 'Hora real no registrada · Sin puntualidad verificable' : f.fecha_registrada ? `Registro: ${f.fecha_registrada}` : null
   ])));
   const pendientes = d.resumen.sin_confirmacion.map(p => [fechaExcel(p.fecha), p.numero_empleado, p.nombre, p.platillo,
     p.tipo === 'cobertura' ? 'Cobertura' : 'Regular', p.folio || null, turno(p.turno), ZONAS[p.zona] || 'Sin zona', horaExcel(p.horario)]);
@@ -28,7 +29,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
     p.registrado_por, instanteLocal(p.registrado_en)]);
   const e = detalle(wb, 'Entregas', 'Relación de comidas entregadas',
     ['Fecha', 'N.º empleado', 'Nombre', 'Platillo', 'Servicio', 'Folio', 'Turno', 'Zona', 'Hora prevista', 'Hora de entrega', 'Confirmación', 'Observación'],
-    [14, 17, 48, 33, 27, 34, 14, 20, 16, 16, 18, 31], entregas, d, imagenes, [9, 10]);
+    [14, 17, 48, 33, 27, 34, 14, 20, 16, 16, 38, 31], entregas, d, imagenes, [9, 10]);
   const p = detalle(wb, 'Pendientes_Registro', 'Pedidos pendientes de registro',
     ['Fecha', 'N.º empleado', 'Nombre', 'Platillo', 'Servicio', 'Folio', 'Turno', 'Zona', 'Hora prevista'],
     [14, 17, 48, 33, 27, 34, 14, 20, 16], pendientes, d, imagenes, [9]);
@@ -73,7 +74,7 @@ export async function crearExcelOperacion(ini, fin, comidas, opciones = {}) {
   resumen.getRow(totalFila + 4).values = [null, d.resumen.entrega.entregados, d.resumen.entrega.tardios, d.resumen.entrega.indeterminados];
   estiloFila(resumen.getRow(totalFila + 4), anchos);
   for (const [offset, texto] of [
-    [7, 'Las entregas conciliadas se incluyen en Entregas. Su hora real no quedó registrada.'],
+    [7, 'Las entregas reportadas por el administrador se incluyen en Entregas. Su hora real no quedó registrada.'],
     [8, 'Una comida pendiente de registro requiere conciliación; no acredita que el empleado no la haya recogido.']
   ]) {
     const n = totalFila + offset; resumen.mergeCells(`A${n}:I${n}`); resumen.getCell(`A${n}`).value = texto;

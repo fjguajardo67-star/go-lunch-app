@@ -45,7 +45,7 @@
       const filas = elegidas.map(({fila:f,indice}) => {
         const servicio = f.tipo === 'cobertura' ? (f.origen === 'extraordinaria' ? 'Cobertura extraordinaria' : 'Cobertura') : 'Regular';
         let estado = escapar(ESTADOS[f.estado] || 'Sin estado');
-        if (f.entrega_conciliada_en && !f.no_surtido_en) estado += meta('Confirmación administrativa') + meta('Confirmó: ' + f.entrega_conciliada_por + ' · ' + registro(f.entrega_conciliada_en)) + meta(f.entrega_conciliacion_motivo);
+        if (f.entrega_conciliada_en && !f.no_surtido_en) estado += meta('Reportada como entregada por el administrador') + meta('Confirmó: ' + f.entrega_conciliada_por + ' · ' + registro(f.entrega_conciliada_en)) + meta(f.entrega_conciliacion_motivo);
         if (f.no_surtido_en) estado += meta(f.no_surtido_motivo) + meta('Registró: ' + f.no_surtido_por + ' · ' + registro(f.no_surtido_en));
         else if (f.id && puedeIncidencia(datos.fecha)) estado += '<button class="dash-incidencia" id="dash-incidencia-' + indice + '" type="button" data-incidencia="' + indice + '">Registrar no surtido</button>';
         if (f.estado === 'tardia') estado += meta(f.motivo_tardia ? motivo(f.motivo_tardia) : 'Sin motivo registrado');
