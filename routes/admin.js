@@ -23,6 +23,7 @@ import { prepararReportePeriodo, htmlReportePeriodo } from '../services/reporte-
 import { crearExcelOperacion } from '../services/reporte-operacion-excel.js';
 import { crearExcelFacturacion, validarCostoFacturacion } from '../services/reporte-facturacion-excel.js';
 import { validarIncidencia, errorIncidencia } from '../services/incidencias.js';
+import { validarFechaEntregasAdmin, validarEntregasAdmin, errorEntregasAdmin } from '../services/entregas-admin.js';
 
 export const adminRouter = express.Router();
 
@@ -31,6 +32,27 @@ adminRouter.use(autorizarPanel);
 adminRouter.get('/sesion', (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json({ usuario: req.rolPanel, rol: req.rolPanel });
+});
+
+// Confirmación administrativa: atribución fija del servidor, sin hora física.
+adminRouter.get('/entregas-admin/:fecha', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    res.json(await db.previewEntregasAdmin(validarFechaEntregasAdmin(req.params.fecha)));
+  } catch (err) {
+    const e = errorEntregasAdmin(err);
+    res.status(e.status).json({ error: e.mensaje });
+  }
+});
+
+adminRouter.post('/entregas-admin', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    res.json(await db.confirmarEntregasAdmin(validarEntregasAdmin(req.body)));
+  } catch (err) {
+    const e = errorEntregasAdmin(err);
+    res.status(e.status).json({ error: e.mensaje });
+  }
 });
 
 // ── Empleados ───────────────────────────────────────────────────

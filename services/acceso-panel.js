@@ -25,6 +25,9 @@ export function autorizarPanel(req, res, next) {
     return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
   }
   req.rolPanel = rol;
+  if (rol !== 'admin' && /^\/entregas-admin(?:\/|$)/i.test(req.path)) {
+    return res.status(403).json({ error: 'Solo el administrador puede consultar y confirmar entregas omitidas.' });
+  }
   const escritura = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
   if (rol === 'monitoreo' && escritura) {
     return res.status(403).json({ error: 'Monitoreo es de solo lectura: puedes consultar y descargar reportes, sin modificar registros.' });
