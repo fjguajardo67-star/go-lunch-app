@@ -26,7 +26,7 @@ El pedido personal no requiere cuenta ni contraseña: localiza al empleado con s
 - Turno y zona son variables operativas; pueden venir de RRHH, de un pedido previo o elegirse para el pedido actual.
 - La aplicación web es el canal principal mientras Meta/WhatsApp permanece sin verificar.
 - El panel, la página del empleado, cocina y reparto forman un solo flujo operativo.
-- Desde el 7 de noviembre de 2026 las zonas son ASLA (LZCA, fuera del puerto) y REFIS (LZCR, dentro del puerto). Turno A: 10:00 AM en ambos patios. Turno B: 6:00 PM en ASLA y 5:00 PM en REFIS.
+- Desde el 7 de noviembre de 2026 las zonas son ASLA (LZCA, fuera del puerto) y REFIS (LZCR, dentro del puerto). Turno A: 10:00 AM en ambos patios. Turno B: 6:00 PM en ASLA y 5:30 PM en REFIS desde el 20 de noviembre de 2026 (antes, 5:00 PM). El historial conserva el horario vigente en cada fecha.
 - Los supervisores pueden registrar varios folios de cobertura para hoy, cada uno con turno A o B y horas extras, zona, responsable y hora de entrega propios. Crear, modificar y cancelar requiere al menos dos horas antes de la entrega; un cambio de horario también respeta el límite del horario anterior. El menú especial es compartido. Cocina recibe avisos por folio nuevo o modificado y puede imprimir cada pedido por separado o consultar el consolidado del turno.
 
 ## Capabilities and Constraints

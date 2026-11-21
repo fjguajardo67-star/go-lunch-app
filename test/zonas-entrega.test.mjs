@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { horaEntrega, limiteEntrega, esEntregaTardia, ZONAS } from '../services/menu.js';
+import { horaEntrega, horaTexto, limiteEntrega, esEntregaTardia, ZONAS } from '../services/menu.js';
 
 const fecha = '2026-11-07';
 const asla = 'zona_vdc';
@@ -13,6 +13,51 @@ test('dos patios, con mañana común y tarde por zona', () => {
   for (const zona of [asla, refis]) assert.equal(horaEntrega('turno_a', zona, fecha), '10:00');
   assert.equal(horaEntrega('turno_b', asla, fecha), '18:00');
   assert.equal(horaEntrega('turno_b', refis, fecha), '17:00');
+});
+
+test('REFIS cambia a 17:30 desde el 20 de noviembre sin recalificar el historial', () => {
+  assert.equal(horaEntrega('turno_b', refis, '2026-11-19'), '17:00');
+  for (const dia of ['2026-11-20', '2026-11-21', '2027-01-01']) {
+    assert.equal(horaEntrega('turno_b', refis, dia), '17:30');
+    assert.equal(horaEntrega('turno_b', asla, dia), '18:00');
+    for (const zona of [asla, refis]) assert.equal(horaEntrega('turno_a', zona, dia), '10:00');
+  }
+  assert.equal(horaEntrega('turno_b', refis), '17:30');
+  assert.equal(horaTexto('turno_b', null, '2026-11-19'), 'REFIS 5:00 PM · ASLA 6:00 PM');
+  assert.equal(horaTexto('turno_b', null, '2026-11-20'), 'REFIS 5:30 PM · ASLA 6:00 PM');
+  assert.equal(horaTexto('turno_b'), 'REFIS 5:30 PM · ASLA 6:00 PM');
+});
+
+test('la tolerancia de REFIS parte de las 17:30 desde la nueva vigencia', () => {
+  const dia = '2026-11-20';
+  assert.equal(limiteEntrega(dia, 'turno_b', refis).toFormat('HH:mm'), '17:45');
+  assert.equal(esEntregaTardia(dia, 'turno_b', dia + 'T17:45:00-06:00', refis), false);
+  assert.equal(esEntregaTardia(dia, 'turno_b', dia + 'T17:45:01-06:00', refis), true);
+  assert.equal(limiteEntrega('2026-11-19', 'turno_b', refis).toFormat('HH:mm'), '17:15');
+  assert.equal(limiteEntrega(dia, 'turno_b', asla).toFormat('HH:mm'), '18:15');
+});
+
+test('reparto sin conexion ignora el horario cacheado anterior para REFIS', () => {
+  const html = readFileSync(new URL('../public/entrega.html', import.meta.url), 'utf8');
+  const fn = html.match(/function limiteDelTurno\([\s\S]*?\n  }/)[0];
+  const browser = vm.createContext({});
+  vm.runInContext(readFileSync(new URL('../public/operacion.js', import.meta.url), 'utf8'), browser);
+  vm.runInContext(`const FECHA='2026-11-20', ZONA='${refis}', TOLERANCIA_MIN=15;
+    const TURNO_HORA={turno_a:'10:00',turno_b:'17:00'}; ${fn}`, browser);
+  assert.equal(vm.runInContext("limiteDelTurno('turno_b').getHours()", browser), 17);
+  assert.equal(vm.runInContext("limiteDelTurno('turno_b').getMinutes()", browser), 45);
+  assert.equal(vm.runInContext("limiteDelTurno('turno_b', 'zona_vdc').getHours()", browser), 18);
+  assert.equal(vm.runInContext("limiteDelTurno('turno_b', 'zona_vdc').getMinutes()", browser), 15);
+});
+
+test('coberturas con hora propia la conservan y regulares usan el nuevo horario', async () => {
+  const { horaComida, limiteComida } = await import('../services/comidas.js');
+  const regular = { fecha_menu:'2026-11-20', turno:'turno_b', zona:refis };
+  assert.equal(horaComida(regular), '17:30');
+  assert.equal(limiteComida(regular).toFormat('HH:mm'), '17:45');
+  const cobertura = { ...regular, entrega_programada_en:'2026-11-20T17:00:00-06:00' };
+  assert.equal(horaComida(cobertura), '17:00');
+  assert.equal(limiteComida(cobertura).toFormat('HH:mm'), '17:15');
 });
 
 test('puntualidad por patio, con límite inclusivo de 15 minutos', () => {
@@ -67,4 +112,25 @@ test('etiquetas y comandas muestran el patio y hora sin alterar los QR', async (
   assert.match(cobertura, /ASLA · 6:00 PM/);
   assert.match(cobertura, /REFIS · 5:00 PM/);
   assert.match(cobertura, /EX\|codigo-0\|2026-11-07/);
+});
+
+test('etiquetas, comandas y checklist del 20 muestran REFIS 5:30 PM y conservan los QR', async () => {
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_KEY = 'test-only-not-a-real-key';
+  const { htmlEtiquetas, htmlComanda } = await import('../services/cocina.js');
+  const { htmlEtiquetasCobertura } = await import('../services/cocina-cobertura.js');
+  const { prepararChecklistReparto } = await import('../services/checklist-reparto.js');
+  const dia='2026-11-20';
+  const pedidos=[refis,asla].map((zona,i)=>({zona,turno:'turno_b',opcion_texto:'Pollo',empleados:{numero_empleado:String(i+1),nombre:'Ejemplo'}}));
+  const etiquetas=htmlEtiquetas({fecha:dia,pedidos});
+  assert.match(etiquetas,/REFIS &nbsp;·&nbsp; 17:30/);
+  assert.match(etiquetas,/ASLA &nbsp;·&nbsp; 18:00/);
+  assert.match(etiquetas,/1\|2026-11-20/);
+  assert.match(htmlComanda({fecha:dia,total:0,resumen:[]}),/REFIS 5:30 PM · ASLA 6:00 PM/);
+  const items=pedidos.map((p,i)=>({empleado_nombre_snapshot:'Ejemplo',codigo_entrega:'codigo-'+i,secuencia:1,solicitud:{zona:p.zona,folio:'F'+i,total_porciones:1}}));
+  const cobertura=htmlEtiquetasCobertura({fecha:dia,items});
+  assert.match(cobertura,/REFIS · 5:30 PM/);
+  assert.match(cobertura,/ASLA · 6:00 PM/);
+  assert.match(cobertura,/EX\|codigo-0\|2026-11-20/);
+  assert.deepEqual(prepararChecklistReparto(dia,pedidos).lotes.map(l=>l.horario),['5:30 PM','6:00 PM']);
 });

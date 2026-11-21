@@ -5,14 +5,17 @@
   const ZONAS = Object.freeze({ zona_vdc: 'ASLA (LZCA)', zona_refris: 'REFIS (LZCR)' });
   const ZONA_DESC = Object.freeze({ zona_vdc: 'Fuera del puerto', zona_refris: 'Dentro del puerto' });
   const VIGENCIA = '2026-11-07';
+  const VIGENCIA_REFIS_1730 = '2026-11-20';
   const TURNOS = Object.freeze({ turno_a: 'Turno A — matutino', turno_b: 'Turno B — vespertino' });
 
-  function horaEntrega(turno, zona, fecha = VIGENCIA) {
+  function horaEntrega(turno, zona, fecha = VIGENCIA_REFIS_1730) {
     if (!Object.hasOwn(TURNOS, turno)) return null;
     // El cambio no recalifica entregas históricas con un horario nuevo.
     if (fecha < VIGENCIA) return turno === 'turno_a' ? '10:00' : '17:00';
     if (!Object.hasOwn(ZONAS, zona)) return null;
-    return turno === 'turno_a' ? '10:00' : (zona === 'zona_vdc' ? '18:00' : '17:00');
+    if (turno === 'turno_a') return '10:00';
+    if (zona === 'zona_vdc') return '18:00';
+    return fecha >= VIGENCIA_REFIS_1730 ? '17:30' : '17:00';
   }
 
   function horarioZona(zona, fecha) {
@@ -23,7 +26,7 @@
     const hora = horaEntrega(turno, zona, fecha);
     if (!hora) {
       if (turno === 'turno_a') return '10:00 AM';
-      if (turno === 'turno_b') return 'REFIS 5:00 PM · ASLA 6:00 PM';
+      if (turno === 'turno_b') return `REFIS ${horaTexto(turno, 'zona_refris', fecha)} · ASLA ${horaTexto(turno, 'zona_vdc', fecha)}`;
       return '';
     }
     const [h, m] = hora.split(':');

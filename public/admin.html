@@ -1417,7 +1417,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
     </div>
     <h2 id="cov-alarma-titulo">La comanda final está lista</h2>
-    <p id="cov-alarma-texto">Cocina necesita este consolidado: REFIS 5:00 PM y ASLA 6:00 PM.</p>
+    <p id="cov-alarma-texto">Cocina necesita este consolidado: REFIS 5:30 PM y ASLA 6:00 PM.</p>
     <dl class="cov-alerta-resumen">
       <div><dt>Solicitudes</dt><dd id="cov-alarma-solicitudes">0</dd></div>
       <div><dt>Alimentos</dt><dd id="cov-alarma-porciones">0</dd></div>
@@ -3456,7 +3456,7 @@
     document.getElementById('cov-alarma-titulo').textContent = datos.solicitud ? 'Pedido de cobertura por imprimir' : 'La comanda final está lista';
     document.getElementById('cov-alarma-texto').textContent = datos.solicitud
       ? datos.folio + ' · ' + (datos.turno === 'turno_a' ? 'Turno A' : 'Turno B') + ' · ' + zonaTxt(datos.zona) + ' · Entrega ' + horaTxt(datos.entrega_programada_en) + ' · Imprime este folio actualizado.'
-      : (datos.turno === 'turno_a' ? 'Turno A · entrega 10:00 AM.' : 'Turno B y horas extras · REFIS 5:00 PM y ASLA 6:00 PM.');
+      : (datos.turno === 'turno_a' ? 'Turno A · entrega 10:00 AM.' : 'Turno B y horas extras · ' + GoLunchOperacion.horaTexto('turno_b', null, fecha) + '.');
     document.getElementById('cov-alarma-solicitudes').textContent = coberturaAlarma.total_solicitudes;
     document.getElementById('cov-alarma-porciones').textContent = coberturaAlarma.total_porciones;
     document.getElementById('cov-alarma-comanda').classList.remove('oculto');
