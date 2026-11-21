@@ -110,6 +110,7 @@
       form.reset(); contar(); $('error').textContent='';
       $('fecha').textContent='Servicio: '+dia.split('-').reverse().join('/');
       dialogo.showModal();
+      dialogo.scrollTop=0; lista.scrollTop=0;
       await cargar(dia);
     } };
   }

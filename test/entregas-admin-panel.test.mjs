@@ -85,6 +85,12 @@ test('cerrar durante una consulta descarta su respuesta y no repinta una apertur
   const carga=p.panel.abrir('2026-11-20');p.dialogo.close();resolver({items});await carga;
   assert.equal(p.elementos.lista.innerHTML,'');assert.equal(p.dialogo.open,false);
 });
+test('volver a abrir empieza en la fecha y filtros, sin conservar el desplazamiento anterior',async()=>{
+  const p=preparar();await p.panel.abrir('2026-11-20');
+  p.dialogo.scrollTop=600;p.elementos.lista.scrollTop=150;p.dialogo.close();
+  await p.panel.abrir('2026-11-20');
+  assert.equal(p.dialogo.scrollTop,0);assert.equal(p.elementos.lista.scrollTop,0);
+});
 test('doble envio registra una vez y Cancelar permite salir durante la espera',async()=>{
   let resolver;const p=preparar({api:async(_url,opts)=>!opts?{items}:new Promise(r=>{resolver=r;})});
   await p.panel.abrir('2026-11-20');p.seleccionar();p.confirmar();const envio=p.form.disparar('submit');
