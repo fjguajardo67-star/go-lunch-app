@@ -25,7 +25,7 @@ test('Pedidos reúne comidas de la misma persona, conserva horario propio, folio
  assert.equal((tabla.match(/scope="row"/g)||[]).length,4);assert.equal((tabla.match(/N.º 00001/g)||[]).length,4);
  assert.match(tabla,/Cobertura extraordinaria/);assert.match(tabla,/CE-QA-01/);assert.match(tabla,/18:20/);assert.match(tabla,/17:04/);assert.doesNotMatch(tabla,/02:00/);
  assert.equal((tabla.match(/class="pedido-entregado"/g)||[]).length,2);
- assert.match(tabla,/Confirmado por administración/);assert.match(tabla,/No surtido · Sin cargo/);assert.match(tabla,/Pendiente de registro/);
+ assert.match(tabla,/Reportada como entregada por el administrador/);assert.match(tabla,/No surtido · Sin cargo/);assert.match(tabla,/Pendiente de registro/);
  assert.match(estado,/4 comidas: 3 regulares \+ 1 cobertura/);assert.match(estado,/Entregadas: 2 · Pendientes de registro: 1 · No surtidas sin cargo: 1/);
  assert.match(tabla,/tabindex="0" role="region"/);assert.match(tabla,/<caption>/);assert.match(tabla,/<thead>/);assert.equal(p.elementos.pedidosBox.atributos['aria-busy'],undefined);
 });
