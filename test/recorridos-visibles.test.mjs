@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const html=readFileSync(new URL('../public/entrega.html',import.meta.url),'utf8');
 const funciones=['claveBitacora','guardarBitacora','planesDeRuta','rutasRegistradas','rutaEnCurso',
-  'seleccionarPuntoDeRuta','pintarBitacora','guardarPasoRuta','accionBitacora','activarRecorrido','prepararBotonesRecorrido']
+  'registrarPasoDeLlegada','comenzarEntrega','seleccionarPuntoDeRuta','pintarBitacora','guardarPasoRuta','accionBitacora','activarRecorrido','prepararBotonesRecorrido']
   .map(nombre=>html.match(new RegExp('(?:async )?function '+nombre+'\\([\\s\\S]*?\\n  }'))[0]).join('\n');
 const fecha='2026-11-16';
 
@@ -98,4 +98,88 @@ test('comandos nativos y alternativa de clic activan una sola vez; aria-disabled
     q.c.activarRecorrido({source:{getAttribute:()=> 'true'},command:'--iniciar-turno_b'});
     assert.equal(llamadas.length,1);
   }
+});
+
+
+test('ASLA abierta con REFIS elegido avisa, bloquea marca equivocada y conserva 44 marcas y las demás colas',async()=>{
+  const q=preparar();await q.iniciar('turno_a_asla');
+  const pendientes=Array.from({length:43},(_,i)=>({fecha:'2026-10-01',ruta:'turno_a_asla',paso:0,ocurrido_en:`2026-10-01T10:${String(i).padStart(2,'0')}:00-06:00`}));
+  q.c.BITACORA.pendientes.push(...pendientes);
+  q.c.BITACORA.rechazadas=[{evidencia:'conservar'}];
+  q.c.LLEGADAS=[{fecha,zona:'zona_vdc',turno:'turno_a'}];
+  q.c.ZONA='zona_refris';q.c.servicioActual=()=>({turno:'turno_a',pendientes:20});
+  const antes=JSON.stringify(q.c.BITACORA),cola=JSON.stringify(q.c.COLA),llegadas=JSON.stringify(q.c.LLEGADAS);
+  q.c.pintarBitacora();
+  assert.match(q.nodo('bitacora-estado').textContent,/no corresponde/);
+  assert.match(q.nodo('bitacora-estado').textContent,/44 marca/);
+  assert.equal(q.nodo('bitacora-accion').disabled,true);
+  assert.ok(!q.nodo('bitacora-inicios').classList.contains('oculto'));
+  assert.match(q.nodo('bitacora-inicios').innerHTML,/Iniciar Turno A · REFIS/);
+  await q.iniciar();assert.equal(JSON.stringify(q.c.BITACORA),antes);
+  assert.equal(q.c.registrarPasoDeLlegada('turno_a'),null);
+  let llegada;
+  q.c.recordarServicio=()=>{};q.c.llegadaRegistrada=()=>false;
+  q.c.registrarLlegada=async marca=>{llegada={marca,zona:q.c.ZONA};};
+  q.c.TURNO='turno_a';q.c.MODO_LECTOR=true;q.c.enfocarLector=()=>{};
+  await q.c.comenzarEntrega();
+  assert.deepEqual(llegada,{marca:null,zona:'zona_refris'});
+  assert.equal(q.c.SERVICIO_INICIADO,true);
+  assert.equal(JSON.stringify(q.c.BITACORA),antes);
+  await q.iniciar('turno_a_refis');
+  assert.equal(q.c.rutaEnCurso().plan.id,'turno_a_refis');
+  assert.equal(q.c.BITACORA.pendientes.length,45);
+  assert.equal(JSON.stringify(q.c.BITACORA.pendientes.slice(0,44)),JSON.stringify(JSON.parse(antes).pendientes));
+  assert.equal(JSON.stringify(q.c.COLA),cola);assert.equal(JSON.stringify(q.c.LLEGADAS),llegadas);
+  assert.equal(q.c.BITACORA.rechazadas[0].evidencia,'conservar');
+  const guardada=JSON.parse(q.almacen.get('qa_999'));
+  assert.equal(guardada.rutaSeleccionada,fecha+'|turno_a_refis');
+  assert.match(q.nodo('bitacora-inicios').innerHTML,/Continuar Turno A · ASLA/);
+  await q.iniciar('turno_a_asla');assert.equal(q.c.BITACORA.pendientes.length,45);
+  assert.equal(q.c.ZONA,'zona_vdc');
+  await q.iniciar('turno_a_refis');assert.equal(q.c.BITACORA.pendientes.length,45);
+  assert.equal(q.c.ZONA,'zona_refris');
+  q.c.BITACORA=guardada;assert.equal(q.c.rutaEnCurso().plan.id,'turno_a_refis');
+});
+
+test('ruta de ayer dentro de 24 h no cambia el punto de hoy ni permite fabricar un cierre',async()=>{
+  const q=preparar();
+  q.c.BITACORA.pendientes=[{fecha:'2026-11-15',ruta:'turno_a_asla',paso:0,ocurrido_en:'2026-11-15T20:00:00-06:00'}];
+  q.c.ZONA='zona_refris';
+  const antes=JSON.stringify(q.c.BITACORA);
+  q.c.seleccionarPuntoDeRuta(q.c.rutaEnCurso());q.c.pintarBitacora();
+  assert.equal(q.c.ZONA,'zona_refris');assert.equal(q.nodo('bitacora-accion').disabled,true);
+  await q.iniciar();assert.equal(JSON.stringify(q.c.BITACORA),antes);
+  await q.iniciar('turno_a_refis');assert.equal(q.c.rutaEnCurso().fecha,fecha);
+  assert.equal(q.c.BITACORA.pendientes[0].fecha,'2026-11-15');
+});
+
+test('turno discordante bloquea acción directa sin alterar la evidencia',async()=>{
+  const q=preparar();await q.iniciar('turno_a_refis');
+  q.c.servicioActual=()=>({turno:'turno_b',pendientes:20});
+  const antes=JSON.stringify(q.c.BITACORA);q.c.pintarBitacora();
+  assert.equal(q.nodo('bitacora-accion').disabled,true);
+  await q.iniciar();assert.equal(JSON.stringify(q.c.BITACORA),antes);
+  assert.equal(q.c.registrarPasoDeLlegada('turno_b'),null);
+});
+
+
+test('Comenzar entrega guarda la llegada real de REFIS sin marcar ASLA ni tocar su cola',async()=>{
+  const q=preparar();await q.iniciar('turno_a_asla');
+  q.c.ZONA='zona_refris';q.c.TURNO='turno_a';q.c.MODO_LECTOR=true;
+  q.c.LLEGADAS=[];q.c.LLEGADAS_DIA=[];q.c.PUNTOS=[];q.c.PERMISO_UBICACION='denegado';
+  q.c.servicioActual=()=>({turno:'turno_a',pendientes:20});
+  q.c.recordarServicio=()=>{};q.c.enfocarLector=()=>{};q.c.flash=()=>{};
+  q.c.LS.llegadas='qa_llegadas';q.c.guardar=(k,v)=>q.almacen.set(k,JSON.stringify(v));
+  const funcionesLlegada=['turnoEnCurso','llegadaRegistrada','metrosEntre','registrarLlegada']
+    .map(nombre=>html.match(new RegExp('(?:async )?function '+nombre+'\\([\\s\\S]*?\\n  }'))?.[0]
+      || html.match(new RegExp('function '+nombre+'\\([^\\n]+'))[0]).join('\n');
+  vm.runInContext(funcionesLlegada,q.c);
+  const antes=JSON.stringify(q.c.BITACORA),cola=JSON.stringify(q.c.COLA);
+  await q.c.comenzarEntrega();
+  const [llegada]=JSON.parse(q.almacen.get('qa_llegadas'));
+  assert.equal(llegada.zona,'zona_refris');assert.equal(llegada.turno,'turno_a');
+  assert.equal(llegada.fecha,fecha);assert.equal(llegada.lat,null);
+  assert.equal(q.c.LLEGADAS.length,1);
+  assert.equal(JSON.stringify(q.c.BITACORA),antes);assert.equal(JSON.stringify(q.c.COLA),cola);
+  await q.c.comenzarEntrega();assert.equal(q.c.LLEGADAS.length,1);
 });
