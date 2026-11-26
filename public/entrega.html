@@ -1161,13 +1161,14 @@
 
   function rutaEnCurso() {
     const permitidas=planesDeRuta();
-    return rutasRegistradas().find(ruta => ruta.marcas[0] && ruta.siguiente > 0 && permitidas.includes(ruta.plan)
+    const abiertas=rutasRegistradas().filter(ruta => ruta.marcas[0] && ruta.siguiente > 0 && permitidas.includes(ruta.plan)
       && (ruta.fecha === FECHA || ahoraComedor().getTime() - Date.parse(ruta.marcas[0].ocurrido_en) < 86400000));
+    return abiertas.find(ruta => BITACORA.rutaSeleccionada === ruta.fecha + '|' + ruta.plan.id) || abiertas[0];
   }
 
   function seleccionarPuntoDeRuta(ruta) {
     const punto=ruta?.plan.pasos[ruta.siguiente];
-    if (punto?.zona && punto.zona !== ZONA) cambiarContexto(punto.zona, true);
+    if (ruta?.fecha === FECHA && punto?.zona && punto.zona !== ZONA) cambiarContexto(punto.zona, true);
   }
 
   function pintarBitacora() {
@@ -1179,14 +1180,17 @@
     $('bitacora-ruta').classList.toggle('oculto', !FECHA && !activa);
     $('bitacora-titulo').textContent=activa?.plan.titulo || 'Ruta del turno';
     const inicios=$('bitacora-inicios');
-    const html=opciones.map(plan => `<button class="btn sec" type="button" commandfor="bitacora-ruta" command="--iniciar-${plan.id}" aria-disabled="${!listaDeHoy()}">Iniciar ${esc(plan.titulo)}</button>`).join('');
-    if (!activa && inicios.innerHTML !== html) inicios.innerHTML=html;
-    inicios.classList.toggle('oculto', !!activa || !opciones.length);
+    const paso=activa?.plan.pasos[activa.siguiente];
+    const discordante=!!activa && (activa.fecha !== FECHA || (paso?.zona && ZONA && paso.zona !== ZONA)
+      || (servicioActual() && servicioActual().turno !== activa.plan.turno));
+    const otras=registradas.filter(ruta => ruta.siguiente > 0 && ruta.plan !== activa?.plan && planesDeRuta().includes(ruta.plan));
+    const html=otras.map(ruta => `<button class="btn sec" type="button" commandfor="bitacora-ruta" command="--iniciar-${ruta.plan.id}">Continuar ${esc(ruta.plan.titulo)}</button>`).join('') + opciones.map(plan => `<button class="btn sec" type="button" commandfor="bitacora-ruta" command="--iniciar-${plan.id}" aria-disabled="${!listaDeHoy()}">Iniciar ${esc(plan.titulo)}</button>`).join('');
+    if (inicios.innerHTML !== html) inicios.innerHTML=html;
+    inicios.classList.toggle('oculto', (!discordante && !!activa && !otras.length) || (!opciones.length && !otras.length));
     $('bitacora-controles').classList.toggle('oculto', !activa);
     const accion=$('bitacora-accion');
-    const paso=activa?.plan.pasos[activa.siguiente];
     accion.textContent=paso?.boton || 'Continuar ruta';
-    accion.disabled=!activa;
+    accion.disabled=!activa || discordante;
     const ultima=activa?.marcas.at(-1);
     const completadas=registradas.filter(ruta => ruta.siguiente < 0);
     const resumen=ultima ? activa.plan.pasos[ultima.paso].titulo + ' · ' + horaLocal(ultima.ocurrido_en)
@@ -1195,17 +1199,18 @@
       : ocupadas.length && !opciones.length ? 'Otro repartidor ya inició las rutas disponibles.'
       : opciones.length ? 'Al salir del comedor, toca tu recorrido. El botón registra tu salida.' : '';
     const pendientes=BITACORA.pendientes.length;
-    $('bitacora-estado').textContent=[AVISO_BITACORA || (!listaDeHoy() && !activa ? ayuda : resumen || ayuda),
+    $('bitacora-estado').textContent=[discordante ? 'La ruta abierta no corresponde al punto, turno o fecha elegidos. Puedes comenzar el servicio elegido sin cambiar esa ruta, o elegir otro recorrido. Las marcas se conservan.' : '', AVISO_BITACORA || (!listaDeHoy() && !activa ? ayuda : resumen || ayuda),
       pendientes ? `${pendientes} marca(s) por subir` : ''].filter(Boolean).join(' · ');
     $('bitacora-sincronizar').classList.toggle('oculto', !pendientes);
   }
 
-  function guardarPasoRuta(plan, fecha, paso) {
+  function guardarPasoRuta(plan, fecha, paso, seleccionar = false) {
     const pos=posicionUtil();
     const marca={ fecha, ruta: plan.id, paso, ocurrido_en: ahoraComedor().toISOString(),
       lat: pos?.lat ?? null, lon: pos?.lon ?? null, precision_m: pos?.precision_m ?? null };
     try {
-      guardarBitacora({ ...BITACORA, pendientes: [...BITACORA.pendientes, marca] });
+      guardarBitacora({ ...BITACORA, ...(seleccionar ? { rutaSeleccionada: fecha + '|' + plan.id } : {}),
+        pendientes: [...BITACORA.pendientes, marca] });
       AVISO_BITACORA='';
       return marca;
     } catch {
@@ -1224,9 +1229,18 @@
   }
 
   async function accionBitacora(recorridoId) {
-    const ruta=rutaEnCurso();
+    let ruta=rutaEnCurso();
+    if (recorridoId) {
+      const abierta=rutasRegistradas().find(x => x.fecha === FECHA && x.plan.id === recorridoId && x.siguiente > 0);
+      if (abierta && planesDeRuta().includes(abierta.plan)) {
+        if (ruta?.fecha === abierta.fecha && ruta.plan === abierta.plan) return;
+        guardarBitacora({ ...BITACORA, rutaSeleccionada: FECHA + '|' + recorridoId });
+        seleccionarPuntoDeRuta(abierta); pintar(); return;
+      }
+      ruta=null;
+    }
     // Un segundo evento del botón de inicio nunca adelanta la llegada.
-    if ((recorridoId && ruta) || (!recorridoId && !ruta)) return;
+    if (!recorridoId && !ruta) return;
     const plan=ruta?.plan || GoLunchBitacora.porId(recorridoId);
     if (!plan || !planesDeRuta().includes(plan)) return;
     const fecha=ruta?.fecha || FECHA;
@@ -1234,13 +1248,16 @@
       || (BITACORA.fecha === FECHA && BITACORA.ocupadas?.includes(plan.id)))) return;
     const paso=ruta?.siguiente ?? 0;
     const waypoint=plan.pasos[paso];
+    if (ruta && (fecha !== FECHA || (waypoint.zona && ZONA && waypoint.zona !== ZONA)
+      || (servicioActual() && servicioActual().turno !== plan.turno))) return;
     if (waypoint.llegada && !SERVICIO_INICIADO && fecha === FECHA && waypoint.zona === ZONA
       && servicioActual()?.turno === plan.turno && servicioActual().pendientes) {
       return comenzarEntrega();
     }
-    if (!guardarPasoRuta(plan, fecha, paso)) return;
+    if (!guardarPasoRuta(plan, fecha, paso, !!recorridoId)) return;
     if (waypoint.zona && !waypoint.llegada && ZONA === waypoint.zona && SERVICIO_INICIADO) cerrarEscaneoDeServicio();
-    seleccionarPuntoDeRuta(rutaEnCurso());
+    const siguiente=rutaEnCurso();
+    if (siguiente?.plan === plan && siguiente.fecha === fecha) seleccionarPuntoDeRuta(siguiente);
     pintar();
     if (recorridoId) $('bitacora-accion').focus({preventScroll:true});
     if (navigator.onLine) sincronizar();
