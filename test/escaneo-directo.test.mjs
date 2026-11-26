@@ -115,3 +115,8 @@ test('cerrar cámara conserva pedidos y colas sin crear marcas de ruta',()=>{
  vm.runInContext(fn('detenerCamara'),q.c);q.c.detenerCamara();
  assert.equal(q.c.escaneando,false);assert.equal(JSON.stringify({pedidos:q.c.PEDIDOS,cola:q.c.COLA}),antes);
 });
+
+test('al cambiar de día puede cerrar la cámara, aunque deba descargar la nueva jornada para abrirla',async()=>{
+ let cierres=0;const c=vm.createContext({escaneando:true,listaDeHoy:()=>false,detenerCamara:()=>{cierres++;},flash:()=>{throw Error('No debe impedir cerrar');}});
+ vm.runInContext(fn('alternarCamara'),c);await c.alternarCamara();assert.equal(cierres,1);
+});

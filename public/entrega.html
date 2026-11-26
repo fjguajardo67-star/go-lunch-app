@@ -1801,8 +1801,8 @@
 
   // ── Cámara ────────────────────────────────────────────────
   async function alternarCamara(prueba = false) {
-    if (!prueba && !listaDeHoy()) return flash('mal','Falta la lista de hoy','Descarga el reparto con señal antes de escanear.');
     if (escaneando) return detenerCamara();
+    if (!prueba && !listaDeHoy()) return flash('mal','Falta la lista de hoy','Descarga el reparto con señal antes de escanear.');
     if (ABRIENDO_CAMARA) return;
     if (typeof jsQR !== 'function') {
       $('scan-status').textContent = 'Lector QR no disponible';
