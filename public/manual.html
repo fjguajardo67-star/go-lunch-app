@@ -404,7 +404,7 @@
     <h2>5 · Para el personal de reparto — entregar y escanear</h2>
     <span class="rol rep">Repartidor</span>
 
-    <p>Procedimiento de escaneo directo para la <b>versión v91</b>. Comprueba la versión del equipo antes de salir.</p>
+    <p>Procedimiento de escaneo directo para la <b>versión v92</b>. Comprueba la versión del equipo antes de salir.</p>
     <h3>Puntos oficiales y ubicación</h3>
     <p>Escanear no requiere configurar un punto oficial: cada comida conserva la zona de su pedido y la coordenada disponible al entregarla. Administración mantiene los puntos de ASLA y REFIS desde <b>Cocina → Reparto y puntos → Capturar con este dispositivo</b>, con un móvil físicamente en el sitio. No captures desde una PC situada en otro lugar.</p>
     <p>Las propuestas de ubicación enviadas en versiones anteriores se conservan. Gerente o administrador puede revisarlas desde una PC, comprobar zona, coordenadas, precisión y autor antes de aprobar o rechazar. La aprobación crea el punto con radio de 150 m y no reemplaza uno existente; ninguna propuesta confirma comidas. La pantalla de reparto ya no pide al operador configurar puntos.</p>
@@ -437,9 +437,9 @@
     <p>Desde Panel → Cocina abre <b>“QR permanente de prueba del escáner”</b>.
       Es el mismo código para todos los días y sirve en <b>ASLA, REFIS, Turno A y
       Turno B</b>.</p>
-    <div class="paso"><div class="n">1</div><div class="t"><b>Entra con la clave personal del repartidor</b> para comprobar sus zonas autorizadas.</div></div>
+    <div class="paso"><div class="n">1</div><div class="t"><b>Abre Entrega con tu acceso habitual.</b> La prueba de cámara funciona también con Reparto general. La sesión personal permite comprobar además las zonas autorizadas.</div></div>
     <div class="paso"><div class="n">2</div><div class="t"><b>Abre Configuración y prueba del escáner → Probar cámara sin registrar</b> y escanea el QR de prueba. No hace falta descargar pedidos para esta prueba. El código de prueba no se captura manualmente.</div></div>
-    <div class="paso"><div class="n">3</div><div class="t"><b>Debe aparecer “Prueba correcta”</b> con el nombre del repartidor y sus zonas autorizadas.</div></div>
+    <div class="paso"><div class="n">3</div><div class="t"><b>Debe aparecer “Prueba correcta”</b> con Reparto general o con el nombre y zonas del repartidor. Al reconocer el QR de prueba, la cámara se cierra automáticamente; no registra comidas.</div></div>
     <p>Para leer una etiqueta, mantén el QR completo sobre una superficie plana, sin dobleces ni reflejos, y mueve despacio el teléfono hasta enfocar. La cámara intenta enfocar automáticamente cuando el equipo lo permite. Si indica <b>Reintentando lectura</b>, está recuperándose de una imagen no disponible; si persiste, cierra y abre la cámara. Si aparece <b>Lector QR no disponible</b>, conéctate, actualiza la aplicación y vuelve a probar. Abrir la cámara o reintentar no confirma ninguna entrega por sí solo. La captura por número de empleado se conserva para etiquetas dañadas, con confirmación individual.</p>
     <div class="caja tip">
       Este QR no depende de empleado, pedido, fecha, hora, turno ni ubicación.
@@ -450,7 +450,7 @@
     <table>
       <tr><th>Aviso</th><th>Qué significa</th><th>Qué hacer</th></tr>
       <tr><td><b style="color:#1e7a22">Verde</b> con nombre</td><td>Entrega registrada</td><td>Nada — sigue con la siguiente</td></tr>
-      <tr><td><b style="color:#1e7a22">“Prueba correcta”</b></td><td>La cámara leyó el QR y el repartidor tiene zonas autorizadas</td><td>Nada se registró; la prueba valida las zonas autorizadas sin elegir recorrido</td></tr>
+      <tr><td><b style="color:#1e7a22">“Prueba correcta”</b></td><td>La cámara leyó el QR; con una sesión personal también comprueba sus zonas</td><td>Nada se registró; puedes cerrar la prueba sin cambiar de usuario</td></tr>
       <tr><td><b style="color:var(--dorado)">"Ya estaba entregada"</b></td><td>Esa etiqueta ya se escaneó antes</td><td>Verifica que no estés entregando doble</td></tr>
       <tr><td><b style="color:#c0392b">"No está en la lista"</b></td><td>Ese número no tiene pedido hoy</td><td>Revisa el número; si insiste, avisa al administrador</td></tr>
       <tr><td><b style="color:#c0392b">"Etiqueta de otro día"</b></td><td>La etiqueta es de una fecha distinta</td><td>NO la entregues — es comida de otro día</td></tr>
@@ -463,7 +463,7 @@
     <div class="caja peligro">
       <b>No se puede cambiar de usuario con entregas por subir.</b> Esos escaneos
       son tuyos: el sistema no los deja subir a nombre de alguien más. Conéctate,
-      espera a que <b>"Por subir"</b> llegue a cero y entonces cambia. La app
+      espera a que <b>"Por subir"</b> llegue a cero y entonces cambia. Al tocar Cambiar usuario, la cámara se detiene y el aviso aparece al inicio del contenido. Puedes probar el QR con Reparto general sin cerrar esta sesión. La app
       <b>nunca borra la cola</b> para resolverlo — esas entregas ya ocurrieron.
     </div>
     <p>Si tu sesión vence o el administrador la cierra, la app te pide la clave

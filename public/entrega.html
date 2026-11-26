@@ -331,6 +331,7 @@
   </div>
 
   <main>
+    <div id="avisoSync" role="status" tabindex="-1"></div>
     <section class="escaneo-directo" aria-labelledby="escaneo-titulo">
       <h1 id="escaneo-titulo">Escanea y entrega</h1>
       <p id="escaneo-ayuda">Abre la cámara y escanea el QR de cada paquete al entregarlo.</p>
@@ -403,7 +404,6 @@
     </label>
       <button class="btn sec" type="button" onclick="alternarCamara(true)">Probar cámara sin registrar</button>
     </details>
-    <div id="avisoSync"></div>
 
     <section class="ultima-entrega oculto" id="ultima-entrega" aria-label="Última entrega">
       <div class="section-heading"><h2>Última entrega</h2><span id="ultima-hora">—</span></div>
@@ -786,11 +786,14 @@
   // sin subir, porque esa cola es de quien la escaneó y el servidor la
   // rechazaría si la subiera otro. Nunca se borra la cola para resolverlo.
   function cambiarUsuario() {
+    if (escaneando) detenerCamara();
     const pendientes = COLA.length + LLEGADAS.length + BITACORA.pendientes.length;
     if (pendientes) {
-      return mostrarAviso('avisoSync',
+      mostrarAviso('avisoSync',
         'Hay ' + pendientes + ' registro(s) sin subir. Son de esta sesión: conéctate y espera a que ' +
         '"Por subir" quede en 0 antes de cambiar de usuario.', 'err');
+      $('avisoSync').focus();
+      return;
     }
     if (!confirm('¿Cerrar la sesión de ' + (SESION?.repartidor?.nombre || 'este usuario') + '?')) return;
     reiniciarContextoOperativo();
@@ -1472,9 +1475,12 @@
     }
 
     const repartidor = SESION?.repartidor;
+    // La lectura del patrón de prueba ya demuestra que la cámara funciona.
+    // No requiere cambiar de usuario ni modifica permisos o entregas.
+    if (escaneando) detenerCamara();
     if (!repartidor) {
-      flash('mal', 'Falta una sesión personal',
-        'Entra con la clave de un repartidor para comprobar sus permisos.',
+      flash('ok', 'Prueba correcta',
+        'QR leído con Reparto general. La cámara funciona; no se registró ninguna entrega.',
         'Prueba del escáner');
       return true;
     }

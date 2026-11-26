@@ -18,7 +18,7 @@ function contexto(usuario=20) {
   LS:{servicio:'servicio',sesion:'sesion',clave:'clave',zona:'zona'},CLAVE:'clave-anterior',
   agenda:()=>[servicio],servicioActual:()=>servicio,
   leerLS:k=>almacenamiento.get(k),localStorage:{removeItem:k=>almacenamiento.delete(k)},
-  $:()=>({textContent:'',classList:{add(){},remove(){}}}),
+  $:()=>({textContent:'',focus:()=>acciones.push('aviso-visible'),classList:{add(){},remove(){}}}),
   detenerVigilancia:()=>acciones.push('gps'),detenerCamara:()=>acciones.push('camara'),
   cancelarManual:()=>acciones.push('manual'),cancelarReceptor:()=>acciones.push('receptor'),
   mostrarAviso:()=>acciones.push('aviso'),confirm:()=>{acciones.push('confirm');return true;}
@@ -50,7 +50,7 @@ test('cerrar o invalidar sesión corta cámara y GPS, invalida descargas y conse
 });
 test('una llegada por subir también impide cambiar de operador',()=>{
  const {c,acciones}=contexto();c.COLA=[];vm.runInContext('cambiarUsuario()',c);
- assert.deepEqual(acciones,['aviso']);assert.equal(c.SESION.repartidor.id,20);
+ assert.deepEqual(acciones,['camara','aviso','aviso-visible']);assert.equal(c.SESION.repartidor.id,20);
 });
 test('cambio autorizado de operador vacía el contexto operativo y el servicio guardado',()=>{
  const {c,almacenamiento,acciones}=contexto();c.COLA=[];c.LLEGADAS=[];almacenamiento.set('servicio',{iniciado:true});
