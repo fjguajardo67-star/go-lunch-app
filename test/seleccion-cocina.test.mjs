@@ -52,7 +52,7 @@ test('servicios reales comparten selección y generan la misma cantidad de etiqu
   assert.match(comanda,/<span>TOTAL PORCIONES<\/span><span>1<\/span>/);
   const html=htmlEtiquetas(datos);
   assert.equal((html.match(/class="etiqueta"/g)||[]).length,1);
-  assert.match(html,/data-codigo="00004\|2026-11-07"/);
+  assert.match(html,/data-codigo="00004\|2026-11-07\|zona_refris"/);
   assert.doesNotMatch(html,/data-codigo="00001\|/);
   assert.match(html,/Turno A · REFIS \(LZCR\)/);
   assert.match(html,/1 comida\(s\)/);

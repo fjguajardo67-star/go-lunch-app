@@ -75,7 +75,7 @@ test('API, cocina, checklist y etiquetas comparten filtros y no entregan totales
   assert.equal((etiquetasHTML.match(/data-codigo="EX\|/g)||[]).length,7);
   assert.equal((etiquetasHTML.match(/transform:scale\(0\.85\)/g)||[]).length,7);
   assert.match(etiquetasHTML,/@page \{ size: 200mm 62mm/);
-  assert.match(etiquetasHTML,/data-codigo="00001\|2026-11-07"/);
+  assert.match(etiquetasHTML,/data-codigo="00001\|2026-11-07\|zona_refris"/);
   assert.match(htmlComanda(await resumenCocina(d.fecha)),/Regulares: 61 \+ Coberturas: 7 = 68/);
   const antes=consultas;
   for(const ruta of ['/comidas/2026-02-30','/reportes?ini=2026-11-08&fin=2026-11-07','/comidas/'+d.fecha+'?servicio=no-existe'])assert.equal((await get(ruta)).status,400);
