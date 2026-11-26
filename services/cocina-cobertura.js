@@ -1,3 +1,4 @@
+import '../public/etiqueta-entrega.js';
 import { ANCHO_ETIQUETA, ALTO_ETIQUETA, esFormatoReparto, estiloEtiquetaReparto, scriptAjustarTextoEtiqueta } from './formato-etiquetas.js';
 // services/cocina-cobertura.js — comanda y etiquetas del menú especial
 
@@ -98,7 +99,7 @@ export function htmlEtiquetasCobertura({ fecha, ancho = ANCHO_ETIQUETA, alto = A
     a.empleado_nombre_snapshot.localeCompare(b.empleado_nombre_snapshot));
   const cuerpo = orden.map(item => {
     const s = item.solicitud;
-    const codigo = `EX|${item.codigo_entrega}|${fecha}`;
+    const codigo = GoLunchEtiqueta.crear({tipo:'cobertura',codigo_entrega:item.codigo_entrega,numero_empleado:item.empleado_numero_snapshot,zona:s.zona},fecha);
     return `<div class="marco-etiqueta"><article class="etiqueta">
       <div class="ruta">${esc((ZONAS[s.zona] || s.zona).split(' (')[0])} · ${esc(horaTextoCobertura(s, fecha))}</div>
       <div class="texto">

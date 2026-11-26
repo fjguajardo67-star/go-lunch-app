@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Entrega">
 <script src="/operacion.js"></script>
+<script src="/etiqueta-entrega.js"></script>
 <script src="/reparto-grupos.js"></script>
 <script src="/reparto-guiado.js"></script>
 <script src="/puntos-propuesta.js"></script>
@@ -330,49 +331,18 @@
   </div>
 
   <main>
-    <section class="bitacora-ruta oculto" id="bitacora-ruta" aria-labelledby="bitacora-titulo">
-      <h2 id="bitacora-titulo">Ruta del turno</h2>
-      <div class="bitacora-inicios" id="bitacora-inicios" role="group" aria-labelledby="bitacora-titulo" aria-describedby="bitacora-estado"></div>
-      <div class="bitacora-controles oculto" id="bitacora-controles">
-        <button class="btn sec" id="bitacora-accion" type="button" onclick="accionBitacora()" aria-describedby="bitacora-estado">Continuar ruta</button>
-      </div>
-      <p id="bitacora-estado" role="status" aria-live="polite"></p>
-      <button class="btn-texto oculto" id="bitacora-sincronizar" type="button" onclick="sincronizar()">Sincronizar bitácora</button>
-    </section>
-    <!-- Llegada al punto. Es lo primero de la pantalla porque es lo primero de
-         la ruta, y de su hora depende que el contrato aplique o no el 30%.
-         ESTRUCTURA PARA ESTILIZAR: #barra-llegada el contenedor,
-         #btn-llegada la acción, #llegada-estado el resumen una vez registrada,
-         #aviso-ubicacion la advertencia cuando no hay GPS o falta permiso. -->
-    <section class="barra-llegada servicio-ruta" id="barra-llegada" aria-labelledby="servicio-punto">
-      <h1 id="servicio-punto">Preparando reparto</h1>
-      <p class="servicio-horario" id="servicio-horario">Descargando la lista de hoy…</p>
-      <p id="servicio-ayuda" role="status" aria-live="polite"></p>
-      <div id="servicio-opciones" class="servicio-opciones"></div>
-      <button class="btn btn-llegada" id="btn-llegada" type="button" onclick="comenzarEntrega()">Comenzar entrega</button>
-      <div class="llegada-estado oculto" id="llegada-estado" role="status" aria-live="polite"></div>
-      <div class="aviso-ubicacion oculto" id="aviso-ubicacion" role="status" aria-live="polite"></div>
-      <div id="propuesta-punto" class="propuesta-punto oculto" aria-labelledby="propuesta-punto-titulo">
-        <h2 id="propuesta-punto-titulo">Registrar este punto de entrega</h2>
-        <p id="propuesta-punto-texto"></p>
-        <p id="propuesta-punto-estado" role="status" aria-live="polite"></p>
-        <button class="btn sec" id="btn-proponer-punto" type="button" onclick="enviarUbicacionPunto()">Enviar ubicación del punto</button>
-        <button class="btn-texto oculto" id="btn-reintentar-punto" type="button" onclick="sincronizar()">Reintentar envío</button>
-      </div>
-      <details class="ajustes-reparto" id="ajustes-reparto">
-        <summary>Cambiar punto o servicio</summary>
-        <p>Úsalo si no se detectó tu ubicación o necesitas otro horario.</p>
-        <div id="puntos-manuales" class="servicio-opciones"></div>
-        <div id="servicios-manuales" class="servicio-opciones"></div>
-      </details>
+    <section class="escaneo-directo" aria-labelledby="escaneo-titulo">
+      <h1 id="escaneo-titulo">Escanea y entrega</h1>
+      <p id="escaneo-ayuda">Abre la cámara y escanea el QR de cada paquete al entregarlo.</p>
+      <p id="escaneo-lista" role="status"></p>
     </section>
 
     <div class="scanner-heading">
       <div>
-        <h1>Escanea la etiqueta</h1>
+        <h2>Escanear paquetes</h2>
         <p>Centra el código dentro del marco.</p>
       </div>
-      <button class="camera-toggle" id="btn-camara" type="button" aria-pressed="false" onclick="alternarCamara()">
+      <button class="camera-toggle" id="btn-camara" type="button" aria-describedby="escaneo-ayuda" aria-pressed="false" onclick="alternarCamara()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>
         <span id="btn-camara-label">Abrir cámara</span>
       </button>
@@ -414,6 +384,7 @@
     </button>
 
     <div class="manual-panel oculto" id="manual-panel">
+      <label for="manual">Número de empleado</label>
       <div class="manual">
         <input id="manual" aria-label="Número de empleado" placeholder="Número de empleado" autocomplete="off"
                onkeydown="if(event.key==='Enter')entregarManual()"
@@ -421,6 +392,8 @@
         <button class="btn" type="button" onclick="buscarManual()">Buscar empleado</button>
       </div>
     </div>
+
+    <div class="aviso-ubicacion oculto" id="aviso-ubicacion" role="status"></div>
 
     <details class="ajustes-reparto"><summary>Configuración y prueba del escáner</summary>
     <label class="modo-lector">
@@ -445,8 +418,6 @@
       <div class="lista-contenido" id="lista-pendientes"></div>
     </details>
     <div class="acciones-reparto">
-      <button class="btn sec" id="btn-supervisor" type="button" onclick="prepararSupervisor()">Escanear paquetes para supervisor</button>
-      <button class="btn sec" id="btn-finalizar" type="button" onclick="finalizarReparto()">Finalizar reparto</button>
     </div>
     <details class="pedidos-panel">
       <summary>Entregadas <span id="badge-entregadas">0</span></summary>
@@ -645,21 +616,6 @@
   const $ = id => document.getElementById(id);
   const entregada = p => !!(p.entregado_en || p.entrega_conciliada_en) && !p.no_surtido_en;
 
-  // CommandEvent es nativo en navegadores recientes. El fallback local mantiene
-  // los mismos botones operables en Safari y Android anteriores, sin CDN.
-  function activarRecorrido(evento) {
-    const boton=evento.source || evento.target.closest('button[commandfor="bitacora-ruta"]');
-    if (!boton || boton.getAttribute('aria-disabled') === 'true') return;
-    const comando=evento.command || boton.getAttribute('command') || '';
-    if (comando.startsWith('--iniciar-')) accionBitacora(comando.slice('--iniciar-'.length));
-  }
-  function prepararBotonesRecorrido() {
-    $('bitacora-ruta').addEventListener('command', activarRecorrido);
-    if (!('commandForElement' in HTMLButtonElement.prototype)) {
-      $('bitacora-ruta').addEventListener('click', activarRecorrido);
-    }
-  }
-  prepararBotonesRecorrido();
   const leerLS  = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
   const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -676,7 +632,8 @@
   }
 
   function pedidoPorClave(clave) {
-    return PEDIDOS.find(p => clavePedido(p) === clave) || null;
+    const coinciden=PEDIDOS.filter(p=>clavePedido(p) === clave);
+    return coinciden.length === 1 ? coinciden[0] : null;
   }
 
   function receptoresDelDia() {
@@ -862,7 +819,7 @@
       $('zona-picker-aviso').textContent =
         'Hay ' + COLA.length + ' entrega(s) sin subir. Conéctate y espera a que "Por subir" quede en 0 antes de cambiar de zona.';
       $('zona-picker-aviso').className = 'aviso err';
-      $('zona-picker').classList.remove('oculto');
+      $('zona-picker').classList.add('oculto');
       $('zona-cancelar').classList.remove('oculto');
       $('zona-opciones').classList.add('oculto');
       return;
@@ -871,7 +828,7 @@
     pintarOpcionesZona();
     $('zona-opciones').classList.remove('oculto');
     $('zona-cancelar').classList.toggle('oculto', !ZONA);
-    $('zona-picker').classList.remove('oculto');
+    $('zona-picker').classList.add('oculto');
   }
 
   // Solo se muestran las zonas que este repartidor tiene asignadas. Si tiene
@@ -898,7 +855,7 @@
     ZONA = z; ZONA_MANUAL = manual; TURNO = ''; SERVICIO_ID = '';
     SERVICIO_INICIADO = false; SERVICIO_MANUAL = false; SUPERVISOR_ACTUAL = '';
     localStorage.setItem(LS.zona,z);
-    PEDIDOS = TODOS_PEDIDOS.filter(p => p.zona === z);
+    PEDIDOS = TODOS_PEDIDOS;
     restaurarServicio();
     proponerContexto();
     pintar();
@@ -920,38 +877,18 @@
   function listaDeHoy() { return !!FECHA && FECHA === diaComedor(); }
   function agenda() { return GoLunchGuiado.servicios(PEDIDOS,ZONA,FECHA); }
   function servicioActual() { return agenda().find(s => s.id === SERVICIO_ID) || null; }
-  function comidasEnPantalla() { return servicioActual()?.pedidos || []; }
+  function comidasEnPantalla() { return PEDIDOS; }
   function codificarClave(valor) { return encodeURIComponent(valor).replace(/'/g,'%27'); }
   function recordarServicio() {
     guardar(LS.servicio,{fecha:FECHA,zona:ZONA,id:SERVICIO_ID,iniciado:SERVICIO_INICIADO,
       usuario:SESION?.repartidor?.id ?? 'legado',supervisor:SUPERVISOR_ACTUAL});
   }
   function restaurarServicio() {
-    const x = leerLS(LS.servicio,null);
-    SERVICIO_ID=''; SERVICIO_INICIADO=false; TURNO=''; SUPERVISOR_ACTUAL='';
-    if (x?.fecha === FECHA && x.zona === ZONA && x.usuario === (SESION?.repartidor?.id ?? 'legado') && agenda().some(s => s.id === x.id)) {
-      SERVICIO_ID=x.id; SERVICIO_INICIADO=x.iniciado === true; SUPERVISOR_ACTUAL=x.supervisor || '';
-      TURNO=servicioActual().turno;
-    }
+    SERVICIO_ID='';SERVICIO_INICIADO=false;TURNO='';SUPERVISOR_ACTUAL='';
   }
   function proponerContexto() {
-    if (SERVICIO_INICIADO || !listaDeHoy()) return;
-    if (!ZONA_MANUAL) {
-      const punto=GoLunchGuiado.detectarPunto(posicionUtil(),PUNTOS,zonasAutorizadas());
-      if (punto.zona && punto.zona !== ZONA) {
-        ZONA=punto.zona; localStorage.setItem(LS.zona,ZONA);
-        PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA);
-        SERVICIO_ID=''; SERVICIO_MANUAL=false; restaurarServicio();
-      }
-    }
-    if (!ZONA) return;
-    const ruta=rutaEnCurso();
-    const puntoRuta=ruta?.plan.pasos[ruta.siguiente]?.zona;
-    const servicios=puntoRuta === ZONA ? agenda().filter(s => s.turno === ruta.plan.turno) : agenda();
-    if (!SERVICIO_MANUAL && !SERVICIO_INICIADO) {
-      SERVICIO_ID=GoLunchGuiado.sugerirServicio(servicios,ahoraComedor().toISOString(),FECHA) || '';
-    }
-    TURNO=servicioActual()?.turno || '';
+    // El punto y el turno pertenecen a cada pedido, no a una selección del operador.
+    PEDIDOS=TODOS_PEDIDOS;
   }
   function seleccionarServicio(id) {
     if (!agenda().some(s => s.id === id)) return;
@@ -961,19 +898,27 @@
     SERVICIO_ID=id; SERVICIO_INICIADO=false; SERVICIO_MANUAL=true; SUPERVISOR_ACTUAL='';
     TURNO=servicioActual().turno; recordarServicio(); pintar();
   }
+  function aplicarColaLocal(pedidos) {
+    return pedidos.filter(p=>zonasAutorizadas().includes(p.zona)).map(p=>{
+      const e=COLA.find(e=>e.fecha === FECHA && e.accion !== 'cierre_ruta' && e.origen !== 'lista'
+        && clavePedido(e) === clavePedido(p) && GoLunchReparto.validarGrupo(p,e.zona,e.turno).ok);
+      return !p.entregado_en && !p.entrega_conciliada_en && !p.no_surtido_en && e
+        ? {...p,entregado_en:e.entregado_en,metodo_entrega:e.metodo_entrega} : p;
+    });
+  }
   function cargarCacheDeZona() {
     const jornada=leerLS(LS.jornada,null);
     if (jornada?.usuario === (SESION?.repartidor?.id ?? 'legado') && Array.isArray(jornada.pedidos)) {
-      FECHA=jornada.fecha; TODOS_PEDIDOS=jornada.pedidos.filter(p => zonasAutorizadas().includes(p.zona));
+      FECHA=jornada.fecha; TODOS_PEDIDOS=aplicarColaLocal(jornada.pedidos);
       PUNTOS=jornada.puntos || []; LLEGADAS_DIA=jornada.llegadas || []; RELOJ=jornada.reloj || null;
       ULTIMA_DESCARGA=jornada.descargada || null;
-      PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA); restaurarServicio(); return;
+      PEDIDOS=TODOS_PEDIDOS; restaurarServicio(); return;
     }
     const datos=zonasAutorizadas().map(z => leerLS(claveDatos(z),null)).filter(Boolean);
     const fecha=datos.map(x => x.fecha).sort().at(-1);
     if (fecha) {
-      FECHA=fecha; TODOS_PEDIDOS=datos.filter(x => x.fecha === fecha).flatMap(x => x.pedidos || []);
-      PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA); restaurarServicio();
+      FECHA=fecha; TODOS_PEDIDOS=aplicarColaLocal(datos.filter(x => x.fecha === fecha).flatMap(x => x.pedidos || []));
+      PEDIDOS=TODOS_PEDIDOS; restaurarServicio();
     }
   }
   async function iniciar() {
@@ -1002,7 +947,6 @@
     // Primero lo guardado: la app abre y sirve aunque no haya señal
     cargarCacheDeZona();
     proponerContexto();
-    if (!ZONA) seleccionarPuntoDeRuta(rutaEnCurso());
     pintar();
 
     if (!APP_ARRANCADA) {
@@ -1045,104 +989,21 @@
 
   function turnoEnCurso() { return TURNO; }
   function validarGrupoEnPantalla(pedido) {
-    if (!listaDeHoy() || !SERVICIO_INICIADO) {
-      flash('mal','Comienza el reparto','Descarga la lista de hoy, revisa el punto y pulsa Comenzar entrega.'); return false;
+    if (!listaDeHoy()) {
+      flash('mal','Falta la lista de hoy','Descarga el reparto con señal antes de escanear.'); return false;
     }
-    if (!GoLunchReparto.validarGrupo(pedido,ZONA,TURNO).ok || !GoLunchGuiado.esDelServicio(pedido,servicioActual())) {
-      flash('mal','Etiqueta de otro servicio','Verifica el punto y horario de esta etiqueta. Cambia de servicio antes de registrarla.'); return false;
+    if (!pedido || pedido.no_surtido_en || !zonasAutorizadas().includes(pedido.zona) ||
+        !GoLunchReparto.turnoValido(pedido.turno) || !PEDIDOS.includes(pedido)) {
+      flash('mal','Pedido no autorizado','Actualiza la lista y revisa la etiqueta.'); return false;
     }
     return true;
   }
-  async function comenzarEntrega() {
-    const servicio=servicioActual();
-    if (!listaDeHoy() || !servicio || !servicio.pendientes) return;
-    if (!SERVICIO_INICIADO) {
-      const marca=registrarPasoDeLlegada(servicio.turno);
-      SERVICIO_INICIADO=true; recordarServicio();
-      if (!llegadaRegistrada(TURNO)) await registrarLlegada(marca);
-      if (marca && navigator.onLine) sincronizar();
-      pintar();
-    }
-    if (!MODO_LECTOR && !escaneando) await alternarCamara();
-    else enfocarLector();
-  }
-  function finalizarReparto() {
-    if (!SERVICIO_INICIADO) return;
-    const pendientes=comidasEnPantalla().filter(p => !entregada(p)).length;
-    if (!confirm('Finalizar este reparto. Quedan ' + pendientes + ' comida(s) pendientes; conservarán ese estado hasta que se identifique y registre cada paquete.')) return;
-    cerrarEscaneoDeServicio();
-    pintar();
-  }
-  function cerrarEscaneoDeServicio() {
-    if (escaneando) detenerCamara();
-    cancelarManual(); if (RECEPTOR_PENDIENTE) cancelarReceptor();
-    SERVICIO_INICIADO=false; SERVICIO_MANUAL=true; SUPERVISOR_ACTUAL=''; recordarServicio();
-  }
-  function prepararSupervisor() {
-    if (!SERVICIO_INICIADO) return;
-    const quien=prompt('¿Qué supervisor recibe estos paquetes? Escanea cada etiqueta después de indicar su nombre.',SUPERVISOR_ACTUAL);
-    if (quien === null) return;
-    SUPERVISOR_ACTUAL=quien.trim().slice(0,120); recordarServicio(); pintar();
-    if (SUPERVISOR_ACTUAL && !escaneando && !MODO_LECTOR) alternarCamara();
-  }
 
-  function llegadaRegistrada(turno) {
-    return LLEGADAS_DIA.find(l => l.zona === ZONA && l.turno === turno && l.fecha_menu === FECHA)
-        || LLEGADAS.find(l => l.zona === ZONA && l.turno === turno && l.fecha === FECHA)
-        || null;
-  }
+
 
   // Metros entre dos coordenadas (Haversine). Sirve para avisar al repartidor
   // si registra la llegada lejos del punto del contrato.
-  function metrosEntre(a, b) {
-    const R = 6371000, rad = g => g * Math.PI / 180;
-    const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
-    const s = Math.sin(dLat / 2) ** 2 +
-              Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
-    return Math.round(2 * R * Math.asin(Math.sqrt(s)));
-  }
 
-  async function registrarLlegada(marca = null) {
-    if (!ZONA || !FECHA || !TURNO) return;
-    const turno = turnoEnCurso();
-    if (llegadaRegistrada(turno)) {
-      return flash('dup', 'La llegada ya estaba registrada',
-        'Se conserva la primera hora: es la que cuenta para el contrato.');
-    }
-
-    const pos = marca ? (marca.lat == null ? null : marca) : posicionUtil();
-    // Sin coordenada NO se bloquea: la hora de llegada es lo que decide la
-    // penalización y perderla por un GPS que no fijó sería peor. Se registra y
-    // se avisa, para que quede claro que esa llegada va sin respaldo de lugar.
-    const punto = PUNTOS.find(p => p.zona === ZONA && p.lat != null);
-    let aviso = '';
-    if (!pos) {
-      aviso = PERMISO_UBICACION === 'denegado'
-        ? 'Sin permiso de ubicación: esta llegada queda sin coordenada.'
-        : 'Todavía sin señal de GPS: esta llegada queda sin coordenada.';
-    } else if (punto) {
-      const d = metrosEntre(pos, punto);
-      const radio = punto.radio_m || 150;
-      if (d > radio) aviso = 'Estás a ' + (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m') +
-                             ' del punto de ' + (ZONA_TXT[ZONA] || ZONA) + '.';
-    }
-
-    const item = {
-      fecha: FECHA, zona: ZONA, turno,
-      llegada_en: marca?.ocurrido_en || ahoraComedor().toISOString(),
-      repartidor_id: SESION?.repartidor?.id ?? null,
-      lat: pos ? pos.lat : null,
-      lon: pos ? pos.lon : null,
-      precision_m: pos ? pos.precision_m : null
-    };
-    LLEGADAS.push(item);
-    guardar(LS.llegadas, LLEGADAS);
-
-    flash(aviso ? 'dup' : 'ok', 'Llegada registrada · ' + horaLocal(item.llegada_en),
-      aviso || ((ZONA_TXT[ZONA] || '') + ' · ' + (TURNO_TXT[turno] || '')), 'Inicio de reparto');
-    pintar();
-    if (navigator.onLine) sincronizar();
-  }
 
   function claveBitacora() {
     return LS.bitacora + (SESION?.repartidor?.id ?? 'legado');
@@ -1166,102 +1027,10 @@
     return abiertas.find(ruta => BITACORA.rutaSeleccionada === ruta.fecha + '|' + ruta.plan.id) || abiertas[0];
   }
 
-  function seleccionarPuntoDeRuta(ruta) {
-    const punto=ruta?.plan.pasos[ruta.siguiente];
-    if (ruta?.fecha === FECHA && punto?.zona && punto.zona !== ZONA) cambiarContexto(punto.zona, true);
-  }
 
-  function pintarBitacora() {
-    const activa=rutaEnCurso();
-    const registradas=rutasRegistradas().filter(ruta => ruta.fecha === FECHA);
-    const ocupadas=BITACORA.fecha === FECHA ? (BITACORA.ocupadas || []) : [];
-    const opciones=planesDeRuta().filter(plan => !ocupadas.includes(plan.id)
-      && !registradas.some(ruta => ruta.plan === plan));
-    $('bitacora-ruta').classList.toggle('oculto', !FECHA && !activa);
-    $('bitacora-titulo').textContent=activa?.plan.titulo || 'Ruta del turno';
-    const inicios=$('bitacora-inicios');
-    const paso=activa?.plan.pasos[activa.siguiente];
-    const discordante=!!activa && (activa.fecha !== FECHA || (paso?.zona && ZONA && paso.zona !== ZONA)
-      || (servicioActual() && servicioActual().turno !== activa.plan.turno));
-    const otras=registradas.filter(ruta => ruta.siguiente > 0 && ruta.plan !== activa?.plan && planesDeRuta().includes(ruta.plan));
-    const html=otras.map(ruta => `<button class="btn sec" type="button" commandfor="bitacora-ruta" command="--iniciar-${ruta.plan.id}">Continuar ${esc(ruta.plan.titulo)}</button>`).join('') + opciones.map(plan => `<button class="btn sec" type="button" commandfor="bitacora-ruta" command="--iniciar-${plan.id}" aria-disabled="${!listaDeHoy()}">Iniciar ${esc(plan.titulo)}</button>`).join('');
-    if (inicios.innerHTML !== html) inicios.innerHTML=html;
-    inicios.classList.toggle('oculto', (!discordante && !!activa && !otras.length) || (!opciones.length && !otras.length));
-    $('bitacora-controles').classList.toggle('oculto', !activa);
-    const accion=$('bitacora-accion');
-    accion.textContent=paso?.boton || 'Continuar ruta';
-    accion.disabled=!activa || discordante;
-    const ultima=activa?.marcas.at(-1);
-    const completadas=registradas.filter(ruta => ruta.siguiente < 0);
-    const resumen=ultima ? activa.plan.pasos[ultima.paso].titulo + ' · ' + horaLocal(ultima.ocurrido_en)
-      : completadas.map(ruta => ruta.plan.titulo + ' cerrada a las ' + horaLocal(ruta.marcas.at(-1).ocurrido_en)).join(' · ');
-    const ayuda=!listaDeHoy() && !activa ? 'Descarga el reparto de hoy con señal para poder iniciar el recorrido.'
-      : ocupadas.length && !opciones.length ? 'Otro repartidor ya inició las rutas disponibles.'
-      : opciones.length ? 'Al salir del comedor, toca tu recorrido. El botón registra tu salida.' : '';
-    const pendientes=BITACORA.pendientes.length;
-    $('bitacora-estado').textContent=[discordante ? 'La ruta abierta no corresponde al punto, turno o fecha elegidos. Puedes comenzar el servicio elegido sin cambiar esa ruta, o elegir otro recorrido. Las marcas se conservan.' : '', AVISO_BITACORA || (!listaDeHoy() && !activa ? ayuda : resumen || ayuda),
-      pendientes ? `${pendientes} marca(s) por subir` : ''].filter(Boolean).join(' · ');
-    $('bitacora-sincronizar').classList.toggle('oculto', !pendientes);
-  }
 
-  function guardarPasoRuta(plan, fecha, paso, seleccionar = false) {
-    const pos=posicionUtil();
-    const marca={ fecha, ruta: plan.id, paso, ocurrido_en: ahoraComedor().toISOString(),
-      lat: pos?.lat ?? null, lon: pos?.lon ?? null, precision_m: pos?.precision_m ?? null };
-    try {
-      guardarBitacora({ ...BITACORA, ...(seleccionar ? { rutaSeleccionada: fecha + '|' + plan.id } : {}),
-        pendientes: [...BITACORA.pendientes, marca] });
-      AVISO_BITACORA='';
-      return marca;
-    } catch {
-      AVISO_BITACORA='No se pudo guardar la marca en el teléfono. Libera espacio y vuelve a intentar.';
-      pintarBitacora();
-      return null;
-    }
-  }
 
-  function registrarPasoDeLlegada(turno) {
-    const ruta=rutaEnCurso();
-    if (!ruta || ruta.fecha !== FECHA || ruta.plan.turno !== turno) return null;
-    const paso=ruta.plan.pasos[ruta.siguiente];
-    if (paso.zona !== ZONA) return null;
-    return paso.llegada ? guardarPasoRuta(ruta.plan, ruta.fecha, ruta.siguiente) : ruta.marcas[ruta.siguiente - 1];
-  }
 
-  async function accionBitacora(recorridoId) {
-    let ruta=rutaEnCurso();
-    if (recorridoId) {
-      const abierta=rutasRegistradas().find(x => x.fecha === FECHA && x.plan.id === recorridoId && x.siguiente > 0);
-      if (abierta && planesDeRuta().includes(abierta.plan)) {
-        if (ruta?.fecha === abierta.fecha && ruta.plan === abierta.plan) return;
-        guardarBitacora({ ...BITACORA, rutaSeleccionada: FECHA + '|' + recorridoId });
-        seleccionarPuntoDeRuta(abierta); pintar(); return;
-      }
-      ruta=null;
-    }
-    // Un segundo evento del botón de inicio nunca adelanta la llegada.
-    if (!recorridoId && !ruta) return;
-    const plan=ruta?.plan || GoLunchBitacora.porId(recorridoId);
-    if (!plan || !planesDeRuta().includes(plan)) return;
-    const fecha=ruta?.fecha || FECHA;
-    if (!ruta && (!listaDeHoy() || rutasRegistradas().some(x => x.fecha === fecha && x.plan === plan)
-      || (BITACORA.fecha === FECHA && BITACORA.ocupadas?.includes(plan.id)))) return;
-    const paso=ruta?.siguiente ?? 0;
-    const waypoint=plan.pasos[paso];
-    if (ruta && (fecha !== FECHA || (waypoint.zona && ZONA && waypoint.zona !== ZONA)
-      || (servicioActual() && servicioActual().turno !== plan.turno))) return;
-    if (waypoint.llegada && !SERVICIO_INICIADO && fecha === FECHA && waypoint.zona === ZONA
-      && servicioActual()?.turno === plan.turno && servicioActual().pendientes) {
-      return comenzarEntrega();
-    }
-    if (!guardarPasoRuta(plan, fecha, paso, !!recorridoId)) return;
-    if (waypoint.zona && !waypoint.llegada && ZONA === waypoint.zona && SERVICIO_INICIADO) cerrarEscaneoDeServicio();
-    const siguiente=rutaEnCurso();
-    if (siguiente?.plan === plan && siguiente.fecha === fecha) seleccionarPuntoDeRuta(siguiente);
-    pintar();
-    if (recorridoId) $('bitacora-accion').focus({preventScroll:true});
-    if (navigator.onLine) sincronizar();
-  }
 
   async function sincronizarBitacora(signal) {
     if (!FECHA || (!SESION?.token && !CLAVE)) return;
@@ -1300,7 +1069,6 @@
         (m.fecha === anterior?.fecha && m.ruta === anterior.plan.id)
         || BITACORA.pendientes.some(p => p.fecha === m.fecha && p.ruta === m.ruta)));
       guardarBitacora({ ...BITACORA, fecha: FECHA, confirmadas: [...conservadas, ...datos.marcas], ocupadas: datos.ocupadas || [] });
-      if (!ZONA) seleccionarPuntoDeRuta(rutaEnCurso());
     } catch {
       if (epoca === EPOCA_SESION && BITACORA.pendientes.length) AVISO_BITACORA='Las marcas siguen en el teléfono. Se enviarán cuando vuelva la conexión.';
     } finally {
@@ -1309,9 +1077,11 @@
   }
 
   function guardarCacheZona() {
-    guardar(claveDatos(ZONA),{fecha:FECHA,pedidos:PEDIDOS,zona:ZONA,turno_hora:TURNO_HORA,tolerancia_min:TOLERANCIA_MIN,motivos:MOTIVOS});
-    const modificados=new Map(PEDIDOS.map(p => [clavePedido(p),p]));
-    TODOS_PEDIDOS=TODOS_PEDIDOS.map(p => p.zona === ZONA ? modificados.get(clavePedido(p)) || p : p);
+    TODOS_PEDIDOS=PEDIDOS;
+    for (const zona of zonasAutorizadas()) {
+      guardar(claveDatos(zona),{fecha:FECHA,pedidos:PEDIDOS.filter(p=>p.zona === zona),zona,
+        turno_hora:TURNO_HORA,tolerancia_min:TOLERANCIA_MIN,motivos:MOTIVOS});
+    }
     guardar(LS.jornada,{usuario:SESION?.repartidor?.id ?? 'legado',fecha:FECHA,pedidos:TODOS_PEDIDOS,
       puntos:PUNTOS,llegadas:LLEGADAS_DIA,reloj:RELOJ,descargada:ULTIMA_DESCARGA});
   }
@@ -1324,13 +1094,13 @@
     if (!el) return;
     let msg = '';
     if (PERMISO_UBICACION === 'denegado') {
-      msg = 'Sin permiso de ubicación. Las entregas se registran, pero SIN la coordenada que respalda dónde se hicieron. Actívala en los ajustes del equipo.';
+      msg = 'Ubicación desactivada. Puedes entregar; la hora se guarda, pero sin coordenadas. Activa el permiso en los ajustes del teléfono.';
     } else if (!navigator.geolocation) {
       msg = 'Este equipo no tiene ubicación disponible.';
     } else if (!posicionUtil()) {
       msg = POSICION
-        ? 'Señal de GPS débil (±' + POSICION.precision_m + ' m). Espera unos segundos en el sitio.'
-        : 'Buscando señal de GPS…';
+        ? 'GPS con poca precisión (±' + POSICION.precision_m + ' m). Puedes seguir escaneando; la hora se guarda.'
+        : 'Ubicación pendiente. Puedes escanear; la hora se guarda.';
     }
     el.textContent = msg;
     el.classList.toggle('oculto', !msg);
@@ -1338,28 +1108,9 @@
   }
 
   function pintarLlegada() {
-    const servicio=servicioActual();
-    const btn=$('btn-llegada'), est=$('llegada-estado');
-    $('servicio-punto').textContent=ZONA_TXT[ZONA] || '¿Dónde vas a entregar?';
-    $('servicio-horario').textContent=servicio ? servicio.titulo + ' · ' + servicio.hora + ' · ' + servicio.pendientes + ' pendiente(s)' : 'Selecciona el servicio de hoy';
-    $('servicio-ayuda').textContent=!listaDeHoy() ? 'Descarga la lista de hoy con señal antes de comenzar.' :
-      SERVICIO_INICIADO ? (SUPERVISOR_ACTUAL ? 'Escaneando para supervisor: ' + SUPERVISOR_ACTUAL : 'Escanea cada paquete. Punto y servicio permanecen fijos.') :
-      !ZONA ? 'Buscando tu punto por GPS. También puedes elegirlo abajo.' : ZONA_MANUAL ? 'Punto elegido manualmente. Revisa el horario antes de comenzar.' : 'Punto detectado. Revisa el horario antes de comenzar.';
-    btn.disabled=!listaDeHoy() || !servicio || !servicio.pendientes;
-    btn.textContent=SERVICIO_INICIADO ? 'Continuar escaneando' : 'Comenzar entrega';
-    btn.classList.toggle('oculto',SERVICIO_INICIADO && escaneando);
-    const llegada=llegadaRegistrada(TURNO);
-    est.classList.toggle('oculto',!SERVICIO_INICIADO || !llegada);
-    if (llegada) est.textContent='Primera llegada del turno: ' + horaLocal(llegada.llegada_en) + (LLEGADAS.some(l => l.fecha === FECHA && l.zona === ZONA && l.turno === TURNO) ? ' · por subir' : '');
-    $('barra-llegada').classList.toggle('iniciado',SERVICIO_INICIADO);
-    const botonServicio=s => `<button class="btn sec" type="button" onclick="seleccionarServicio(decodeURIComponent('${codificarClave(s.id)}'))">${esc(s.titulo)} · ${esc(s.hora)} · ${s.pendientes} pendiente(s)</button>`;
-    $('servicio-opciones').innerHTML=!ZONA ? zonasAutorizadas().map(z => `<button class="btn sec" type="button" onclick="elegirZona('${z}')">${esc(ZONA_TXT[z])}</button>`).join('') : !servicio ? agenda().map(botonServicio).join('') : '';
-    $('puntos-manuales').innerHTML=zonasAutorizadas().map(z => `<button class="btn sec" type="button" onclick="elegirZona('${z}')">${esc(ZONA_TXT[z])}</button>`).join('');
-    $('servicios-manuales').innerHTML=agenda().map(botonServicio).join('');
-    $('btn-supervisor').classList.toggle('oculto',!SERVICIO_INICIADO || servicio?.id.startsWith('cobertura|'));
-    $('btn-supervisor').textContent=SUPERVISOR_ACTUAL ? 'Cambiar receptor: ' + SUPERVISOR_ACTUAL : 'Escanear paquetes para supervisor';
-    $('btn-finalizar').classList.toggle('oculto',!SERVICIO_INICIADO);
-    pintarPropuestaPunto();
+    $('escaneo-lista').textContent=listaDeHoy()
+      ? 'Regulares y coberturas · ' + zonasAutorizadas().map(z=>ZONA_TXT[z]).join(' y ')
+      : 'Descarga la lista de hoy con señal. Después puedes escanear sin conexión.';
   }
 
   function autorPropuestaPunto() { return SESION?.repartidor?.id != null ? 'repartidor:' + SESION.repartidor.id : 'legado'; }
@@ -1376,6 +1127,7 @@
   }
   function pintarPropuestaPunto() {
     const caja=$('propuesta-punto');
+    if (!caja) return;
     const visible=!!ZONA && zonasAutorizadas().includes(ZONA) && !puntoOficial(ZONA);
     caja.classList.toggle('oculto',!visible);
     if (!visible) return;
@@ -1630,12 +1382,8 @@
       if (cambio) { SERVICIO_INICIADO=false; SERVICIO_MANUAL=false; SERVICIO_ID=''; SUPERVISOR_ACTUAL=''; if (escaneando) detenerCamara(); }
       FECHA=d.fecha;
       if (d.server_time && Number.isFinite(Date.parse(d.server_time))) RELOJ={servidor:d.server_time,aparato:Date.now()};
-      const enCola=new Map(COLA.filter(e => e.fecha === FECHA && e.accion !== 'cierre_ruta' && e.origen !== 'lista' && GoLunchReparto.turnoValido(e.turno)).map(e => [clavePedido(e),e]));
-      TODOS_PEDIDOS=d.pedidos.filter(p => zonasAutorizadas().includes(p.zona) && !p.no_surtido_en).map(p => {
-        const e=enCola.get(clavePedido(p));
-        return !p.entregado_en && e && GoLunchReparto.validarGrupo(p,e.zona,e.turno).ok ? {...p,entregado_en:e.entregado_en,metodo_entrega:e.metodo_entrega} : p;
-      });
-      PEDIDOS=TODOS_PEDIDOS.filter(p => p.zona === ZONA);
+      TODOS_PEDIDOS=aplicarColaLocal(d.pedidos.filter(p=>!p.no_surtido_en));
+      PEDIDOS=TODOS_PEDIDOS;
       ULTIMA_DESCARGA=new Date().toISOString(); ERROR_DESCARGA=false;
       if (d.turno_hora) TURNO_HORA = d.turno_hora;
       if (d.tolerancia_min != null) TOLERANCIA_MIN = d.tolerancia_min;
@@ -1732,7 +1480,7 @@
     }
 
     const autorizadas = zonasAutorizadas();
-    if (!ZONA || (Array.isArray(autorizadas) && !autorizadas.includes(ZONA))) {
+    if (!autorizadas.some(z=>ZONAS_VALIDAS.includes(z))) {
       flash('mal', 'Zona no autorizada',
         'La sesión de ' + repartidor.nombre + ' no tiene permiso para esta ruta.',
         'Prueba del escáner');
@@ -1741,7 +1489,7 @@
 
     flash('ok', 'Prueba correcta',
       'Escáner y permiso de ' + repartidor.nombre + ' para ' +
-      (ZONA_TXT[ZONA] || ZONA) + ' correctos. Válido para Turno A y Turno B. ' +
+      autorizadas.map(z=>ZONA_TXT[z]).join(' y ') + ' correctos. Válido para Turno A y Turno B. ' +
       'No se registró ninguna entrega.',
       'Prueba del escáner');
     return true;
@@ -1843,98 +1591,51 @@
     codigo = codigo.toUpperCase();
     if (comprobarEscaner(codigo, origen)) return;
 
-    // Regular: "GL-001|2026-08-03". Cobertura:
-    // "EX|uuid|2026-08-03". El UUID evita colisionar con el pedido regular
-    // del mismo empleado y la fecha evita usar una etiqueta de otro día.
-    let tipoCodigo = 'regular';
-    let identificador = codigo;
-    let fechaCodigo = null;
-    const partes = codigo.split('|').map(x => x.trim());
-    if (partes[0] === 'EX') {
-      tipoCodigo = 'cobertura';
-      identificador = partes[1] || '';
-      fechaCodigo = partes[2] || null;
-    } else if (partes.length > 1) {
-      identificador = partes[0];
-      fechaCodigo = partes[1] || null;
+    const resultado=GoLunchEtiqueta.resolver(codigo,PEDIDOS,FECHA,zonasAutorizadas());
+    if (!resultado.pedido) {
+      const errores={
+        codigo_invalido:['QR no reconocido','Usa la etiqueta del paquete o busca el número de empleado.'],
+        otra_fecha:['Etiqueta de otro día','Descarga la lista de hoy y revisa la fecha de la etiqueta.'],
+        sin_pedido:['No está en la lista','Actualiza el reparto con señal. Si la etiqueta está dañada, busca el número de empleado.'],
+        etiqueta_distinta:['La etiqueta no coincide','La zona o el empleado del QR difiere del pedido. Revisa la etiqueta con administración.'],
+        ambiguo:['Hay más de una comida','Busca el número de empleado y confirma la comida que estás entregando.'],
+        zona_no_autorizada:['Zona no autorizada','Este usuario no tiene permiso para entregar en esa zona.'],
+        no_surtido:['Comida no surtida','Administración registró una incidencia sin cargo. Verifica antes de entregar.']
+      };
+      return flash('mal',...(errores[resultado.error] || errores.codigo_invalido));
     }
-    if (fechaCodigo && FECHA && fechaCodigo !== FECHA) {
-      return flash('mal', 'Etiqueta de otro día', 'Es del ' + fechaCodigo + ', hoy se reparte el ' + FECHA);
-    }
-
-    const p = tipoCodigo === 'cobertura'
-      ? PEDIDOS.find(x => x.tipo === 'cobertura' && String(x.codigo_entrega || '').toUpperCase() === identificador)
-      : PEDIDOS.find(x => x.tipo !== 'cobertura' && String(x.numero_empleado || '').toUpperCase() === identificador);
-    if (!p) {
-      // Antes de decir "no existe", revisar si es de la otra ruta. El índice
-      // del día se descargó con la lista, así que esto funciona sin señal y es
-      // la diferencia entre "búscalo en la otra tablet" y "este número no sirve".
-      const indice = tipoCodigo === 'cobertura' ? 'EX|' + identificador : identificador;
-      const zonaOtra = INDICE_ZONAS[indice];
-      if (zonaOtra && zonaOtra !== ZONA) {
-        return flash('mal', 'Este pedido corresponde a ' + (ZONA_TXT[zonaOtra] || 'otra zona'),
-          'Regístralo desde el equipo de esa ruta. Aquí no se guardó nada.');
-      }
-      return flash('mal', 'No está en la lista', tipoCodigo === 'cobertura'
-        ? 'Esta etiqueta de cobertura no pertenece a la lista de hoy.'
-        : 'El número ' + identificador + ' no tiene pedido para hoy.');
-    }
+    const p=resultado.pedido;
     if (!validarGrupoEnPantalla(p)) return;
+    if (entregada(p)) return flash('dup','Ya estaba entregada',p.nombre + ' — se registró antes.');
     ORIGEN_PENDIENTE=origen;
-    if (entregada(p)) return flash('dup', 'Ya estaba entregada', p.nombre + ' — se registró antes.');
-
-    if (p.tipo === 'cobertura') {
-      const receptor = receptoresDelDia()[p.folio];
-      if (!receptor) return abrirReceptor(p);
-      return registrarEntrega(p, receptor);
-    }
-    registrarEntrega(p, null);
+    // No se afirma que se verificó al receptor por escanear el paquete.
+    registrarEntrega(p,null,origen);
   }
 
   function registrarEntrega(p, receptor, metodo = ORIGEN_PENDIENTE) {
     if (!p || entregada(p) || !validarGrupoEnPantalla(p)) return;
 
-    p.entregado_en = ahoraComedor().toISOString();
-    p.metodo_entrega=metodo;
-    if (p.tipo !== 'cobertura' && SUPERVISOR_ACTUAL) { p.entregado_a='supervisor'; p.recibido_por=SUPERVISOR_ACTUAL; }
-    if (p.tipo === 'cobertura' && receptor) {
-      p.entregado_a = 'responsable';
-      p.recibido_por = receptor.nombre;
-      p.receptor_numero = receptor.numero;
-      p.receptor_discrepante = receptor.discrepante === true;
+    const hora=ahoraComedor().toISOString();
+    const pos=posicionUtil();
+    const registro={
+      tipo:p.tipo === 'cobertura' ? 'cobertura' : 'regular',
+      codigo_entrega:p.tipo === 'cobertura' ? p.codigo_entrega : p.numero_empleado,
+      numero_empleado:p.numero_empleado,entregado_en:hora,
+      fecha:FECHA,zona:p.zona,turno:p.turno,accion:'entrega',metodo_entrega:metodo,
+      entregado_a:p.tipo === 'cobertura' ? 'responsable' : 'empleado',
+      recibido_por:receptor?.nombre || null,receptor_numero:receptor?.numero || null,
+      receptor_nombre:receptor?.nombre || null,receptor_discrepante:receptor?.discrepante === true,
+      repartidor_id:SESION?.repartidor?.id ?? null,
+      lat:pos?.lat ?? null,lon:pos?.lon ?? null,precision_m:pos?.precision_m ?? null
+    };
+    const siguiente=[...COLA,registro];
+    try { localStorage.setItem(LS.cola,JSON.stringify(siguiente)); }
+    catch {
+      return flash('mal','No se pudo guardar','El almacenamiento del teléfono está lleno o bloqueado. No se confirmó esta comida. Avisa a administración.');
     }
-    guardar(claveDatos(ZONA), {
-      fecha: FECHA, pedidos: PEDIDOS, zona: ZONA,
-      turno_hora: TURNO_HORA, tolerancia_min: TOLERANCIA_MIN, motivos: MOTIVOS
-    });
-
-    // Cada escaneo lleva SU fecha y SU zona: si queda atorado en la cola y la
-    // app se reabre al día siguiente, debe subirse al día en que ocurrió; y la
-    // zona viaja para que el servidor verifique que el pedido sí era de esta
-    // ruta, sin confiar en el filtro del teléfono.
-    // La coordenada viaja con el escaneo. Veinte escaneos formando un racimo
-    // apretado prueban un reparto en sitio; un rastro que avanza por la
-    // carretera prueba lo contrario. Si el GPS no fijó va en nulo: la entrega
-    // vale más que su coordenada, y perderla por eso sería peor.
-    const pos = posicionUtil();
-    COLA.push({
-      tipo: p.tipo === 'cobertura' ? 'cobertura' : 'regular',
-      codigo_entrega: p.tipo === 'cobertura' ? p.codigo_entrega : p.numero_empleado,
-      numero_empleado: p.numero_empleado, entregado_en: p.entregado_en,
-      fecha: FECHA, zona: ZONA, turno: TURNO, accion: 'entrega', metodo_entrega:metodo,
-      entregado_a: p.tipo === 'cobertura' ? 'responsable' : SUPERVISOR_ACTUAL ? 'supervisor' : 'empleado',
-      recibido_por: p.tipo === 'cobertura' ? receptor?.nombre || null : SUPERVISOR_ACTUAL || null,
-      receptor_numero: receptor?.numero || null,
-      receptor_nombre: receptor?.nombre || null,
-      receptor_discrepante: receptor?.discrepante === true,
-      // Quién lo escaneó. El servidor NO se fía de este campo para atribuir
-      // —usa la sesión— pero sí lo compara: si otro repartidor intenta subir
-      // esta cola, el elemento se rechaza en vez de atribuirse mal.
-      repartidor_id: SESION?.repartidor?.id ?? null,
-      lat: pos ? pos.lat : null, lon: pos ? pos.lon : null,
-      precision_m: pos ? pos.precision_m : null
-    });
-    guardar(LS.cola, COLA);
+    COLA=siguiente;
+    p.entregado_en=hora;p.metodo_entrega=metodo;
+    if (receptor) { p.recibido_por=receptor.nombre;p.receptor_numero=receptor.numero; }
     guardarCacheZona();
 
     const tardia = esTardia(p);
@@ -1945,9 +1646,8 @@
     pintar();
     if (navigator.onLine) sincronizar();
 
-    // La entrega ya quedó guardada y en cola ANTES de pedir el motivo: si el
-    // chofer cierra la app aquí, no se pierde — queda tardía sin motivo.
-    if (tardia) { pedirMotivo(p); return; }
+    // La entrega ya está guardada. El motivo de tardanza puede revisarse
+    // desde el historial sin interrumpir la siguiente lectura.
     enfocarLector();   // dejar el campo armado para el siguiente escaneo
   }
 
@@ -1955,14 +1655,14 @@
     if (MODO_LECTOR) entregar($('manual').value,'lector'); else buscarManual();
   }
   function buscarManual() {
-    if (!listaDeHoy() || !SERVICIO_INICIADO) return flash('mal','Comienza el reparto','Revisa el punto y horario y pulsa Comenzar entrega.');
+    if (!listaDeHoy()) return flash('mal','Falta la lista de hoy','Descarga el reparto con señal antes de escanear.');
     const numero=$('manual').value.trim();
     if (!numero) return;
     const candidatos=comidasEnPantalla().filter(p => String(p.numero_empleado) === numero && !entregada(p));
-    if (!candidatos.length) return flash('mal','Sin comida pendiente en este servicio','Verifica el número escrito en la etiqueta, el punto y el horario.');
+    if (!candidatos.length) return flash('mal','Sin comida pendiente','Verifica el número escrito en la etiqueta y actualiza la lista con señal.');
     MANUAL_NUMERO=numero;
     $('manual-error').textContent='';
-    $('manual-resultados').innerHTML=candidatos.map(p => `<article><b>${esc(p.nombre)} · #${esc(p.numero_empleado)}</b><p>${esc(p.platillo)}</p><p>${esc(ZONA_TXT[p.zona])} · ${esc(servicioActual().hora)} · ${p.tipo === 'cobertura' ? 'Cobertura ' + esc(p.folio || '') : 'Regular'}</p><button class="btn" type="button" onclick="confirmarManual('${codificarClave(clavePedido(p))}')">Confirmar esta comida</button></article>`).join('');
+    $('manual-resultados').innerHTML=candidatos.map(p => `<article><b>${esc(p.nombre)} · #${esc(p.numero_empleado)}</b><p>${esc(p.platillo)}</p><p>${esc(ZONA_TXT[p.zona])} · ${esc(p.entrega_programada_en ? horaLocal(p.entrega_programada_en) : GoLunchOperacion.horaEntrega(p.turno,p.zona,FECHA))} · ${p.tipo === 'cobertura' ? 'Cobertura ' + esc(p.folio || '') : 'Regular'}</p><button class="btn" type="button" onclick="confirmarManual('${codificarClave(clavePedido(p))}')">Confirmar esta comida</button></article>`).join('');
     $('manual-confirmacion').showModal();
   }
   function cancelarManual() {
@@ -1972,7 +1672,7 @@
     const p=pedidoPorClave(decodeURIComponent(clave));
     if (!MANUAL_NUMERO || !p || String(p.numero_empleado) !== MANUAL_NUMERO || !validarGrupoEnPantalla(p)) return;
     cancelarManual(); $('manual').value='';
-    const codigo=p.tipo === 'cobertura' ? 'EX|' + p.codigo_entrega + '|' + FECHA : p.numero_empleado + '|' + FECHA;
+    const codigo=GoLunchEtiqueta.crear(p,FECHA);
     entregar(codigo,'manual');
   }
 
@@ -2101,15 +1801,15 @@
 
   // ── Cámara ────────────────────────────────────────────────
   async function alternarCamara(prueba = false) {
-    if (!prueba && (!listaDeHoy() || !SERVICIO_INICIADO)) return flash('mal','Comienza el reparto','Revisa el punto y horario y pulsa Comenzar entrega.');
     if (escaneando) return detenerCamara();
+    if (!prueba && !listaDeHoy()) return flash('mal','Falta la lista de hoy','Descarga el reparto con señal antes de escanear.');
     if (ABRIENDO_CAMARA) return;
     if (typeof jsQR !== 'function') {
       $('scan-status').textContent = 'Lector QR no disponible';
       return mostrarAviso('avisoSync','No se cargó el lector QR. Con conexión, actualiza la app y vuelve a abrir la cámara. No se registró ninguna entrega.','err');
     }
     ABRIENDO_CAMARA=true;
-    const contexto=FECHA + '|' + ZONA + '|' + SERVICIO_ID;
+    const contexto=FECHA,epoca=EPOCA_SESION;
     let nuevo=null;
     try {
       nuevo=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
@@ -2121,9 +1821,9 @@
           await pista.applyConstraints({advanced:[{focusMode:'continuous'}]});
         }
       } catch { /* Se conserva el enfoque que ofrece el equipo. */ }
-      if ((!SERVICIO_INICIADO && !prueba) || contexto !== FECHA + '|' + ZONA + '|' + SERVICIO_ID) { nuevo.getTracks().forEach(t=>t.stop()); return; }
+      if ((!listaDeHoy() && !prueba) || contexto !== FECHA || epoca !== EPOCA_SESION || document.hidden) { nuevo.getTracks().forEach(t=>t.stop()); return; }
       const v=$('video'); v.srcObject=nuevo; await v.play();
-      if ((!SERVICIO_INICIADO && !prueba) || contexto !== FECHA + '|' + ZONA + '|' + SERVICIO_ID) { nuevo.getTracks().forEach(t=>t.stop()); return; }
+      if ((!listaDeHoy() && !prueba) || contexto !== FECHA || epoca !== EPOCA_SESION || document.hidden) { nuevo.getTracks().forEach(t=>t.stop()); return; }
       stream=nuevo; escaneando=true;
       ultimoAnalisisCamara=-Infinity; intentoCamara=0;
       $('camara').classList.remove('oculta'); $('btn-camara').classList.add('alta');
@@ -2205,7 +1905,7 @@
       $('sesion-nombre').textContent = SESION?.repartidor?.nombre || 'Reparto general';
       ses.classList.toggle('legado', !SESION?.repartidor);
     }
-    $('btn-camara').disabled = !escaneando && (!listaDeHoy() || !SERVICIO_INICIADO);
+    $('btn-camara').disabled = !escaneando && !listaDeHoy();
     const delDia = comidasEnPantalla();
     const hechas = delDia.filter(entregada);
     const faltan = delDia.filter(p => !entregada(p));
@@ -2213,9 +1913,8 @@
     pintarLlegada();
     pintarUbicacion();
     estadoConexion();
-    $('n-entregado').textContent = listaDeHoy() && servicioActual() ? hechas.length : '—';
-    $('n-falta').textContent = listaDeHoy() && servicioActual() ? faltan.length : '—';
-    pintarBitacora();
+    $('n-entregado').textContent = listaDeHoy() ? hechas.length : '—';
+    $('n-falta').textContent = listaDeHoy() ? faltan.length : '—';
     const porSubir = COLA.length + LLEGADAS.length + BITACORA.pendientes.length;
     $('n-cola').textContent = porSubir;
     $('badge-pendientes').textContent = faltan.length;
@@ -2263,7 +1962,7 @@
 
     $('lista-pendientes').innerHTML = faltan.length
       ? faltan.map(p => fila(p, false)).join('')
-      : '<p class="lista-vacia">' + (servicioActual() ? 'No quedan entregas pendientes en este servicio.' : 'Elige el punto y servicio para consultar sus comidas.') + '</p>';
+      : '<p class="lista-vacia">' + (listaDeHoy() ? 'No quedan entregas pendientes en la lista de hoy.' : 'Descarga el reparto de hoy para consultar las comidas.') + '</p>';
     $('lista-hechas').innerHTML = hechas.length
       ? hechas.map(p => fila(p, true)).join('')
       : '<p class="lista-vacia">Aún no hay entregas registradas.</p>';

@@ -1,3 +1,4 @@
+import '../public/etiqueta-entrega.js';
 import { normalizarSeleccionCocina, seleccionarPedidosCocina, textoSeleccionCocina, resumirPedidosCocina } from './seleccion-cocina.js';
 import { prepararChecklistReparto, validarFechaChecklist } from './checklist-reparto.js';
 import { contarServicios, horaComida } from './comidas.js';
@@ -182,11 +183,11 @@ export function htmlEtiquetas({ fecha, ancho = ANCHO_ETIQUETA, alto = ALTO_ETIQU
   // Hora y patio explícitos, abreviados para conservar el ancho del rollo.
   const zonaCorta = z => (ZONAS[z] || z || 'Sin zona').split(' (')[0];
 
-  // El QR lleva número de empleado y fecha: sin la fecha, la etiqueta de ayer
-  // se podría escanear hoy y marcaría una entrega que no ocurrió.
+  // El QR incluye empleado, fecha y zona; coberturas conserva su código único.
+  // El horario se consulta en el pedido y la hora real se toma al escanear.
   const cuerpo = orden.map(p => {
     const numero = p.empleados?.numero_empleado || '';
-    const codigo = p.codigo_etiqueta || `${numero}|${fecha}`;
+    const codigo = GoLunchEtiqueta.crear(p, fecha);
     const cobertura = p.tipo === 'cobertura';
     const calibrar = cobertura && esFormatoReparto(ancho, alto);
     return `

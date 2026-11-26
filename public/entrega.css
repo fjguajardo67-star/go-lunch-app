@@ -418,7 +418,7 @@ main {
   margin-bottom: 12px;
 }
 
-.scanner-heading h1 {
+.scanner-heading h2 {
   color: var(--azul);
   font-size: 1.3rem;
   font-weight: 800;
@@ -1475,7 +1475,7 @@ main {
     width: 82px;
   }
 
-  .scanner-heading h1 {
+  .scanner-heading h2 {
     font-size: 1.18rem;
   }
 
@@ -2626,3 +2626,19 @@ main {
 #bitacora-estado { margin-top: 8px; color: var(--gris-text); font-size: .9rem; }
 #bitacora-sincronizar { min-height: 44px; }
 :root[data-theme="dark"] .bitacora-ruta { background: #0e2039; }
+
+/* Escaneo directo: una acción primaria para ambas clases y todas las zonas autorizadas. */
+.escaneo-directo { margin-bottom: 20px; }
+.escaneo-directo h1 { font-size: 1.6rem; line-height: 1.2; letter-spacing: -.02em; margin-bottom: 8px; }
+.escaneo-directo p { color: var(--gris-text); max-width: 65ch; }
+#escaneo-lista { margin-top: 8px; font-size: .875rem; }
+.scanner-heading { flex-wrap: wrap; }
+.scanner-heading > div { display: none; }
+.scanner-heading .camera-toggle { width: 100%; min-height: 56px; justify-content: center; background: var(--verde-accion); color: var(--blanco); border-color: var(--verde-accion); font-size: 1.125rem; }
+.scanner-heading .camera-toggle:focus-visible { outline: 3px solid var(--azul-vivo); outline-offset: 3px; }
+.scanner-heading .camera-toggle.alta { background: var(--blanco); color: var(--azul); border-color: var(--azul-line); }
+.manual-panel label { display: block; margin-bottom: 8px; font-weight: 700; }
+:root[data-theme="dark"] .escaneo-directo p { color: #b9cbe0; }
+:root[data-theme="dark"] .scanner-heading .camera-toggle.alta { background: #0e2039; color: #eaf3ff; }
+
+.scanner-heading .camera-toggle span { max-width: none; white-space: nowrap; }

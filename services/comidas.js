@@ -1,3 +1,4 @@
+import '../public/etiqueta-entrega.js';
 // Una fila por comida. Las coberturas conservan su identidad y horario propios.
 import { DateTime } from 'luxon';
 import { ZONA, horaTexto, horaEntrega, limiteEntrega, TOLERANCIA_TARDIA_MIN } from './menu.js';
@@ -14,7 +15,7 @@ export function unirComidas(pedidos, coberturas) {
   return [
     ...pedidos.map(p => ({ ...p, tipo: 'regular', origen: 'regular', folio: null,
       entrega_programada_en: null, rating_elegible: true,
-      clave_servicio: `regular:${p.id}`, codigo_etiqueta: `${p.empleados?.numero_empleado || ''}|${p.fecha_menu}` })),
+      clave_servicio: `regular:${p.id}`, codigo_etiqueta: GoLunchEtiqueta.crear(p) })),
     ...coberturas.filter(s => s.estado !== 'cancelada').flatMap(s => (s.items || []).map(i => ({
       ...i, tipo: 'cobertura', origen: s.origen || 'supervisor', folio: s.folio,
       clave_servicio: `cobertura:${i.id}`, fecha_menu: s.fecha_servicio,
@@ -22,7 +23,7 @@ export function unirComidas(pedidos, coberturas) {
       responsable_nombre: s.responsable_nombre_snapshot, responsable_numero: s.responsable_numero_snapshot,
       empleados: { nombre: i.empleado_nombre_snapshot, numero_empleado: i.empleado_numero_snapshot,
         telefono: i.empleado_telefono },
-      rating: null, rating_elegible: false, codigo_etiqueta: `EX|${i.codigo_entrega}|${s.fecha_servicio}`
+      rating: null, rating_elegible: false, codigo_etiqueta: GoLunchEtiqueta.crear({tipo:'cobertura',codigo_entrega:i.codigo_entrega,numero_empleado:i.empleado_numero_snapshot,zona:s.zona},s.fecha_servicio)
     })))
   ];
 }

@@ -15,7 +15,7 @@ test('100 × 62 sigue disponible y la etiqueta larga mantiene el mismo QR y bloq
  assert.match(larga,/padding-left: 110mm/);
  for(const html of [anterior,larga]) {
   assert.match(html,/width: 90mm/);
-  assert.match(html,/data-codigo="00123\|2026-11-07"/);
+  assert.match(html,/data-codigo="00123\|2026-11-07\|zona_vdc"/);
  }
 });
 
@@ -25,7 +25,7 @@ test('etiqueta regular horizontal conserva número y fecha sin pie externo',()=>
  assert.match(html,/ASLA &nbsp;·&nbsp; 10:00/);
  assert.match(html,/font-size: 21pt/);
  assert.match(html,/width: 32mm; height: 32mm/);
- assert.match(html,/data-codigo="00123\|2026-11-07"/);
+ assert.match(html,/data-codigo="00123\|2026-11-07\|zona_vdc"/);
  assert.match(html,/Nombre &lt;de prueba&gt;/);
  assert.match(html,/Pollo &lt;especial&gt;/);
  assert.match(html,/<span>Empleado #00123<\/span>/);
@@ -68,7 +68,7 @@ test('90 × 62 conserva el formato anterior, con QR y calibración iguales y sin
  assert.match(regular,/@page \{ size: 90mm 62mm; margin: 0; \}/);
  assert.match(regular,/padding-left: 0mm/);
  assert.doesNotMatch(regular,/class="marco-etiqueta"/);
- assert.match(regular,/data-codigo="00123\|2026-11-07"/);
+ assert.match(regular,/data-codigo="00123\|2026-11-07\|zona_vdc"/);
  const especial=htmlEtiquetasCobertura({fecha,ancho:90,alto:62,items:[]});
  assert.match(especial,/transform:scale\(0\.85\);transform-origin:center center/);
  assert.match(especial,/padding-left: 0mm/);

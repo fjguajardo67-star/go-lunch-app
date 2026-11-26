@@ -32,11 +32,11 @@ test('otro repartidor de la misma zona no hereda servicio iniciado ni supervisor
  vm.runInContext('restaurarServicio()',c);
  assert.equal(c.SERVICIO_INICIADO,false);assert.equal(c.SERVICIO_ID,'');assert.equal(c.TURNO,'');assert.equal(c.SUPERVISOR_ACTUAL,'');
 });
-test('solo el mismo usuario, fecha y zona puede reanudar su servicio',()=>{
+test('el mismo usuario tampoco hereda una selección o un receptor del flujo anterior',()=>{
  const {c,almacenamiento}=contexto(10);
  almacenamiento.set('servicio',{fecha:c.FECHA,zona:c.ZONA,id:servicio.id,iniciado:true,usuario:10,supervisor:'Receptor actual'});
  vm.runInContext('restaurarServicio()',c);
- assert.equal(c.SERVICIO_INICIADO,true);assert.equal(c.TURNO,'turno_a');assert.equal(c.SUPERVISOR_ACTUAL,'Receptor actual');
+ assert.equal(c.SERVICIO_INICIADO,false);assert.equal(c.TURNO,'');assert.equal(c.SUPERVISOR_ACTUAL,'');
  almacenamiento.get('servicio').fecha='2026-11-09';vm.runInContext('restaurarServicio()',c);assert.equal(c.SERVICIO_INICIADO,false);
 });
 test('cerrar o invalidar sesión corta cámara y GPS, invalida descargas y conserva colas',()=>{
