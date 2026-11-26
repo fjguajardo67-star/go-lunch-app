@@ -391,11 +391,11 @@
       <li>Mantén el <b>panel abierto y el equipo despierto</b>. El monitor revisa cada 30 segundos y avisa por cada folio de supervisor nuevo o modificado, con zona y hora de entrega. Intenta abrir la comanda de <b>ese folio</b>; confirma <b>Comanda impresa</b> para atender el siguiente aviso. Si hubo una modificación, sustituye la comanda y etiquetas anteriores por las actualizadas. Los botones <b>Comanda de este folio</b> y <b>Etiquetas de este folio</b> permiten imprimir solo ese pedido; los botones generales reúnen el turno seleccionado.</li>
       <li>Si el navegador bloquea el diálogo automático, usa <b>Imprimir comanda</b> en la alerta. Verifica el documento y después pulsa <b>Comanda impresa</b>; solo esa confirmación detiene la alarma.</li>
       <li>La comanda y las etiquetas de cobertura también pueden abrirse manualmente desde <b>Panel → Cocina → Operación diaria → Producción por folio de cobertura</b>, seleccionando fecha y turno. El selector <b>Tamaño de etiqueta (rollo × largo)</b> de Producción por folio de cobertura inicia en <b>62 × 200 mm</b> y aplica tanto a las etiquetas del turno como a <b>Etiquetas de este folio</b>; es independiente del selector general de Impresión. Configura ese mismo tamaño en la Brother para evitar recortes. Cada turno tiene su propia comanda y etiquetas. No se mezclan con la comanda regular.</li>
-      <li>Cada alimento lleva su propia etiqueta y QR, con empleado, platillo, zona, horario y responsable. En el formato Brother de <b>200 × 62 mm horizontal</b>, el contenido de cobertura ya lleva una <b>reducción al 85 % centrada en el bloque impreso de 90 mm</b> para respetar el área imprimible. Mantén <b>escala 100 %</b> en el navegador, sin márgenes y con encabezados y pies desactivados. El folio sigue disponible en el panel y el QR identifica cada recipiente.</li>
+      <li>Cada alimento lleva una etiqueta con empleado, platillo, zona, horario y responsable. El QR contiene empleado, fecha y zona; en coberturas conserva además el identificador único de esa comida. El horario está impreso y se consulta en el pedido, no forma parte del QR. En el formato Brother de <b>200 × 62 mm horizontal</b>, el contenido de cobertura ya lleva una <b>reducción al 85 % centrada en el bloque impreso de 90 mm</b> para respetar el área imprimible. Mantén <b>escala 100 %</b> en el navegador, sin márgenes y con encabezados y pies desactivados. El folio sigue disponible en el panel y el QR identifica cada recipiente.</li>
       <li>El repartidor escanea <b>cada etiqueta</b>, igual que en el servicio regular.</li>
-      <li>En el primer paquete del folio, la tablet pregunta si recibe la persona indicada. Si sí, guarda su nombre para todo el lote.</li>
-      <li>Si recibe otra persona, toca <b>“Recibe otra persona”</b> y escanea una sola vez el QR de su gafete Glovis. El número y el nombre quedan registrados para los demás paquetes del mismo folio.</li>
-      <li>Todas las comidas se confirman individualmente. Cada cobertura conserva su etiqueta y el receptor; una etiqueta dañada se puede confirmar por número de empleado.</li>
+      <li>El QR registra directamente la comida, sin pedir confirmar al responsable del folio.</li>
+      <li>El responsable previsto se conserva en el pedido. Escanear el paquete no verifica la identidad de quien lo recibe.</li>
+      <li>Todas las comidas se confirman individualmente. Cada cobertura conserva su etiqueta y el responsable previsto; una etiqueta dañada se puede confirmar por número de empleado.</li>
     </ul>
   </section>
 
@@ -404,24 +404,10 @@
     <h2>5 · Para el personal de reparto — entregar y escanear</h2>
     <span class="rol rep">Repartidor</span>
 
-    <p>Procedimiento de reparto guiado con bitácora de ruta para la <b>versión v90</b>. Comprueba la versión del equipo antes de salir.</p>
-    <h3>Preparación inicial</h3>
-    <p><b>Se necesita un punto oficial en ASLA y otro en REFIS.</b> El repartidor puede enviar la ubicación desde el sitio y gerente o administrador revisarla desde una PC. Enviar una propuesta no fija el punto oficial ni registra comidas, llegadas o entregas.</p>
-    <h3>Enviar ubicación desde Entrega</h3>
-    <ol>
-      <li><b>Estando físicamente en el punto de entrega</b>, abre Entrega con tu sesión habitual. Si la zona aún no tiene ubicación oficial, toca <b>Enviar ubicación del punto</b> y elige <b>ASLA o REFIS</b>, según dónde estás.</li>
-      <li>Permite el GPS y quédate quieto mientras se toman varias muestras. Se necesita una <b>precisión de 25 m o menos</b>; si no se obtiene, busca mejor señal de GPS y repite. Revisa y confirma la zona antes de enviar.</li>
-      <li>Con señal, la propuesta se envía para revisión. Sin conexión, queda <b>pendiente de subida</b>: conserva los datos del navegador y abre la app con señal para enviarla. Después queda <b>pendiente de aprobación</b>; ninguno de esos estados significa que ya exista un punto oficial.</li>
-    </ol>
-    <p>La propuesta conserva la identidad de la sesión: si usas el acceso legado <b>Reparto general</b>, se identifica así; no escribas ni inventes otro nombre. El repartidor puede proponer, pero no crear ni modificar el punto oficial.</p>
-    <h3>Revisar la propuesta desde una PC</h3>
-    <p>Gerente o administrador entra a <b>Cocina → Reparto y puntos</b> y revisa <b>nombre o identidad de quien propone, zona, coordenadas GPS, precisión y hora</b>. Comprueba que la zona corresponde al sitio antes de decidir:</p>
-    <ul>
-      <li><b>Aprobar:</b> crea el punto oficial de esa zona con <b>radio de 150 m</b>. La aprobación no reemplaza un punto oficial que ya exista.</li>
-      <li><b>Rechazar:</b> indica el motivo y pide al repartidor una nueva captura desde el sitio correcto.</li>
-    </ul>
-    <p>Tras la aprobación, <b>actualiza la lista en Entrega con señal</b> para descargar el punto oficial y usarlo en la detección automática por GPS. Mientras no exista o no se haya descargado, elige punto y servicio manualmente.</p>
-    <p><b>Alternativa: captura directa de administración.</b> Se conserva <b>Capturar con este dispositivo</b> en Reparto y puntos, desde un móvil físicamente en ASLA o REFIS. Permite la ubicación, espera la medición y confirma el punto correcto. No captures desde una PC situada en otra ubicación: la revisión de propuestas sí puede hacerse desde esa PC.</p>
+    <p>Procedimiento de escaneo directo para la <b>versión v91</b>. Comprueba la versión del equipo antes de salir.</p>
+    <h3>Puntos oficiales y ubicación</h3>
+    <p>Escanear no requiere configurar un punto oficial: cada comida conserva la zona de su pedido y la coordenada disponible al entregarla. Administración mantiene los puntos de ASLA y REFIS desde <b>Cocina → Reparto y puntos → Capturar con este dispositivo</b>, con un móvil físicamente en el sitio. No captures desde una PC situada en otro lugar.</p>
+    <p>Las propuestas de ubicación enviadas en versiones anteriores se conservan. Gerente o administrador puede revisarlas desde una PC, comprobar zona, coordenadas, precisión y autor antes de aprobar o rechazar. La aprobación crea el punto con radio de 150 m y no reemplaza uno existente; ninguna propuesta confirma comidas. La pantalla de reparto ya no pide al operador configurar puntos.</p>
     <h3>Preparar el teléfono de reparto</h3>
     <div class="paso"><div class="n">1</div><div class="t"><b>Instala con señal.</b> Abre el QR de la hoja de instalación o la dirección de entrega. iPhone: Compartir → Agregar a pantalla de inicio. Android: menú ⋮ → Agregar a pantalla principal.</div></div>
     <div class="paso"><div class="n">2</div><div class="t"><b>Entra con tu clave personal.</b> Comprueba tu nombre y permite ubicación y cámara. Cada entrega se registra a tu nombre; si aparece otra persona, avisa a administración.</div></div>
@@ -436,31 +422,24 @@
     </div>
 
     <h3>El día de reparto</h3>
-    <div class="paso"><div class="n">1</div><div class="t"><b>Revisa la lista de hoy.</b> La app propone ASLA o REFIS por GPS y un servicio por horario. Comprueba punto, horario y agenda del día; las coberturas conservan su hora y folio propios.</div></div>
-    <div class="paso"><div class="n">2</div><div class="t"><b>Al llegar, toca Comenzar entrega.</b> Registra la llegada y abre la cámara; si usas lector, queda preparado para escanear. Mantén la app abierta, visible y el equipo despierto durante el reparto: no trabaja en segundo plano.</div></div>
+    <div class="paso"><div class="n">1</div><div class="t"><b>Revisa la lista de hoy.</b> Descarga el reparto con señal antes de salir. Incluye regulares y coberturas de todas tus zonas autorizadas; no hace falta elegir punto ni servicio.</div></div>
+    <div class="paso"><div class="n">2</div><div class="t"><b>Toca Abrir cámara.</b> Ya puedes escanear paquetes; no se pide iniciar ruta ni registrar salida o llegada. Mantén la app abierta, visible y el equipo despierto durante el reparto: no trabaja en segundo plano.</div></div>
     <div class="paso"><div class="n">3</div><div class="t"><b>Escanea cada paquete al entregarlo.</b> Un QR registra una comida. Revisa la confirmación con el nombre antes de pasar al siguiente. Con pistola o escáner integrado, activa Lector Bluetooth en sus ajustes.</div></div>
     <div class="paso"><div class="n">4</div><div class="t"><b>Etiqueta dañada: captura el número de empleado.</b> Abre Etiqueta dañada · ingresar número y pulsa Buscar empleado. Revisa nombre, platillo, zona y horario; si aparecen varias comidas, elige únicamente la que tienes delante y pulsa Confirmar esta comida. La captura manual se conserva para esta excepción, tanto en regulares como en coberturas; no hay botón Entregar en Pendientes.</div></div>
-    <div class="paso"><div class="n">5</div><div class="t"><b>Al terminar, toca Finalizar reparto.</b> Detiene la sesión de escaneo; las comidas pendientes siguen pendientes. Revisa Por subir · equipo y mantén la app abierta con señal hasta que llegue a cero.</div></div>
+    <div class="paso"><div class="n">5</div><div class="t"><b>Al terminar, toca Cerrar cámara.</b> Las comidas pendientes conservan su estado. Revisa Por subir · equipo y mantén la app abierta con señal hasta que llegue a cero.</div></div>
     <p>El método de cada entrega queda auditado: <b>cámara, lector o captura manual por etiqueta dañada</b>. La captura manual también confirma una sola comida, nunca todos los pedidos del empleado.</p>
-    <p>Si falta GPS o la sugerencia no corresponde, usa <b>Cambiar punto o servicio</b> y elige manualmente entre tus zonas autorizadas y la agenda. Una vez comenzado, <b>ni el reloj ni un cambio de GPS cambian el servicio activo</b>. Para otro punto u horario, cámbialo expresamente y vuelve a comenzar.</p>
+    <p>La zona, el turno y el horario se toman del pedido descargado. La app guarda la <b>hora real del escaneo</b> y el GPS disponible, sin impedir la entrega si falta ubicación. Una etiqueta cuyo empleado o zona difiere del pedido se rechaza para revisión. Las etiquetas anteriores siguen funcionando; si no identifican una sola comida, busca el número y confirma la correcta.</p>
 
-    <h3>Registrar el recorrido del turno</h3>
-    <ol>
-      <li>En el comedor, abre Entrega con señal y descarga el reparto. Justo al salir, toca el botón visible de tu recorrido: <b>Iniciar Turno A · ASLA</b>, <b>Iniciar Turno A · REFIS</b> o <b>Iniciar Turno B · REFIS y ASLA</b>. Ese toque registra la salida; después aparece el botón de llegada al primer punto. Solo se muestran recorridos autorizados que aún no están iniciados ni cerrados para ese día. Si falta la lista de hoy, la pantalla explica que debes descargarla con señal antes de iniciar.</li>
-      <li>Al llegar, toca <b>Comenzar entrega</b> en el servicio del turno o usa el botón <b>Registrar llegada</b> de la ruta. Escanea cada comida. Si hay pedidos regulares y coberturas en el mismo punto, termina ambos servicios antes de registrar la salida de ese punto.</li>
-      <li>Toca <b>Registrar salida</b> al partir de cada zona. En el Turno B, Entrega muestra ASLA después de registrar la salida de REFIS. De vuelta en el comedor, toca <b>Cerrar ruta en el comedor</b>.</li>
-    </ol>
-    <p>Cada marca guarda la hora y, si el GPS está disponible, la ubicación. Las marcas que se toman sin señal se quedan en el teléfono y se sincronizan cuando vuelve la conexión. El panel identifica la sesión personal por nombre y la clave compartida como <b>Reparto general</b>.</p>
-    <p>Si la ruta abierta no coincide con el punto, turno o fecha elegidos, aparece un aviso y su siguiente marca queda bloqueada. <b>Comenzar entrega</b> conserva el servicio elegido y registra su llegada aunque la bitácora sea de otra ruta. Usa <b>Iniciar</b> para registrar una salida real de otro recorrido o <b>Continuar</b> para volver a uno abierto. Cambiar de recorrido conserva las marcas y las colas pendientes; no cierra ni corrige el anterior. No registres pasos que no ocurrieron: una salida equivocada requiere revisión administrativa, sin inventar llegadas ni regreso al comedor.</p>
-    <p>Gerencia puede consultar los horarios y la duración de cada tramo en <b>Cocina → Reparto y puntos → Bitácora de rutas</b>.</p>
+    <h3>Recorridos anteriores</h3>
+    <p>La pantalla de reparto ya no solicita salidas, llegadas ni regreso al comedor. Las marcas y entregas que quedaron por subir de versiones anteriores se conservan y se sincronizan al recuperar señal. Gerencia puede consultar la bitácora histórica en <b>Cocina → Reparto y puntos</b>. Abrir la cámara no genera marcas de recorrido.</p>
 
     <h3>Probar el escáner sin registrar una entrega</h3>
     <p>Desde Panel → Cocina abre <b>“QR permanente de prueba del escáner”</b>.
       Es el mismo código para todos los días y sirve en <b>ASLA, REFIS, Turno A y
       Turno B</b>.</p>
-    <div class="paso"><div class="n">1</div><div class="t"><b>Entra con la clave personal del repartidor</b> y elige una de las rutas que tiene autorizadas.</div></div>
-    <div class="paso"><div class="n">2</div><div class="t"><b>Abre Configuración y prueba del escáner → Probar cámara sin registrar</b> y escanea el QR de prueba. No hace falta Comenzar entrega ni descargar pedidos para esta prueba. El código de prueba no se captura manualmente.</div></div>
-    <div class="paso"><div class="n">3</div><div class="t"><b>Debe aparecer “Prueba correcta”</b> con el nombre del repartidor y la ruta seleccionada.</div></div>
+    <div class="paso"><div class="n">1</div><div class="t"><b>Entra con la clave personal del repartidor</b> para comprobar sus zonas autorizadas.</div></div>
+    <div class="paso"><div class="n">2</div><div class="t"><b>Abre Configuración y prueba del escáner → Probar cámara sin registrar</b> y escanea el QR de prueba. No hace falta descargar pedidos para esta prueba. El código de prueba no se captura manualmente.</div></div>
+    <div class="paso"><div class="n">3</div><div class="t"><b>Debe aparecer “Prueba correcta”</b> con el nombre del repartidor y sus zonas autorizadas.</div></div>
     <p>Para leer una etiqueta, mantén el QR completo sobre una superficie plana, sin dobleces ni reflejos, y mueve despacio el teléfono hasta enfocar. La cámara intenta enfocar automáticamente cuando el equipo lo permite. Si indica <b>Reintentando lectura</b>, está recuperándose de una imagen no disponible; si persiste, cierra y abre la cámara. Si aparece <b>Lector QR no disponible</b>, conéctate, actualiza la aplicación y vuelve a probar. Abrir la cámara o reintentar no confirma ninguna entrega por sí solo. La captura por número de empleado se conserva para etiquetas dañadas, con confirmación individual.</p>
     <div class="caja tip">
       Este QR no depende de empleado, pedido, fecha, hora, turno ni ubicación.
@@ -471,7 +450,7 @@
     <table>
       <tr><th>Aviso</th><th>Qué significa</th><th>Qué hacer</th></tr>
       <tr><td><b style="color:#1e7a22">Verde</b> con nombre</td><td>Entrega registrada</td><td>Nada — sigue con la siguiente</td></tr>
-      <tr><td><b style="color:#1e7a22">“Prueba correcta”</b></td><td>La cámara leyó el QR y el repartidor tiene permiso para la ruta mostrada</td><td>Nada se registró; puedes repetir en la otra ruta autorizada</td></tr>
+      <tr><td><b style="color:#1e7a22">“Prueba correcta”</b></td><td>La cámara leyó el QR y el repartidor tiene zonas autorizadas</td><td>Nada se registró; la prueba valida las zonas autorizadas sin elegir recorrido</td></tr>
       <tr><td><b style="color:var(--dorado)">"Ya estaba entregada"</b></td><td>Esa etiqueta ya se escaneó antes</td><td>Verifica que no estés entregando doble</td></tr>
       <tr><td><b style="color:#c0392b">"No está en la lista"</b></td><td>Ese número no tiene pedido hoy</td><td>Revisa el número; si insiste, avisa al administrador</td></tr>
       <tr><td><b style="color:#c0392b">"Etiqueta de otro día"</b></td><td>La etiqueta es de una fecha distinta</td><td>NO la entregues — es comida de otro día</td></tr>
@@ -492,12 +471,11 @@
     vuelvas a entrar.</p>
 
     <h3>Paquetes que recibe el supervisor</h3>
-    <p>Si dejas comidas regulares con un supervisor, toca <b>Escanear paquetes para supervisor</b>, indica su nombre una vez y <b>escanea cada paquete que realmente le entregas</b>. El nombre se conserva para los siguientes paquetes de esa sesión; verifica el receptor y cámbialo cuando corresponda. Las coberturas mantienen la confirmación de responsable por folio.</p>
-    <p><b>No existe cierre masivo al supervisor.</b> Finalizar reparto no marca comidas ni convierte pendientes en entregadas. Una comida solo cambia al identificarla y confirmar su entrega individual.</p>
-    <p>Una etiqueta de otro servicio requiere cambiar la selección antes de registrarla. Cada confirmación conserva fecha, zona y turno para sincronizar después, aunque cambies de servicio o de día. Los reintentos antiguos sin contexto que requieran revisión permanecen en el equipo: <b>no borres datos del navegador y avisa a administración</b>.</p>
+    <p>Escanea cada paquete que realmente entregas, regular o cobertura. El responsable previsto se conserva en los folios de cobertura; este escaneo no acredita su identidad. La app no confirma comidas en grupo ni convierte los pendientes en entregados al cerrar la cámara.</p>
+    <p>Cada registro conserva fecha, zona y turno propios aunque escanees paquetes de distintos servicios seguidos. Si quedan registros antiguos para revisión, no borres datos del navegador y avisa a administración.</p>
 
     <h3>La ubicación</h3>
-    <p>La app guarda <b>dónde</b> se registró cada llegada y cada escaneo. No es
+    <p>La app guarda <b>dónde</b> se registró cada escaneo. No es
     para vigilar al repartidor: es la prueba de que el reparto se hizo en el
     punto y no en el camino, que es lo que se discute cuando hay una
     reclamación por entrega tardía.</p>
@@ -508,13 +486,13 @@
       recuperar después.
     </div>
 
-    <h3>Cambiar de punto o servicio</h3>
-    <p>Usa <b>Cambiar punto o servicio</b> y revisa la nueva selección. Termina el escaneo activo antes de comenzar otro servicio; las comidas pendientes conservan su estado. Después toca Comenzar entrega en el nuevo servicio. La descarga incluye todas las zonas autorizadas para poder cambiar entre ellas sin señal el mismo día. La cola conserva el contexto de cada entrega y no se borra al cambiar.</p>
+    <h3>Entregar en otra zona autorizada</h3>
+    <p>Continúa escaneando sus etiquetas sin cambiar de pantalla. La app identifica la zona de cada pedido y comprueba los permisos del usuario. La descarga reúne las zonas autorizadas para trabajar sin señal durante el día; las entregas pendientes de subir mantienen su fecha y contexto.</p>
 
     <h3>Lista del día y trabajo sin señal</h3>
     <table>
       <tr><th>Estado</th><th>Qué hacer</th></tr>
-      <tr><td><b>Lista actualizada</b></td><td>Se descargó la jornada; revisa punto y servicio antes de comenzar.</td></tr>
+      <tr><td><b>Lista actualizada</b></td><td>Se descargó la jornada; abre la cámara y escanea cada paquete.</td></tr>
       <tr><td><b>Lista guardada</b></td><td>Trabaja con la descarga de hoy aunque no haya señal. Cada entrega queda en Por subir · equipo hasta poder sincronizar.</td></tr>
       <tr><td><b>Falta lista de hoy</b></td><td>Conecta el equipo y descarga la jornada. Una lista de ayer no permite nuevas marcas.</td></tr>
     </table>

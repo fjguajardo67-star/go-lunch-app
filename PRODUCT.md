@@ -76,3 +76,5 @@ El pedido personal no requiere cuenta ni contraseña: localiza al empleado con s
 ## Accessibility & Inclusion
 
 La experiencia debe funcionar con teclado y lector de pantalla, mantener contraste legible bajo luz intensa, ofrecer objetivos táctiles amplios y respetar `prefers-reduced-motion`.
+
+- En Entrega, el operador abre cámara y escanea cada paquete sin elegir servicio ni registrar recorridos. El pedido determina zona y turno; el escaneo guarda hora y GPS disponible. Se conservan etiquetas anteriores, colas sin conexión y permisos de zona.

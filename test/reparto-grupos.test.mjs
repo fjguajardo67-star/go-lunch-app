@@ -28,36 +28,14 @@ test('la lista y el cierre se limitan al grupo; coberturas y tipos desconocidos 
  assert.equal(validarGrupo(pedidos[3],zona,'turno_a').motivo,'zona_incorrecta');
 });
 
-test('finalizar reparto detiene la sesión sin marcar pendientes ni cambiar la cola',()=>{
- const html=readFileSync(new URL('../public/entrega.html',import.meta.url),'utf8');
- const funciones=['finalizarReparto','cerrarEscaneoDeServicio'].map(nombre=>
-  html.match(new RegExp('function '+nombre+'\\([\\s\\S]*?\\n  }'))[0]).join('\n');
- const captura={};const copia=structuredClone(pedidos);
- const cola=[{numero_empleado:'002',entregado_en:pedidos[1].entregado_en}];
- const contexto=vm.createContext({entregada,PEDIDOS:copia,COLA:structuredClone(cola),SERVICIO_INICIADO:true,SERVICIO_MANUAL:false,
-  SUPERVISOR_ACTUAL:'Responsable QA',escaneando:true,RECEPTOR_PENDIENTE:null,
-  comidasEnPantalla:()=>copia.filter(p=>p.zona===zona&&p.turno==='turno_a'),
-  confirm:mensaje=>{captura.prompt=mensaje;return true;},detenerCamara:()=>{captura.camara=true;},
-  cancelarManual:()=>{},recordarServicio:()=>{},pintar:()=>{}});
- vm.runInContext(funciones+';finalizarReparto()',contexto);
- assert.equal(contexto.SERVICIO_INICIADO,false);assert.equal(contexto.SUPERVISOR_ACTUAL,'');assert.equal(captura.camara,true);
- assert.deepEqual(contexto.COLA,cola);assert.deepEqual(copia,pedidos);assert.match(captura.prompt,/3 comida\(s\) pendientes/);
-});
-
-test('el servicio se restaura solo en su fecha, zona y usuario sin adelantarlo por pendientes',()=>{
+test('reabrir escaneo directo descarta la selección y el supervisor antiguos sin tocar comidas ni cola',()=>{
  const html=readFileSync(new URL('../public/entrega.html',import.meta.url),'utf8');
  const fn=html.match(/function restaurarServicio\([\s\S]*?\n  }/)[0];
- const servicio={id:'regular|turno_a',turno:'turno_a',pendientes:0};
- const guardado={fecha,zona,id:servicio.id,usuario:10,iniciado:true,supervisor:'Supervisora QA'};
- const c=vm.createContext({TURNO:'',SERVICIO_ID:'',SERVICIO_INICIADO:false,SUPERVISOR_ACTUAL:'',
-  FECHA:fecha,ZONA:zona,SESION:{repartidor:{id:10}},LS:{servicio:'servicio'},leerLS:()=>guardado,
-  agenda:()=>[servicio,{id:'regular|turno_b',turno:'turno_b',pendientes:8}],servicioActual:()=>servicio});
- vm.runInContext(fn+';restaurarServicio()',c);
- assert.equal(c.TURNO,'turno_a');assert.equal(c.SERVICIO_ID,servicio.id);assert.equal(c.SERVICIO_INICIADO,true);
- for(const cambio of [{ZONA:'zona_vdc'},{FECHA:'2026-11-08'},{SESION:{repartidor:{id:11}}}]){
-  Object.assign(c,{TURNO:'',SERVICIO_ID:'',SERVICIO_INICIADO:false,FECHA:fecha,ZONA:zona,SESION:{repartidor:{id:10}}},cambio);
-  vm.runInContext('restaurarServicio()',c);assert.equal(c.SERVICIO_ID,'');assert.equal(c.SERVICIO_INICIADO,false);
- }
+ const c=vm.createContext({TURNO:'turno_b',SERVICIO_ID:'regular|turno_b',SERVICIO_INICIADO:true,
+  SUPERVISOR_ACTUAL:'Supervisor anterior',PEDIDOS:structuredClone(pedidos),COLA:[{evidencia:'conservar'}]});
+ const antes=JSON.stringify({pedidos:c.PEDIDOS,cola:c.COLA});vm.runInContext(fn+';restaurarServicio()',c);
+ assert.equal(c.TURNO,'');assert.equal(c.SERVICIO_ID,'');assert.equal(c.SERVICIO_INICIADO,false);assert.equal(c.SUPERVISOR_ACTUAL,'');
+ assert.equal(JSON.stringify({pedidos:c.PEDIDOS,cola:c.COLA}),antes);
 });
 
 test('un rechazo de un lote no borra la cola del otro turno si ese envío falla',async()=>{
