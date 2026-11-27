@@ -15,7 +15,7 @@ import {
 } from '../services/sesion.js';
 import {
   MOTIVOS_TARDIA, MOTIVOS_TARDIA_VALIDOS,
-  horarioZona, TOLERANCIA_TARDIA_MIN,
+  horarioZona, toleranciaEntrega,
   ZONAS_VALIDAS, TURNOS_VALIDOS, ZONA, hoy
 } from '../services/menu.js';
 import { validarReceptorEscaneado } from '../services/cobertura.js';
@@ -479,7 +479,7 @@ entregaRouter.get('/:fecha', async (req, res) => {
       // La app las necesita para decidir si una entrega salió tardía y pedir
       // el motivo estando SIN SEÑAL, sin volver a preguntarle al servidor.
       turno_hora: horarioZona(zona, fecha),
-      tolerancia_min: TOLERANCIA_TARDIA_MIN,
+      tolerancia_min: toleranciaEntrega(fecha),
       motivos_tardia: MOTIVOS_TARDIA,
       pedidos
     });

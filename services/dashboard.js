@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { claveEmpleado } from './telefono.js';
-import { esEntregaTardia, TOLERANCIA_TARDIA_MIN, ZONA } from './menu.js';
+import { esEntregaTardia, toleranciaEntrega, ZONA } from './menu.js';
 import { noSurtida, entregada as entregaConfirmada } from './incidencias.js';
 
 const numero = valor => String(valor ?? '').trim();
@@ -38,7 +38,7 @@ export function construirDashboard({fecha, empleados, pedidos, coberturas = [], 
     const entregada = p.entregado_en || null;
     let tardia = esEntregaTardia(fecha, p.turno, entregada, p.zona);
     if (programada && entregada) {
-      const limite = DateTime.fromISO(programada, {zone:ZONA}).plus({minutes:TOLERANCIA_TARDIA_MIN});
+      const limite = DateTime.fromISO(programada, {zone:ZONA}).plus({minutes:toleranciaEntrega(fecha)});
       const hora = DateTime.fromISO(entregada, {zone:ZONA});
       tardia = limite.isValid && hora.isValid ? hora > limite : null;
     }
