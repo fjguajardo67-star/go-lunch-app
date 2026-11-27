@@ -6,6 +6,7 @@
   const ZONA_DESC = Object.freeze({ zona_vdc: 'Fuera del puerto', zona_refris: 'Dentro del puerto' });
   const VIGENCIA = '2026-11-07';
   const VIGENCIA_REFIS_1730 = '2026-11-20';
+  const VIGENCIA_TOLERANCIA_20 = '2026-11-26';
   const TURNOS = Object.freeze({ turno_a: 'Turno A — matutino', turno_b: 'Turno B — vespertino' });
 
   function horaEntrega(turno, zona, fecha = VIGENCIA_REFIS_1730) {
@@ -16,6 +17,12 @@
     if (turno === 'turno_a') return '10:00';
     if (zona === 'zona_vdc') return '18:00';
     return fecha >= VIGENCIA_REFIS_1730 ? '17:30' : '17:00';
+  }
+
+  function toleranciaEntrega(fecha = VIGENCIA_TOLERANCIA_20) {
+    // Fecha civil ISO del servicio, sin convertirla a la zona del dispositivo.
+    return typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)
+      && fecha >= VIGENCIA_TOLERANCIA_20 ? 20 : 15;
   }
 
   function horarioZona(zona, fecha) {
@@ -38,5 +45,5 @@
     return `${turno === 'turno_a' ? 'Turno A' : 'Turno B'} — ${horaTexto(turno, zona, fecha)}`;
   }
 
-  globalThis.GoLunchOperacion = Object.freeze({ ZONAS, ZONA_DESC, TURNOS, VIGENCIA, horaEntrega, horarioZona, horaTexto, textoTurno });
+  globalThis.GoLunchOperacion = Object.freeze({ ZONAS, ZONA_DESC, TURNOS, VIGENCIA, VIGENCIA_TOLERANCIA_20, horaEntrega, horarioZona, horaTexto, textoTurno, toleranciaEntrega });
 })();

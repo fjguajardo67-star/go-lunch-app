@@ -1,7 +1,7 @@
 import '../public/etiqueta-entrega.js';
 // Una fila por comida. Las coberturas conservan su identidad y horario propios.
 import { DateTime } from 'luxon';
-import { ZONA, horaTexto, horaEntrega, limiteEntrega, TOLERANCIA_TARDIA_MIN } from './menu.js';
+import { ZONA, horaTexto, horaEntrega, limiteEntrega, toleranciaEntrega } from './menu.js';
 
 export function validarPeriodo(ini, fin = ini) {
   const valida = f => typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f) &&
@@ -48,7 +48,7 @@ export function horarioComida(p, fecha = p.fecha_menu) {
 export function limiteComida(p) {
   if (!p.entrega_programada_en) return limiteEntrega(p.fecha_menu, p.turno, p.zona);
   const d = DateTime.fromISO(p.entrega_programada_en, { zone: ZONA });
-  return d.isValid ? d.plus({ minutes: TOLERANCIA_TARDIA_MIN }) : null;
+  return d.isValid ? d.plus({ minutes: toleranciaEntrega(p.fecha_menu) }) : null;
 }
 
 export function tardiaComida(p) {

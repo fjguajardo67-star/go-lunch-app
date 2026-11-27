@@ -95,6 +95,13 @@ test('API de entrega individual: métodos, primera marca, colas antiguas y zonas
       const r = await fetch(url + '/hoy' + query, { headers }); return { status: r.status, ...await r.json() };
     }
 
+    await t.test('la descarga informa 20 minutos desde el 26 y conserva 15 en el historial', async () => {
+      for (const [dia,minutos] of [['2026-11-25',15],['2026-11-26',20]]) {
+        const r=await fetch(url+'/'+dia,{headers:sesion()});
+        assert.equal(r.status,200);assert.equal((await r.json()).tolerancia_min,minutos);
+      }
+    });
+
     await t.test('una llegada de otro repartidor no se atribuye a la sesión actual', async () => {
       reiniciar();
       const antes=JSON.stringify(tablas.llegadas);

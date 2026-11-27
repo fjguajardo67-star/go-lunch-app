@@ -1,7 +1,7 @@
 // services/menu.js — Lógica de horario y construcción del menú
 import { DateTime } from 'luxon';
 import '../public/operacion.js';
-export const { horaEntrega, horarioZona, horaTexto } = globalThis.GoLunchOperacion;
+export const { horaEntrega, horarioZona, horaTexto, toleranciaEntrega } = globalThis.GoLunchOperacion;
 
 // Una sola definición de zona horaria para todo el sistema. Se exporta porque
 // el panel la tenía escrita a mano en su propio formateo de horas, y dos
@@ -33,15 +33,16 @@ export const TURNOS_VALIDOS = Object.keys(TURNOS);
 // ── Puntualidad de la entrega ─────────────────────────────────
 // Hora programada de cada turno y la tolerancia acordada. La ruta tarda en
 // recorrer sus puntos, así que sin tolerancia el final del recorrido saldría
-// tardío aunque vaya en tiempo. 15 min es acuerdo interno, no contractual.
-export const TOLERANCIA_TARDIA_MIN = 15;
+// tardío aunque vaya en tiempo. Desde 26/nov/2026 son 20 minutos; antes 15.
+// La constante describe la regla actual; para historial usar toleranciaEntrega(fecha).
+export const TOLERANCIA_TARDIA_MIN = 20;
 
 // Momento a partir del cual una entrega de ese turno cuenta como tardía
 export function limiteEntrega(fechaISO, turno, zona) {
   const hora = horaEntrega(turno, zona, fechaISO);
   if (!hora || !fechaISO) return null;
   const d = DateTime.fromISO(`${fechaISO}T${hora}`, { zone: ZONA });
-  return d.isValid ? d.plus({ minutes: TOLERANCIA_TARDIA_MIN }) : null;
+  return d.isValid ? d.plus({ minutes: toleranciaEntrega(fechaISO) }) : null;
 }
 
 // ¿La entrega fue tardía? null si no hay datos para saberlo.

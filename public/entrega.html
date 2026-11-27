@@ -539,7 +539,7 @@
   // Horarios y motivos: llegan del servidor con la lista del día y se guardan
   // en caché, porque el retraso se detecta y se justifica SIN señal.
   let TURNO_HORA = { turno_a: '10:00', turno_b: '17:00' };
-  let TOLERANCIA_MIN = 15;
+  let TOLERANCIA_MIN = 20;
   let MOTIVOS = {};
   let ABRIENDO_CAMARA = false;
   let escaneando = false, stream = null, ultimoCodigo = '', ultimoTs = 0;
@@ -1083,7 +1083,7 @@
     TODOS_PEDIDOS=PEDIDOS;
     for (const zona of zonasAutorizadas()) {
       guardar(claveDatos(zona),{fecha:FECHA,pedidos:PEDIDOS.filter(p=>p.zona === zona),zona,
-        turno_hora:TURNO_HORA,tolerancia_min:TOLERANCIA_MIN,motivos:MOTIVOS});
+        turno_hora:TURNO_HORA,tolerancia_min:(GoLunchOperacion.toleranciaEntrega?.(FECHA) ?? (FECHA >= '2026-11-26' ? 20 : 15)),motivos:MOTIVOS});
     }
     guardar(LS.jornada,{usuario:SESION?.repartidor?.id ?? 'legado',fecha:FECHA,pedidos:TODOS_PEDIDOS,
       puntos:PUNTOS,llegadas:LLEGADAS_DIA,reloj:RELOJ,descargada:ULTIMA_DESCARGA});
@@ -1693,7 +1693,8 @@
     const [a, m, d] = FECHA.split('-').map(Number);
     const [hh, mm] = hora.split(':').map(Number);
     const limite = new Date(a, m - 1, d, hh, mm, 0, 0);
-    limite.setMinutes(limite.getMinutes() + TOLERANCIA_MIN);
+    // Alternativa transitoria si el service worker aún conserva operacion.js de v92.
+    limite.setMinutes(limite.getMinutes() + (GoLunchOperacion.toleranciaEntrega?.(FECHA) ?? (FECHA >= '2026-11-26' ? 20 : 15)));
     return limite;
   }
 
@@ -1706,7 +1707,7 @@
   function limiteDelPedido(p) {
     if (p.entrega_programada_en) {
       const fecha = new Date(p.entrega_programada_en);
-      return Number.isNaN(fecha.getTime()) ? null : new Date(fecha.getTime() + TOLERANCIA_MIN * 60000);
+      return Number.isNaN(fecha.getTime()) ? null : new Date(fecha.getTime() + (GoLunchOperacion.toleranciaEntrega?.(FECHA) ?? (FECHA >= '2026-11-26' ? 20 : 15)) * 60000);
     }
     return limiteDelTurno(p.turno, p.zona || ZONA);
   }
